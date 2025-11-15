@@ -1,14 +1,5 @@
 # Animals
 
-To install dependencies:
-
 ```bash
-bun install
+bun index.html
 ```
-
-To run:
-
-```bash
-bun run index.ts
-```
-
