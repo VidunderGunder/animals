@@ -1,3 +1,14 @@
 # Animals
 
-Nostalgic GBA style animal game
+To install dependencies:
+
+```bash
+bun install
+```
+
+To run:
+
+```bash
+bun run index.ts
+```
+
