@@ -4,6 +4,7 @@
   "type": "module",
   "private": true,
   "devDependencies": {
+    "@total-typescript/ts-reset": "^0.6.1",
     "@types/bun": "latest"
   },
   "peerDependencies": {

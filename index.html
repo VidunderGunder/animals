@@ -4,9 +4,35 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Animals</title>
+    <link rel="stylesheet" href="reset.css" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+      }
+
+      body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: #101010;
+      }
+
+      canvas {
+        /* Scale the GBA resolution up but keep it pixelated */
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
+
+        /* Keep aspect ratio 240x160 and fit window */
+        width: min(100vw, 100vh * (240 / 160));
+        height: min(100vh, 100vw * (160 / 240));
+        border: 2px solid #444;
+      }
+    </style>
   </head>
   <body>
     <canvas id="canvas"></canvas>
-    <script src="src/index.ts"></script>
+    <script src="src/index.ts" type="module"></script>
   </body>
 </html>
