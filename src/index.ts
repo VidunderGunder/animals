@@ -11,7 +11,7 @@ import.meta.hot.accept();
 -- Config -------------------------
 */
 
-const SCALE = 1.2;
+const SCALE = 1;
 const GAME_WIDTH = 240 * SCALE; // 120 x 3
 const GAME_HEIGHT = 160 * SCALE; // 80 x 3
 const TILE_SIZE = 16; // pixels width/height of a tile
@@ -238,22 +238,22 @@ type AnimationState = {
 
 const playerAnimations = {
   // Idle: single frame for each direction (column 0)
-  idle_down: { frames: [0], frameDuration: 0.25, loop: true },
-  idle_up: { frames: [0], frameDuration: 0.25, loop: true },
-  idle_left: { frames: [0], frameDuration: 0.25, loop: true },
-  idle_right: { frames: [0], frameDuration: 0.25, loop: true },
+  idle_down: { frames: [0], frameDuration: 0.1, loop: true },
+  idle_up: { frames: [0], frameDuration: 0.1, loop: true },
+  idle_left: { frames: [0], frameDuration: 0.1, loop: true },
+  idle_right: { frames: [0], frameDuration: 0.1, loop: true },
 
   // Walking: simple ping-pong loop on columns 1–3
-  walk_down: { frames: [1, 2, 3, 2], frameDuration: 0.14, loop: true },
-  walk_up: { frames: [1, 2, 3, 2], frameDuration: 0.14, loop: true },
-  walk_left: { frames: [1, 2, 3, 2], frameDuration: 0.14, loop: true },
-  walk_right: { frames: [1, 2, 3, 2], frameDuration: 0.14, loop: true },
+  walk_down: { frames: [1, 2, 3, 2], frameDuration: 0.1, loop: true },
+  walk_up: { frames: [1, 2, 3, 2], frameDuration: 0.1, loop: true },
+  walk_left: { frames: [1, 2, 3, 2], frameDuration: 0.1, loop: true },
+  walk_right: { frames: [1, 2, 3, 2], frameDuration: 0.1, loop: true },
 
   // Running: same frames, just faster
-  run_down: { frames: [1, 2, 3, 2], frameDuration: 0.08, loop: true },
-  run_up: { frames: [1, 2, 3, 2], frameDuration: 0.08, loop: true },
-  run_left: { frames: [1, 2, 3, 2], frameDuration: 0.08, loop: true },
-  run_right: { frames: [1, 2, 3, 2], frameDuration: 0.08, loop: true },
+  run_down: { frames: [1, 2, 3, 2], frameDuration: 0.1, loop: true },
+  run_up: { frames: [1, 2, 3, 2], frameDuration: 0.1, loop: true },
+  run_left: { frames: [1, 2, 3, 2], frameDuration: 0.1, loop: true },
+  run_right: { frames: [1, 2, 3, 2], frameDuration: 0.1, loop: true },
 } as const satisfies Record<PlayerAnimationName, Animation>;
 
 /*
@@ -297,7 +297,8 @@ function getDesiredDirectionFromInput(): Direction | null {
 }
 
 function isRunning(): boolean {
-  return activeActions.has("secondary");
+  const secondaryPressed = activeActions.has("secondary");
+  return DEFAULT_MOVEMENT === "run" ? !secondaryPressed : secondaryPressed;
 }
 
 /** Get interpolated player world position in pixels */
@@ -471,14 +472,14 @@ function draw() {
       ctx.fillRect(screenX, screenY, TILE_SIZE, TILE_SIZE);
 
       // Light grid outline for debugging tile boundaries
-      ctx.strokeStyle = "#00000043";
-      ctx.lineWidth = 1;
-      ctx.strokeRect(
-        screenX + 0.5,
-        screenY + 0.5,
-        TILE_SIZE - 1,
-        TILE_SIZE - 1
-      );
+      // ctx.strokeStyle = "#00000043";
+      // ctx.lineWidth = 0.2;
+      // ctx.strokeRect(
+      //   screenX + 0.5,
+      //   screenY + 0.5,
+      //   TILE_SIZE - 1,
+      //   TILE_SIZE - 1
+      // );
     }
   }
 
@@ -544,25 +545,9 @@ function draw() {
 -- Assets ------------------------
 */
 
-function loadImage(src: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.src = src;
-    img.onload = () => resolve(img);
-    img.onerror = (err) => reject(err);
-  });
-}
-
-let playerSpriteSheet: HTMLImageElement | null = null;
-
-// Load player sprite sheet (adjust path as needed)
-loadImage("assets/player.png")
-  .then((img) => {
-    playerSpriteSheet = img;
-  })
-  .catch((err) => {
-    console.error("Failed to load player sprite sheet", err);
-  });
+const playerSpriteSheet = document.getElementById(
+  "player-sprite"
+) as HTMLImageElement;
 
 /*
 ▄▄▌               ▄▄▄·
@@ -573,9 +558,12 @@ loadImage("assets/player.png")
 -- Loop --------------
 */
 
-let previousFrameTimestamp = Date.now();
+let previousFrameTimestamp = 0;
 
+console.log("Starting...");
 function loop(timestamp: number) {
+  if (!previousFrameTimestamp) previousFrameTimestamp = timestamp;
+
   const elapsed = timestamp - previousFrameTimestamp;
 
   // Frame limiter: only update/draw if enough time has passed
@@ -583,7 +571,6 @@ function loop(timestamp: number) {
     requestAnimationFrame(loop);
     return;
   }
-  console.log(timestamp);
 
   const dt = elapsed / 1000; // seconds
   previousFrameTimestamp = timestamp;
