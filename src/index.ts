@@ -70,6 +70,8 @@ const allActions = [...moveActions, "primary", "secondary"] as const;
 type Action = (typeof allActions)[number];
 const activeActions = new Set<Action>();
 
+let movementIntent: Direction | null = null;
+
 const keyMap: Record<Action, string[]> = {
   up: ["ArrowUp", "w"],
   down: ["ArrowDown", "s"],
@@ -230,30 +232,24 @@ type PlayerAnimationName =
   | "run_left"
   | "run_right";
 
-type AnimationState = {
-  animationCurrent: PlayerAnimationName;
-  animationFrameIndex: number;
-  animationTimer: number; // seconds accumulated in this frame
-};
-
 const playerAnimations = {
   // Idle: single frame for each direction (column 0)
-  idle_down: { frames: [0], frameDuration: 0.1, loop: true },
-  idle_up: { frames: [0], frameDuration: 0.1, loop: true },
-  idle_left: { frames: [0], frameDuration: 0.1, loop: true },
-  idle_right: { frames: [0], frameDuration: 0.1, loop: true },
+  idle_down: { frames: [0], frameDuration: 0.3, loop: true },
+  idle_up: { frames: [0], frameDuration: 0.3, loop: true },
+  idle_left: { frames: [0], frameDuration: 0.3, loop: true },
+  idle_right: { frames: [0], frameDuration: 0.3, loop: true },
 
-  // Walking: simple ping-pong loop on columns 1–3
-  walk_down: { frames: [1, 2, 3, 2], frameDuration: 0.1, loop: true },
-  walk_up: { frames: [1, 2, 3, 2], frameDuration: 0.1, loop: true },
-  walk_left: { frames: [1, 2, 3, 2], frameDuration: 0.1, loop: true },
-  walk_right: { frames: [1, 2, 3, 2], frameDuration: 0.1, loop: true },
+  // Walking: 1 full cycle ≈ 1 tile
+  walk_down: { frames: [1, 2, 3, 2], frameDuration: 0.13, loop: true },
+  walk_up: { frames: [1, 2, 3, 2], frameDuration: 0.13, loop: true },
+  walk_left: { frames: [1, 2, 3, 2], frameDuration: 0.13, loop: true },
+  walk_right: { frames: [1, 2, 3, 2], frameDuration: 0.13, loop: true },
 
-  // Running: same frames, just faster
-  run_down: { frames: [1, 2, 3, 2], frameDuration: 0.1, loop: true },
-  run_up: { frames: [1, 2, 3, 2], frameDuration: 0.1, loop: true },
-  run_left: { frames: [1, 2, 3, 2], frameDuration: 0.1, loop: true },
-  run_right: { frames: [1, 2, 3, 2], frameDuration: 0.1, loop: true },
+  // Running: snappier — about twice as fast
+  run_down: { frames: [1, 2, 3, 2], frameDuration: 0.08, loop: true },
+  run_up: { frames: [1, 2, 3, 2], frameDuration: 0.08, loop: true },
+  run_left: { frames: [1, 2, 3, 2], frameDuration: 0.08, loop: true },
+  run_right: { frames: [1, 2, 3, 2], frameDuration: 0.08, loop: true },
 } as const satisfies Record<PlayerAnimationName, Animation>;
 
 /*
@@ -316,37 +312,23 @@ function getPlayerWorldPosition() {
 }
 
 function getDesiredPlayerAnimation(): PlayerAnimationName {
-  const moving = player.isMoving;
-  const dir = player.direction;
   const running = isRunning();
+  const hasIntent = movementIntent !== null;
 
-  if (moving) {
+  if (hasIntent) {
+    const dir = movementIntent as Direction;
+
     if (running) {
-      switch (dir) {
-        case "down":
-          return "run_down";
-        case "up":
-          return "run_up";
-        case "left":
-          return "run_left";
-        case "right":
-          return "run_right";
-      }
+      // "run_down" | "run_left" | ...
+      return `run_${dir}` as PlayerAnimationName;
     } else {
-      switch (dir) {
-        case "down":
-          return "walk_down";
-        case "up":
-          return "walk_up";
-        case "left":
-          return "walk_left";
-        case "right":
-          return "walk_right";
-      }
+      // "walk_down" | "walk_left" | ...
+      return `walk_${dir}` as PlayerAnimationName;
     }
   }
 
-  switch (dir) {
+  // No directional input → idle in the last facing direction
+  switch (player.direction) {
     case "down":
       return "idle_down";
     case "up":
@@ -389,10 +371,15 @@ function updatePlayerAnimation(dt: number) {
 
 /** Update player and world state */
 function update(dt: number) {
-  // If not currently moving, see if we should start a tile move
-  if (!player.isMoving) {
-    const desired = getDesiredDirectionFromInput();
+  // 1. Input intent for this frame
+  const desired = getDesiredDirectionFromInput();
+  movementIntent = desired;
 
+  // 2. Speed based on run/walk
+  player.speed = MovementSpeeds[isRunning() ? "run" : "walk"];
+
+  // 3. Movement start
+  if (!player.isMoving) {
     if (desired) {
       player.direction = desired;
 
@@ -400,7 +387,6 @@ function update(dt: number) {
       const targetTileX = clampTile(player.tileX + dx, WORLD_WIDTH_TILES);
       const targetTileY = clampTile(player.tileY + dy, WORLD_HEIGHT_TILES);
 
-      // If the target tile is different (i.e., we're not at the edge), start moving
       if (targetTileX !== player.tileX || targetTileY !== player.tileY) {
         player.isMoving = true;
         player.moveFromX = player.tileX;
@@ -412,7 +398,7 @@ function update(dt: number) {
     }
   }
 
-  // If moving, advance tween
+  // 4. Movement tween
   if (player.isMoving) {
     const distancePx = TILE_SIZE;
     const moveDuration = distancePx / player.speed; // seconds for one tile
@@ -426,6 +412,7 @@ function update(dt: number) {
     }
   }
 
+  // 5. Anim AFTER we've updated movement
   updatePlayerAnimation(dt);
 }
 
