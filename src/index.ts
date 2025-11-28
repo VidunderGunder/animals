@@ -15,7 +15,7 @@ const SCALE = 1;
 const GAME_WIDTH = 240 * SCALE; // 120 x 3
 const GAME_HEIGHT = 160 * SCALE; // 80 x 3
 const TILE_SIZE = 16; // pixels width/height of a tile
-const FPS_LIMIT = 60;
+const FPS_LIMIT = 200;
 
 type MovementType = "walk" | "run";
 const DEFAULT_MOVEMENT: MovementType = "run";
@@ -514,13 +514,12 @@ function draw() {
   ctx.fillStyle = "#ffffff";
   ctx.font = "8px monospace";
   ctx.textBaseline = "top";
-  ctx.fillText(
-    `tile=(${player.tileX}, ${player.tileY}) dir=${player.direction} moving=${
-      player.isMoving
-    } running=${isRunning()}`,
-    4,
-    4
-  );
+  [
+    `tile=(${player.tileX}, ${player.tileY})`,
+    `dir=${player.direction}`,
+    `moving=${player.isMoving}`,
+    `running=${isRunning()}`,
+  ].forEach((line, index) => ctx.fillText(line, 4, 4 + index * 10));
 }
 
 /*
