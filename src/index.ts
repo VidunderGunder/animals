@@ -3,25 +3,38 @@ import.meta.hot.accept();
 // https://patorjk.com/software/taag/#p=display&f=ANSI-Compact&t=Canvas&x=none&v=4&h=4&w=80&we=false
 
 /*
- ▄▄▄▄  ▄▄▄  ▄▄  ▄▄  ▄▄▄▄ ▄▄▄▄▄▄ ▄▄▄  ▄▄  ▄▄ ▄▄▄▄▄▄ ▄▄▄▄ 
-██▀▀▀ ██▀██ ███▄██ ███▄▄   ██  ██▀██ ███▄██   ██  ███▄▄ 
-▀████ ▀███▀ ██ ▀██ ▄▄██▀   ██  ██▀██ ██ ▀██   ██  ▄▄██▀ 
+ ▄▄·        ▐ ▄ ·▄▄▄▪   ▄▄ • 
+▐█ ▌▪▪     •█▌▐█▐▄▄·██ ▐█ ▀ ▪
+██ ▄▄ ▄█▀▄ ▐█▐▐▌██▪ ▐█·▄█ ▀█▄
+▐███▌▐█▌.▐▌██▐█▌██▌.▐█▌▐█▄▪▐█
+·▀▀▀  ▀█▄▀▪▀▀ █▪▀▀▀ ▀▀▀·▀▀▀▀ 
+-- Config -------------------------
 */
 
-const GAME_WIDTH = 360;
-const GAME_HEIGHT = 240;
+const SCALE = 1.2;
+const GAME_WIDTH = 240 * SCALE; // 120 x 3
+const GAME_HEIGHT = 160 * SCALE; // 80 x 3
 const TILE_SIZE = 16; // pixels width/height of a tile
-const WALK_SPEED = 80; // pixels per second (one tile = 16px, so 5 tiles/sec)
 const FPS_LIMIT = 60;
-const DEFAULT_MOVEMENT: "walk" | "run" = "walk";
+
+type MovementType = "walk" | "run";
+const DEFAULT_MOVEMENT: MovementType = "run";
+
+const MovementSpeeds = {
+  walk: 100,
+  run: 220,
+} as const satisfies Record<MovementType, number>;
 
 const WORLD_WIDTH_TILES = 100;
 const WORLD_HEIGHT_TILES = 100;
 
 /*
- ▄▄▄▄  ▄▄▄  ▄▄  ▄▄ ▄▄ ▄▄  ▄▄▄   ▄▄▄▄ 
-██▀▀▀ ██▀██ ███▄██ ██▄██ ██▀██ ███▄▄ 
-▀████ ██▀██ ██ ▀██  ▀█▀  ██▀██ ▄▄██▀ 
+ ▄▄·  ▄▄▄·  ▐ ▄  ▌ ▐· ▄▄▄· .▄▄ · 
+▐█ ▌▪▐█ ▀█ •█▌▐█▪█·█▌▐█ ▀█ ▐█ ▀. 
+██ ▄▄▄█▀▀█ ▐█▐▐▌▐█▐█•▄█▀▀█ ▄▀▀▀█▄
+▐███▌▐█ ▪▐▌██▐█▌ ███ ▐█ ▪▐▌▐█▄▪▐█
+·▀▀▀  ▀  ▀ ▀▀ █▪. ▀   ▀  ▀  ▀▀▀▀ 
+-- Canvas -----------------------
 */
 
 const canvas = document.getElementById("canvas");
@@ -35,9 +48,12 @@ canvas.width = GAME_WIDTH;
 canvas.height = GAME_HEIGHT;
 
 /*
-▄▄ ▄▄  ▄▄ ▄▄▄▄  ▄▄ ▄▄ ▄▄▄▄▄▄ 
-██ ███▄██ ██▄█▀ ██ ██   ██   
-██ ██ ▀██ ██    ▀███▀   ██   
+▪   ▐ ▄  ▄▄▄·▄• ▄▌▄▄▄▄▄
+██ •█▌▐█▐█ ▄██▪██▌•██  
+▐█·▐█▐▐▌ ██▀·█▌▐█▌ ▐█.▪
+▐█▌██▐█▌▐█▪·•▐█▄█▌ ▐█▌·
+▀▀▀▀▀ █▪.▀    ▀▀▀  ▀▀▀ 
+-- Input --------------
 */
 
 const pressedKeys = new Set<string>();
@@ -123,9 +139,12 @@ function initKeyboard() {
 initKeyboard();
 
 /*
- ▄▄▄▄ ▄▄▄▄▄▄ ▄▄▄ ▄▄▄▄▄▄ ▄▄▄▄▄ 
-███▄▄   ██  ██▀██  ██   ██▄▄  
-▄▄██▀   ██  ██▀██  ██   ██▄▄▄                 
+.▄▄ · ▄▄▄▄▄ ▄▄▄· ▄▄▄▄▄▄▄▄ .
+▐█ ▀. •██  ▐█ ▀█ •██  ▀▄.▀·
+▄▀▀▀█▄ ▐█.▪▄█▀▀█  ▐█.▪▐▀▀▪▄
+▐█▄▪▐█ ▐█▌·▐█ ▪▐▌ ▐█▌·▐█▄▄▌
+ ▀▀▀▀  ▀▀▀  ▀  ▀  ▀▀▀  ▀▀▀ 
+-- State ------------------
 */
 
 type Direction = "up" | "down" | "left" | "right";
@@ -154,31 +173,96 @@ type Player = {
   moveToY: number;
   /** 0 → start tile, 1 → target tile */
   moveProgress: number;
+
+  /** Current animation state */
+  animationCurrent: PlayerAnimationName;
+  animationFrameIndex: number;
+  animationTimer: number;
 };
 
-const player: Player = (() => {
-  const startTileX = Math.floor(WORLD_WIDTH_TILES / 2);
-  const startTileY = Math.floor(WORLD_HEIGHT_TILES / 2);
+const startTileX = Math.floor(WORLD_WIDTH_TILES / 2);
+const startTileY = Math.floor(WORLD_HEIGHT_TILES / 2);
 
-  return {
-    tileX: startTileX,
-    tileY: startTileY,
-    direction: "down",
-    size: TILE_SIZE,
-    speed: DEFAULT_MOVEMENT === "walk" ? WALK_SPEED : WALK_SPEED, // run not used yet
-    isMoving: false,
-    moveFromX: startTileX,
-    moveFromY: startTileY,
-    moveToX: startTileX,
-    moveToY: startTileY,
-    moveProgress: 1,
-  };
-})();
+const player: Player = {
+  tileX: startTileX,
+  tileY: startTileY,
+  direction: "down",
+  size: TILE_SIZE,
+  speed: MovementSpeeds[DEFAULT_MOVEMENT],
+  isMoving: false,
+  moveFromX: startTileX,
+  moveFromY: startTileY,
+  moveToX: startTileX,
+  moveToY: startTileY,
+  moveProgress: 1,
+  animationCurrent: "idle_down",
+  animationFrameIndex: 0,
+  animationTimer: 0,
+};
+
+const DIRECTION_ROW: Record<Direction, number> = {
+  down: 0,
+  left: 1,
+  right: 2,
+  up: 3,
+};
+
+type Animation = {
+  /** Frame indices in the sprite sheet (column indexes) */
+  frames: number[];
+  /** Seconds each frame is shown */
+  frameDuration: number;
+  /** Loop back to start when finished */
+  loop: boolean;
+};
+
+type PlayerAnimationName =
+  | "idle_down"
+  | "idle_up"
+  | "idle_left"
+  | "idle_right"
+  | "walk_down"
+  | "walk_up"
+  | "walk_left"
+  | "walk_right"
+  | "run_down"
+  | "run_up"
+  | "run_left"
+  | "run_right";
+
+type AnimationState = {
+  animationCurrent: PlayerAnimationName;
+  animationFrameIndex: number;
+  animationTimer: number; // seconds accumulated in this frame
+};
+
+const playerAnimations = {
+  // Idle: single frame for each direction (column 0)
+  idle_down: { frames: [0], frameDuration: 0.25, loop: true },
+  idle_up: { frames: [0], frameDuration: 0.25, loop: true },
+  idle_left: { frames: [0], frameDuration: 0.25, loop: true },
+  idle_right: { frames: [0], frameDuration: 0.25, loop: true },
+
+  // Walking: simple ping-pong loop on columns 1–3
+  walk_down: { frames: [1, 2, 3, 2], frameDuration: 0.14, loop: true },
+  walk_up: { frames: [1, 2, 3, 2], frameDuration: 0.14, loop: true },
+  walk_left: { frames: [1, 2, 3, 2], frameDuration: 0.14, loop: true },
+  walk_right: { frames: [1, 2, 3, 2], frameDuration: 0.14, loop: true },
+
+  // Running: same frames, just faster
+  run_down: { frames: [1, 2, 3, 2], frameDuration: 0.08, loop: true },
+  run_up: { frames: [1, 2, 3, 2], frameDuration: 0.08, loop: true },
+  run_left: { frames: [1, 2, 3, 2], frameDuration: 0.08, loop: true },
+  run_right: { frames: [1, 2, 3, 2], frameDuration: 0.08, loop: true },
+} as const satisfies Record<PlayerAnimationName, Animation>;
 
 /*
- ▄▄▄▄  ▄▄▄  ▄▄   ▄▄ ▄▄▄▄▄ 
-██ ▄▄ ██▀██ ██▀▄▀██ ██▄▄  
-▀███▀ ██▀██ ██   ██ ██▄▄▄ 
+ ▄▄ •  ▄▄▄· • ▌ ▄ ·. ▄▄▄ .
+▐█ ▀ ▪▐█ ▀█ ·██ ▐███▪▀▄.▀·
+▄█ ▀█▄▄█▀▀█ ▐█ ▌▐▌▐█·▐▀▀▪▄
+▐█▄▪▐█▐█ ▪▐▌██ ██▌▐█▌▐█▄▄▌
+·▀▀▀▀  ▀  ▀ ▀▀  █▪▀▀▀ ▀▀▀ 
+-- Game ------------------
 */
 
 // Simple placeholder world: 100x100 checkerboard
@@ -212,6 +296,10 @@ function getDesiredDirectionFromInput(): Direction | null {
   return null;
 }
 
+function isRunning(): boolean {
+  return activeActions.has("secondary");
+}
+
 /** Get interpolated player world position in pixels */
 function getPlayerWorldPosition() {
   const t = player.moveProgress;
@@ -224,6 +312,78 @@ function getPlayerWorldPosition() {
     x: interpTileX * TILE_SIZE,
     y: interpTileY * TILE_SIZE,
   };
+}
+
+function getDesiredPlayerAnimation(): PlayerAnimationName {
+  const moving = player.isMoving;
+  const dir = player.direction;
+  const running = isRunning();
+
+  if (moving) {
+    if (running) {
+      switch (dir) {
+        case "down":
+          return "run_down";
+        case "up":
+          return "run_up";
+        case "left":
+          return "run_left";
+        case "right":
+          return "run_right";
+      }
+    } else {
+      switch (dir) {
+        case "down":
+          return "walk_down";
+        case "up":
+          return "walk_up";
+        case "left":
+          return "walk_left";
+        case "right":
+          return "walk_right";
+      }
+    }
+  }
+
+  switch (dir) {
+    case "down":
+      return "idle_down";
+    case "up":
+      return "idle_up";
+    case "left":
+      return "idle_left";
+    case "right":
+      return "idle_right";
+  }
+}
+
+function updatePlayerAnimation(dt: number) {
+  const desired = getDesiredPlayerAnimation();
+
+  if (player.animationCurrent !== desired) {
+    player.animationCurrent = desired;
+    player.animationFrameIndex = 0;
+    player.animationTimer = 0;
+    return;
+  }
+
+  const anim = playerAnimations[desired];
+  player.animationTimer += dt;
+
+  if (player.animationTimer >= anim.frameDuration) {
+    player.animationTimer -= anim.frameDuration;
+
+    const nextIndex = player.animationFrameIndex + 1;
+    if (nextIndex >= anim.frames.length) {
+      if (anim.loop) {
+        player.animationFrameIndex = 0;
+      } else {
+        player.animationFrameIndex = anim.frames.length - 1;
+      }
+    } else {
+      player.animationFrameIndex = nextIndex;
+    }
+  }
 }
 
 /** Update player and world state */
@@ -264,6 +424,8 @@ function update(dt: number) {
       player.isMoving = false;
     }
   }
+
+  updatePlayerAnimation(dt);
 }
 
 /** Draw world, player, and any debug overlays */
@@ -273,8 +435,8 @@ function draw() {
   const { x: playerWorldX, y: playerWorldY } = getPlayerWorldPosition();
 
   // Camera keeps player centered
-  const cameraX = playerWorldX - GAME_WIDTH / 2 + player.size / 2;
-  const cameraY = playerWorldY - GAME_HEIGHT / 2 + player.size / 2;
+  const cameraX = playerWorldX - GAME_WIDTH / 2 + TILE_SIZE / 2;
+  const cameraY = playerWorldY - GAME_HEIGHT / 2 + TILE_SIZE / 2;
 
   // Clear screen
   ctx.fillStyle = "#101010";
@@ -320,31 +482,100 @@ function draw() {
     }
   }
 
-  // Draw player as white square
+  // Draw player
   const playerScreenX = Math.round(playerWorldX - cameraX);
   const playerScreenY = Math.round(playerWorldY - cameraY);
+  const centerX = playerScreenX + player.size / 2;
+  const centerY = playerScreenY + player.size / 2;
 
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(playerScreenX, playerScreenY, player.size, player.size);
+  ctx.save();
+  ctx.translate(centerX, centerY);
 
-  // Optional debug overlay (tile coords, direction)
+  if (playerSpriteSheet) {
+    const animName = player.animationCurrent;
+    const anim = playerAnimations[animName];
+
+    const frameColumn = anim.frames[player.animationFrameIndex];
+    if (frameColumn === undefined) {
+      throw new Error(
+        `Invalid animation frame index for ${animName}, index ${player.animationFrameIndex} but frames are ${anim.frames.length} long`
+      );
+    }
+
+    const row = DIRECTION_ROW[player.direction];
+
+    const sx = frameColumn * TILE_SIZE;
+    const sy = row * TILE_SIZE;
+    const sw = TILE_SIZE;
+    const sh = TILE_SIZE;
+
+    const dw = player.size;
+    const dh = player.size;
+
+    ctx.drawImage(playerSpriteSheet, sx, sy, sw, sh, -dw / 2, -dh / 2, dw, dh);
+  } else {
+    // Fallback: white square while sheet is loading / missing
+    ctx.fillStyle = "#ffffff";
+    const size = player.size;
+    ctx.fillRect(-size / 2, -size / 2, size, size);
+  }
+
+  ctx.restore();
+
+  // Optional debug overlay (tile coords, direction, run state)
   ctx.fillStyle = "#ffffff";
   ctx.font = "8px monospace";
   ctx.textBaseline = "top";
   ctx.fillText(
-    `tile=(${player.tileX}, ${player.tileY}) dir=${player.direction} moving=${player.isMoving}`,
+    `tile=(${player.tileX}, ${player.tileY}) dir=${player.direction} moving=${
+      player.isMoving
+    } running=${isRunning()}`,
     4,
     4
   );
 }
 
-let previousFrameTimestamp = 0;
+/*
+ ▄▄▄· .▄▄ · .▄▄ · ▄▄▄ .▄▄▄▄▄.▄▄ · 
+▐█ ▀█ ▐█ ▀. ▐█ ▀. ▀▄.▀·•██  ▐█ ▀. 
+▄█▀▀█ ▄▀▀▀█▄▄▀▀▀█▄▐▀▀▪▄ ▐█.▪▄▀▀▀█▄
+▐█ ▪▐▌▐█▄▪▐█▐█▄▪▐█▐█▄▄▌ ▐█▌·▐█▄▪▐█
+ ▀  ▀  ▀▀▀▀  ▀▀▀▀  ▀▀▀  ▀▀▀  ▀▀▀▀ 
+-- Assets ------------------------
+*/
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.src = src;
+    img.onload = () => resolve(img);
+    img.onerror = (err) => reject(err);
+  });
+}
+
+let playerSpriteSheet: HTMLImageElement | null = null;
+
+// Load player sprite sheet (adjust path as needed)
+loadImage("assets/player.png")
+  .then((img) => {
+    playerSpriteSheet = img;
+  })
+  .catch((err) => {
+    console.error("Failed to load player sprite sheet", err);
+  });
+
+/*
+▄▄▌               ▄▄▄·
+██•  ▪     ▪     ▐█ ▄█
+██▪   ▄█▀▄  ▄█▀▄  ██▀·
+▐█▌▐▌▐█▌.▐▌▐█▌.▐▌▐█▪·•
+.▀▀▀  ▀█▄▀▪ ▀█▄▀▪.▀   
+-- Loop --------------
+*/
+
+let previousFrameTimestamp = Date.now();
 
 function loop(timestamp: number) {
-  if (!previousFrameTimestamp) {
-    previousFrameTimestamp = timestamp;
-  }
-
   const elapsed = timestamp - previousFrameTimestamp;
 
   // Frame limiter: only update/draw if enough time has passed
@@ -352,6 +583,7 @@ function loop(timestamp: number) {
     requestAnimationFrame(loop);
     return;
   }
+  console.log(timestamp);
 
   const dt = elapsed / 1000; // seconds
   previousFrameTimestamp = timestamp;
