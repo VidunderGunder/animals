@@ -547,7 +547,6 @@ const playerSpriteSheet = document.getElementById(
 
 let previousFrameTimestamp = 0;
 
-console.log("Starting...");
 function loop(timestamp: number) {
   if (!previousFrameTimestamp) previousFrameTimestamp = timestamp;
 
