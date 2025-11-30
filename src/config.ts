@@ -8,7 +8,7 @@ export const PLAYER_SPRITE_WIDTH = 16;
 export const PLAYER_SPRITE_HEIGHT = 24;
 
 export type MovementType = "walk" | "run";
-export const DEFAULT_MOVEMENT: MovementType = "run";
+export const DEFAULT_MOVEMENT: MovementType = "walk";
 
 export const movementSpeeds = {
   walk: 100,
