@@ -10,10 +10,10 @@ export const PLAYER_SPRITE_HEIGHT = 24;
 export type MovementType = "walk" | "run";
 export const DEFAULT_MOVEMENT: MovementType = "run";
 
-export const MovementSpeeds = {
+export const movementSpeeds = {
   walk: 100,
   run: 160,
 } as const satisfies Record<MovementType, number>;
 
-export const WORLD_WIDTH_TILES = 100;
-export const WORLD_HEIGHT_TILES = 100;
+export const DEBUG_TILES = false;
+export const DEBUG_OVERLAY = false;

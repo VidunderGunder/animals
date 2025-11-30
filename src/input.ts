@@ -21,10 +21,10 @@ export function setMovementIntent(intent: Direction | null) {
 }
 
 export const keyMap: Record<Action, string[]> = {
-  up: ["ArrowUp", "w"],
-  down: ["ArrowDown", "s"],
-  left: ["ArrowLeft", "a"],
-  right: ["ArrowRight", "d"],
+  up: ["ArrowUp"],
+  down: ["ArrowDown"],
+  left: ["ArrowLeft"],
+  right: ["ArrowRight"],
   primary: [" "],
   secondary: ["Shift"],
 };

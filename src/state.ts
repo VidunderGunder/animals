@@ -1,10 +1,8 @@
 import {
   DEFAULT_MOVEMENT,
-  MovementSpeeds,
+  movementSpeeds,
   PLAYER_SPRITE_HEIGHT,
   PLAYER_SPRITE_WIDTH,
-  WORLD_HEIGHT_TILES,
-  WORLD_WIDTH_TILES,
 } from "./config";
 import type { Direction } from "./input";
 
@@ -40,8 +38,8 @@ export type Player = {
   animationTimer: number;
 };
 
-export const startTileX = Math.floor(WORLD_WIDTH_TILES / 2);
-export const startTileY = Math.floor(WORLD_HEIGHT_TILES / 2);
+export const startTileX = 8;
+export const startTileY = 8;
 
 export const player: Player = {
   tileX: startTileX,
@@ -49,7 +47,7 @@ export const player: Player = {
   direction: "down",
   height: PLAYER_SPRITE_HEIGHT,
   width: PLAYER_SPRITE_WIDTH,
-  speed: MovementSpeeds[DEFAULT_MOVEMENT],
+  speed: movementSpeeds[DEFAULT_MOVEMENT],
   isMoving: false,
   moveFromX: startTileX,
   moveFromY: startTileY,

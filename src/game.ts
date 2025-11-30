@@ -1,16 +1,16 @@
 import { playerSpriteSheet } from "./assets";
 import { ctx } from "./canvas";
 import {
+  DEBUG_OVERLAY,
+  DEBUG_TILES,
   DEFAULT_MOVEMENT,
   FPS_LIMIT,
   GAME_HEIGHT,
   GAME_WIDTH,
-  MovementSpeeds,
+  movementSpeeds,
   PLAYER_SPRITE_HEIGHT,
   PLAYER_SPRITE_WIDTH,
   TILE_SIZE,
-  WORLD_HEIGHT_TILES,
-  WORLD_WIDTH_TILES,
 } from "./config";
 import {
   activeActions,
@@ -24,11 +24,11 @@ import {
   playerAnimations,
   DIRECTION_ROW,
 } from "./state";
+import { drawTile, tileMaps } from "./tiles";
+import { world } from "./world";
 
-// Simple placeholder world: 100x100 checkerboard
-const world: number[][] = Array.from({ length: WORLD_HEIGHT_TILES }, (_, y) =>
-  Array.from({ length: WORLD_WIDTH_TILES }, (_, x) => (x + y) % 2)
-);
+const WORLD_WIDTH_TILES = world[0]?.length ?? 0;
+const WORLD_HEIGHT_TILES = world.length;
 
 function dirToVector(direction: Direction): { dx: number; dy: number } {
   switch (direction) {
@@ -140,7 +140,7 @@ export function update(dt: number) {
   setMovementIntent(desired);
 
   // 2. Speed based on run/walk
-  player.speed = MovementSpeeds[isRunning() ? "run" : "walk"];
+  player.speed = movementSpeeds[isRunning() ? "run" : "walk"];
 
   // 3. Movement start
   if (!player.isMoving) {
@@ -148,11 +148,32 @@ export function update(dt: number) {
       player.direction = desired;
 
       const { dx, dy } = dirToVector(desired);
-      const targetTileX = clampTile(player.tileX + dx, WORLD_WIDTH_TILES);
-      const targetTileY = clampTile(player.tileY + dy, WORLD_HEIGHT_TILES);
+
+      const isNewDirection =
+        player.moveToX !== player.tileX + dx ||
+        player.moveToY !== player.tileY + dy;
+
+      const targetTileX = isNewDirection ? player.tileX + dx : player.moveFromX;
+      const targetTileY = isNewDirection ? player.tileY + dy : player.moveFromY;
 
       if (targetTileX !== player.tileX || targetTileY !== player.tileY) {
+        // Start moving
         player.isMoving = true;
+
+        const outOfBoundsX =
+          targetTileX < 0 || targetTileX >= WORLD_WIDTH_TILES;
+        const outOfBoundsY =
+          targetTileY < 0 || targetTileY >= WORLD_HEIGHT_TILES;
+        const isOutOfBounds =
+          outOfBoundsX ||
+          outOfBoundsY ||
+          world[targetTileY]?.[targetTileX] === -1;
+        const isCollisionTile = tileMaps.grass.colisionIndices.includes(
+          world[targetTileY]?.[targetTileX] ?? -1
+        );
+
+        if (isOutOfBounds || isCollisionTile) return;
+
         player.moveFromX = player.tileX;
         player.moveFromY = player.tileY;
         player.moveToX = targetTileX;
@@ -200,6 +221,8 @@ export function draw() {
   const maxTileX = Math.ceil((cameraX + GAME_WIDTH) / TILE_SIZE) + 1;
   const maxTileY = Math.ceil((cameraY + GAME_HEIGHT) / TILE_SIZE) + 1;
 
+  const overlappingTiles: { x: number; y: number; tileIndex: number }[] = [];
+
   // Draw tiles
   for (let ty = minTileY; ty <= maxTileY; ty++) {
     if (ty < 0 || ty >= WORLD_HEIGHT_TILES) continue;
@@ -208,29 +231,31 @@ export function draw() {
       if (tx < 0 || tx >= WORLD_WIDTH_TILES) continue;
 
       const tile = world[ty]?.[tx];
+      if (tile === undefined) continue;
 
       const worldX = tx * TILE_SIZE;
       const worldY = ty * TILE_SIZE;
       const screenX = Math.round(worldX - cameraX);
       const screenY = Math.round(worldY - cameraY);
 
-      // Placeholder "sprites": checkerboard grass
-      if (tile === 0) {
-        ctx.fillStyle = "#7bc586";
-      } else {
-        ctx.fillStyle = "#7bc586";
+      if (tileMaps.grass.inFrontOfPlayerIndices.includes(tile)) {
+        overlappingTiles.push({ x: screenX, y: screenY, tileIndex: tile });
+        continue;
       }
-      ctx.fillRect(screenX, screenY, TILE_SIZE, TILE_SIZE);
+
+      drawTile({
+        tileset: "grass",
+        tileIndex: tile,
+        x: screenX,
+        y: screenY,
+      });
 
       // Light grid outline for debugging tile boundaries
-      // ctx.strokeStyle = "#00000043";
-      // ctx.lineWidth = 0.2;
-      // ctx.strokeRect(
-      //   screenX + 0.5,
-      //   screenY + 0.5,
-      //   TILE_SIZE - 1,
-      //   TILE_SIZE - 1
-      // );
+      if (DEBUG_TILES) {
+        ctx.strokeStyle = "rgba(255, 50, 153, 0.34)";
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(screenX, screenY, TILE_SIZE - 1, TILE_SIZE - 1);
+      }
     }
   }
 
@@ -248,53 +273,57 @@ export function draw() {
   ctx.save();
   ctx.translate(feetScreenX, feetScreenY);
 
-  if (playerSpriteSheet) {
-    const animName = player.animationCurrent;
-    const anim = playerAnimations[animName];
+  const animName = player.animationCurrent;
+  const anim = playerAnimations[animName];
 
-    const frameColumn = anim.frames[player.animationFrameIndex];
-    if (frameColumn === undefined) {
-      throw new Error(
-        `Invalid animation frame index for ${animName}, index ${player.animationFrameIndex} but frames are ${anim.frames.length} long`
-      );
-    }
-
-    const row = DIRECTION_ROW[player.direction];
-
-    // Source rect in the sprite sheet: 16x24 frames
-    const sx = frameColumn * PLAYER_SPRITE_WIDTH;
-    const sy = row * PLAYER_SPRITE_HEIGHT;
-    const sw = PLAYER_SPRITE_WIDTH;
-    const sh = PLAYER_SPRITE_HEIGHT;
-
-    // Destination size: keep 1:1 pixel ratio (no scaling for now)
-    const dw = player.width; // 16
-    const dh = player.height; // 24
-
-    // Draw so that (0,0) = feet position:
-    // - X: center horizontally  → -dw / 2
-    // - Y: feet at bottom       → -dh
-    ctx.drawImage(playerSpriteSheet, sx, sy, sw, sh, -dw / 2, -dh, dw, dh);
-  } else {
-    // Fallback: rectangle standing on the tile with the same feet anchor
-    ctx.fillStyle = "#ffffff";
-    const dw = player.width;
-    const dh = player.height;
-    ctx.fillRect(-dw / 2, -dh, dw, dh);
+  const frameColumn = anim.frames[player.animationFrameIndex];
+  if (frameColumn === undefined) {
+    throw new Error(
+      `Invalid animation frame index for ${animName}, index ${player.animationFrameIndex} but frames are ${anim.frames.length} long`
+    );
   }
+
+  const row = DIRECTION_ROW[player.direction];
+
+  // Source rect in the sprite sheet: 16x24 frames
+  const sx = frameColumn * PLAYER_SPRITE_WIDTH;
+  const sy = row * PLAYER_SPRITE_HEIGHT;
+  const sw = PLAYER_SPRITE_WIDTH;
+  const sh = PLAYER_SPRITE_HEIGHT;
+
+  // Destination size: keep 1:1 pixel ratio (no scaling for now)
+  const dw = player.width; // 16
+  const dh = player.height; // 24
+
+  // Draw so that (0,0) = feet position:
+  // - X: center horizontally  → -dw / 2
+  // - Y: feet at bottom       → -dh
+  ctx.drawImage(playerSpriteSheet, sx, sy, sw, sh, -dw / 2, -dh, dw, dh);
 
   ctx.restore();
 
+  // Draw any tiles that should be in front of the player
+  for (const tile of overlappingTiles) {
+    drawTile({
+      tileset: "grass",
+      tileIndex: tile.tileIndex,
+      x: tile.x,
+      y: tile.y,
+    });
+  }
+
   // Optional debug overlay (tile coords, direction, run state)
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "8px monospace";
-  ctx.textBaseline = "top";
-  [
-    `tile=(${player.tileX}, ${player.tileY})`,
-    `dir=${player.direction}`,
-    `moving=${player.isMoving}`,
-    `running=${isRunning()}`,
-  ].forEach((line, index) => ctx.fillText(line, 4, 4 + index * 10));
+  if (DEBUG_OVERLAY) {
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "8px monospace";
+    ctx.textBaseline = "top";
+    [
+      `tile=(${player.tileX}, ${player.tileY})`,
+      `dir=${player.direction}`,
+      `moving=${player.isMoving}`,
+      `running=${isRunning()}`,
+    ].forEach((line, index) => ctx.fillText(line, 4, 4 + index * 10));
+  }
 }
 
 /*
