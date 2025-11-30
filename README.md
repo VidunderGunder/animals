@@ -1,6 +1,6 @@
 # Animals
 
-![Game Screenshot](./screenshot.png)
+![Gameplay](./gameplay.gif)
 
 ## Getting Started
 
