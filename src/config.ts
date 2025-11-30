@@ -1,7 +1,7 @@
 export const SCALE = 1;
-export const GAME_WIDTH = 240 * SCALE; // 120 x 3
-export const GAME_HEIGHT = 160 * SCALE; // 80 x 3
-export const TILE_SIZE = 16; // pixels width/height of a tile
+export const GAME_WIDTH = 240 * SCALE;
+export const GAME_HEIGHT = 160 * SCALE;
+export const TILE_SIZE = 16;
 export const FPS_LIMIT = 200;
 
 export const PLAYER_SPRITE_WIDTH = 16;
