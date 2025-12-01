@@ -13,7 +13,6 @@ bun index.html
 
 ## Pixel Art and Level Design
 
-
 If you want to work on pixel art or level design, you need:
 
 - [Aseprite](https://www.aseprite.org/) (for pixel art) *$15-20*\*
@@ -22,7 +21,7 @@ If you want to work on pixel art or level design, you need:
 > [!TIP]
 > \*You can [compile Aseprite from source](https://github.com/aseprite/aseprite/blob/main/INSTALL.md#platforms), if you don't want to buy it, or try [LibreSprite](https://libresprite.github.io/) as a free alternative
 >
-> But if you can, let's support developers that don't rely on subscription models!
+> Just make sure you're not breaking Aseprite support
 
 ## Features
 

@@ -1,3 +1,3 @@
 export const playerSpriteSheet = document.getElementById(
-  "player-sprite"
+	"player-sprite",
 ) as HTMLImageElement;

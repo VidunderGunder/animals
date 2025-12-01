@@ -1,10 +1,10 @@
 import { GAME_HEIGHT, GAME_WIDTH } from "./config";
 
 const canvas: HTMLCanvasElement = document.getElementById(
-  "canvas"
+	"canvas",
 ) as HTMLCanvasElement;
 if (!(canvas instanceof HTMLCanvasElement))
-  throw new Error("Canvas element not found");
+	throw new Error("Canvas element not found");
 
 const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
 if (!ctx) throw new Error("2D context not available");
