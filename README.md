@@ -2,13 +2,27 @@
 
 ![Gameplay](./gameplay.gif)
 
+Nostalgic GBA inspired game about catching animals and making them battle
+
 ## Getting Started
+
 
 ```bash
 bun index.html
 ```
 
-Nostalgic GBA inspired game about catching animals and making them battle
+## Pixel Art and Level Design
+
+
+If you want to work on pixel art or level design, you need:
+
+- [Aseprite](https://www.aseprite.org/) (for pixel art) *$15-20*\*
+- [Tiled](https://www.mapeditor.org/) (for level design) *FREE*
+
+> [!TIP]
+> \*You can [compile Aseprite from source](https://github.com/aseprite/aseprite/blob/main/INSTALL.md#platforms), if you don't want to buy it, or try [LibreSprite](https://libresprite.github.io/) as a free alternative
+>
+> But if you can, let's support developers that don't rely on subscription models!
 
 ## Features
 
