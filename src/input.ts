@@ -1,18 +1,16 @@
 export const pressedKeys = new Set<string>();
 
-export const moveActions = ["up", "down", "left", "right"] as const;
-export type MoveAction = "up" | "down" | "left" | "right";
+export const directions = ["up", "down", "left", "right"] as const;
+export type Direction = (typeof directions)[number];
 
-export function isMove(action: Action | undefined): action is MoveAction {
+export function isMove(action: Action | undefined): action is Direction {
 	if (typeof action !== "string") return false;
-	return moveActions.some((a) => a === action);
+	return directions.some((a) => a === action);
 }
 
-export const allActions = [...moveActions, "primary", "secondary"] as const;
+export const allActions = [...directions, "primary", "secondary"] as const;
 export type Action = (typeof allActions)[number];
 export const activeActions = new Set<Action>();
-
-export type Direction = "up" | "down" | "left" | "right";
 
 export let movementIntent: Direction | null = null;
 

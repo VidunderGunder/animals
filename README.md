@@ -32,3 +32,4 @@ If you want to work on pixel art or level design, you need:
   - Skateboarding with tricks
 - Electric guitar (Zelda inspired, but real-time)
 - Dialog system using [Rapid Serial Visual Presentation (RSVP)](https://www.youtube.com/watch?v=5yddeRrd0hA), not text boxes
+  - Voices/noiees are synthesized vocals (only vowels from words)

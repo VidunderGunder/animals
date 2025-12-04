@@ -33,9 +33,13 @@ export type Player = {
 	moveProgress: number;
 
 	/** Current animation state */
-	animationCurrent: PlayerAnimationName;
+	animationCurrent: AnimationName;
 	animationFrameIndex: number;
 	animationTimer: number;
+
+	/** Whether player interaction is disabled */
+	disabled: boolean;
+	paused: boolean;
 };
 
 export const startTileX = 8;
@@ -57,25 +61,34 @@ export const player: Player = {
 	animationCurrent: "idle_down",
 	animationFrameIndex: 0,
 	animationTimer: 0,
+	disabled: false,
+	paused: false,
 };
 
-export const DIRECTION_ROW: Record<Direction, number> = {
+export const playerDirectionRow: Record<Direction, number> = {
 	down: 0,
 	left: 1,
 	right: 2,
 	up: 3,
-};
+} as const;
+
+export const animalDirectionRow: Record<Direction, number> = {
+	down: 0,
+	left: 1,
+	right: 1, // Mirror left for right
+	up: 2,
+} as const;
 
 export type Animation = {
 	/** Frame indices in the sprite sheet (column indexes) */
-	frames: number[];
+	frames: readonly number[];
 	/** Seconds each frame is shown */
 	frameDuration: number;
 	/** Loop back to start when finished */
 	loop: boolean;
 };
 
-export type PlayerAnimationName =
+export type AnimationName =
 	| "idle_down"
 	| "idle_up"
 	| "idle_left"
@@ -89,22 +102,85 @@ export type PlayerAnimationName =
 	| "run_left"
 	| "run_right";
 
+const walkDuration = 0.13;
+const runDuration = 0.08;
+
 export const playerAnimations = {
-	// Idle: single frame for each direction (column 0)
 	idle_down: { frames: [0], frameDuration: 0.3, loop: true },
 	idle_up: { frames: [0], frameDuration: 0.3, loop: true },
 	idle_left: { frames: [0], frameDuration: 0.3, loop: true },
 	idle_right: { frames: [0], frameDuration: 0.3, loop: true },
 
-	// Walking: 1 full cycle ≈ 1 tile
-	walk_down: { frames: [1, 2, 3, 2], frameDuration: 0.13, loop: true },
-	walk_up: { frames: [1, 2, 3, 2], frameDuration: 0.13, loop: true },
-	walk_left: { frames: [1, 2, 3, 2], frameDuration: 0.13, loop: true },
-	walk_right: { frames: [1, 2, 3, 2], frameDuration: 0.13, loop: true },
+	walk_down: { frames: [1, 2, 3, 2], frameDuration: walkDuration, loop: true },
+	walk_up: { frames: [1, 2, 3, 2], frameDuration: walkDuration, loop: true },
+	walk_left: { frames: [1, 2, 3, 2], frameDuration: walkDuration, loop: true },
+	walk_right: { frames: [1, 2, 3, 2], frameDuration: walkDuration, loop: true },
 
-	// Running: snappier — about twice as fast
-	run_down: { frames: [1, 2, 3, 2], frameDuration: 0.08, loop: true },
-	run_up: { frames: [1, 2, 3, 2], frameDuration: 0.08, loop: true },
-	run_left: { frames: [1, 2, 3, 2], frameDuration: 0.08, loop: true },
-	run_right: { frames: [1, 2, 3, 2], frameDuration: 0.08, loop: true },
-} as const satisfies Record<PlayerAnimationName, Animation>;
+	run_down: { frames: [1, 2, 3, 2], frameDuration: runDuration, loop: true },
+	run_up: { frames: [1, 2, 3, 2], frameDuration: runDuration, loop: true },
+	run_left: { frames: [1, 2, 3, 2], frameDuration: runDuration, loop: true },
+	run_right: { frames: [1, 2, 3, 2], frameDuration: runDuration, loop: true },
+} as const satisfies Record<AnimationName, Animation>;
+
+const animalFrames = [0, 1, 2, 1, 0, 1, 2, 3] as const;
+
+export const animalAnimations = {
+	idle_down: {
+		frames: animalFrames,
+		frameDuration: 0.3,
+		loop: true,
+	},
+	idle_up: { frames: animalFrames, frameDuration: 0.3, loop: true },
+	idle_left: {
+		frames: animalFrames,
+		frameDuration: 0.3,
+		loop: true,
+	},
+	idle_right: {
+		frames: animalFrames,
+		frameDuration: 0.3,
+		loop: true,
+	},
+
+	walk_down: {
+		frames: animalFrames,
+		frameDuration: walkDuration,
+		loop: true,
+	},
+	walk_up: {
+		frames: animalFrames,
+		frameDuration: walkDuration,
+		loop: true,
+	},
+	walk_left: {
+		frames: animalFrames,
+		frameDuration: walkDuration,
+		loop: true,
+	},
+	walk_right: {
+		frames: animalFrames,
+		frameDuration: walkDuration,
+		loop: true,
+	},
+
+	run_down: {
+		frames: animalFrames,
+		frameDuration: runDuration,
+		loop: true,
+	},
+	run_up: {
+		frames: animalFrames,
+		frameDuration: runDuration,
+		loop: true,
+	},
+	run_left: {
+		frames: animalFrames,
+		frameDuration: runDuration,
+		loop: true,
+	},
+	run_right: {
+		frames: animalFrames,
+		frameDuration: runDuration,
+		loop: true,
+	},
+} as const satisfies Record<AnimationName, Animation>;
