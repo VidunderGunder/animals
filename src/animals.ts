@@ -22,14 +22,14 @@ export const secretAnimalIds = ["missing"] as const satisfies readonly string[];
 export type SecretAnimalID = (typeof secretAnimalIds)[number];
 export const animalIds = [
 	"platypus",
-	"cat",
-	"dog",
 	"robovac",
 	"penguin",
+	"bee",
 	"raccoon",
 	"duck",
 	"swan",
-	"bee",
+	"cat",
+	"dog",
 ] as const satisfies readonly string[];
 export type AnimalID = (typeof animalIds)[number];
 
