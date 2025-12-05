@@ -4,8 +4,6 @@ Nostalgic GBA inspired game about catching animals and making them battle
 
 <div>
   <img src="./gameplay.gif" alt="Gameplay" width="45%" />
-</div>
-<div>
   <img src="./biodex.gif" alt="BioDex" width="45%" />
 </div>
 
