@@ -22,9 +22,9 @@ export const secretAnimalIds = ["missing"] as const satisfies readonly string[];
 export type SecretAnimalID = (typeof secretAnimalIds)[number];
 export const animalIds = [
 	"platypus",
+	"bee",
 	"robovac",
 	"penguin",
-	"bee",
 	"raccoon",
 	"duck",
 	"swan",
@@ -58,25 +58,41 @@ export const animals = {
 	},
 	robovac: {
 		stages: {
-			baby: undefined,
-			// baby: { name: "Tiny Robovac", spriteId: "robovac-baby-sprite" },
+			baby: {
+				name: "Tiny Robovac",
+				spriteId: "robovac-baby-sprite",
+				width: 16,
+				height: 16,
+			},
 			adult: {
 				name: "Robovac",
 				spriteId: "robovac-sprite",
 				width: 16,
 				height: 16,
 			},
-			cool: undefined,
-			// cool: { name: "Robovac (with knife)", spriteId: "robovac-cool-sprite" },
+			cool: {
+				name: "Robovac (with knife)",
+				spriteId: "robovac-cool-sprite",
+				width: 16,
+				height: 16,
+			},
 		},
 	},
 	bee: {
 		stages: {
-			// baby: { name: "Baby Bee", spriteId: "bee-baby-sprite" },
-			baby: undefined,
+			baby: {
+				name: "Baby Bee",
+				spriteId: "bee-baby-sprite",
+				width: 16,
+				height: 16,
+			},
 			adult: { name: "Bee", spriteId: "bee-sprite", width: 16, height: 16 },
-			// cool: { name: "Cool Bee", spriteId: "bee-cool-sprite" },
-			cool: undefined,
+			cool: {
+				name: "Queen",
+				spriteId: "bee-cool-sprite",
+				width: 16,
+				height: 16,
+			},
 		},
 	},
 	penguin: {
