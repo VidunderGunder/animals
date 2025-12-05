@@ -1,3 +1,5 @@
+// import.meta.hot.accept();
+
 import { playerSpriteSheet } from "../assets";
 import { ctx } from "../canvas";
 import {
@@ -25,9 +27,19 @@ import {
 } from "../state";
 import { drawTile, tileMaps } from "../tiles";
 import { world } from "../world";
+import { biodexState, openBioDex } from "./biodex";
 
 const WORLD_WIDTH_TILES = world[0]?.length ?? 0;
 const WORLD_HEIGHT_TILES = world.length;
+
+export function returnToOverworld() {
+	activeActions.delete("start");
+
+	biodexState.show = false;
+
+	player.paused = false;
+	player.disabled = false;
+}
 
 function dirToVector(direction: Direction): { dx: number; dy: number } {
 	switch (direction) {
@@ -70,24 +82,21 @@ function getPlayerWorldPosition() {
 	};
 }
 
-function getDesiredPlayerAnimation(): AnimationName {
+function getPlayerAnimation(): AnimationName {
 	const running = isRunning();
-	const hasIntent = movementIntent !== null;
 
-	if (hasIntent) {
-		const dir = movementIntent as Direction;
+	const shouldAnimate = !!player.movingDirection || !!movementIntent;
 
-		if (running) {
-			// "run_down" | "run_left" | ...
-			return `run_${dir}` as AnimationName;
-		} else {
-			// "walk_down" | "walk_left" | ...
-			return `walk_${dir}` as AnimationName;
-		}
+	if (shouldAnimate) {
+		const dir =
+			player.movingDirection ?? movementIntent ?? player.facingDirection;
+
+		if (running) return `run_${dir}`;
+		return `walk_${dir}`;
 	}
 
 	// No directional input → idle in the last facing direction
-	switch (player.direction) {
+	switch (player.facingDirection) {
 		case "down":
 			return "idle_down";
 		case "up":
@@ -100,7 +109,7 @@ function getDesiredPlayerAnimation(): AnimationName {
 }
 
 function updatePlayerAnimation(dt: number) {
-	const desired = getDesiredPlayerAnimation();
+	const desired = getPlayerAnimation();
 
 	if (player.animationCurrent !== desired) {
 		player.animationCurrent = desired;
@@ -130,17 +139,22 @@ function updatePlayerAnimation(dt: number) {
 
 /** Update player and world state */
 function updatePlayer(dt: number) {
+	if (player.paused) return;
+
+	if (!player.disabled && activeActions.has("start")) openBioDex();
+
 	// 1. Input intent for this frame
-	const desired = getDesiredDirectionFromInput();
+	const desired = player.disabled ? null : getDesiredDirectionFromInput();
 	setMovementIntent(desired);
 
 	// 2. Speed based on run/walk
 	player.speed = movementSpeeds[isRunning() ? "run" : "walk"];
 
 	// 3. Movement start
-	if (!player.isMoving) {
+	if (!player.movingDirection) {
 		if (desired) {
-			player.direction = desired;
+			player.facingDirection = desired;
+			player.movingDirection = desired;
 
 			const { dx, dy } = dirToVector(desired);
 
@@ -153,7 +167,7 @@ function updatePlayer(dt: number) {
 
 			if (targetTileX !== player.tileX || targetTileY !== player.tileY) {
 				// Start moving
-				player.isMoving = true;
+				player.movingDirection = desired;
 
 				const outOfBoundsX =
 					targetTileX < 0 || targetTileX >= WORLD_WIDTH_TILES;
@@ -179,7 +193,7 @@ function updatePlayer(dt: number) {
 	}
 
 	// 4. Movement tween
-	if (player.isMoving) {
+	if (player.movingDirection) {
 		const distancePx = TILE_SIZE;
 		const moveDuration = distancePx / player.speed; // seconds for one tile
 		player.moveProgress += dt / moveDuration;
@@ -188,7 +202,7 @@ function updatePlayer(dt: number) {
 			player.moveProgress = 1;
 			player.tileX = player.moveToX;
 			player.tileY = player.moveToY;
-			player.isMoving = false;
+			player.movingDirection = null;
 		}
 	}
 
@@ -275,7 +289,7 @@ function draw() {
 		);
 	}
 
-	const row = playerDirectionRow[player.direction];
+	const row = playerDirectionRow[player.facingDirection];
 
 	// Source rect in the sprite sheet: 16x24 frames
 	const sx = frameColumn * PLAYER_SPRITE_WIDTH;
@@ -311,8 +325,8 @@ function draw() {
 		ctx.textBaseline = "top";
 		[
 			`tile=(${player.tileX}, ${player.tileY})`,
-			`dir=${player.direction}`,
-			`moving=${player.isMoving}`,
+			`dir=${player.facingDirection}`,
+			`moving=${player.movingDirection}`,
 			`running=${isRunning()}`,
 		].forEach((line, index) => {
 			ctx.fillText(line, 4, 4 + index * 10);
@@ -321,6 +335,6 @@ function draw() {
 }
 
 export function overworld(dt: number) {
-	if (!player.paused && !player.disabled) updatePlayer(dt);
+	updatePlayer(dt);
 	draw();
 }

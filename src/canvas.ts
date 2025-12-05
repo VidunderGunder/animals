@@ -1,3 +1,5 @@
+import.meta.hot.accept();
+
 import { GAME_HEIGHT, GAME_WIDTH } from "./config";
 
 const canvas: HTMLCanvasElement = document.getElementById(

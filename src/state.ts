@@ -1,3 +1,6 @@
+import.meta.hot.accept();
+
+import type { AnimalID, SecretAnimalID } from "./animals";
 import {
 	DEFAULT_MOVEMENT,
 	movementSpeeds,
@@ -11,8 +14,8 @@ export type Player = {
 	tileX: number;
 	tileY: number;
 
-	/** Facing direction */
-	direction: Direction;
+	facingDirection: Direction;
+	movingDirection: Direction | null;
 
 	/** Size of sprite in pixels (square) */
 	width: number;
@@ -20,9 +23,6 @@ export type Player = {
 
 	/** Movement speed (pixels per second) */
 	speed: number;
-
-	/** Whether we're currently tweening between tiles */
-	isMoving: boolean;
 
 	/** Movement interpolation state (tile coordinates) */
 	moveFromX: number;
@@ -48,11 +48,11 @@ export const startTileY = 8;
 export const player: Player = {
 	tileX: startTileX,
 	tileY: startTileY,
-	direction: "down",
+	facingDirection: "down",
 	height: PLAYER_SPRITE_HEIGHT,
 	width: PLAYER_SPRITE_WIDTH,
 	speed: movementSpeeds[DEFAULT_MOVEMENT],
-	isMoving: false,
+	movingDirection: null,
 	moveFromX: startTileX,
 	moveFromY: startTileY,
 	moveToX: startTileX,
@@ -102,14 +102,15 @@ export type AnimationName =
 	| "run_left"
 	| "run_right";
 
+const idleDuration = 0.3;
 const walkDuration = 0.13;
 const runDuration = 0.08;
 
 export const playerAnimations = {
-	idle_down: { frames: [0], frameDuration: 0.3, loop: true },
-	idle_up: { frames: [0], frameDuration: 0.3, loop: true },
-	idle_left: { frames: [0], frameDuration: 0.3, loop: true },
-	idle_right: { frames: [0], frameDuration: 0.3, loop: true },
+	idle_down: { frames: [0], frameDuration: idleDuration, loop: true },
+	idle_up: { frames: [0], frameDuration: idleDuration, loop: true },
+	idle_left: { frames: [0], frameDuration: idleDuration, loop: true },
+	idle_right: { frames: [0], frameDuration: idleDuration, loop: true },
 
 	walk_down: { frames: [1, 2, 3, 2], frameDuration: walkDuration, loop: true },
 	walk_up: { frames: [1, 2, 3, 2], frameDuration: walkDuration, loop: true },
@@ -122,6 +123,7 @@ export const playerAnimations = {
 	run_right: { frames: [1, 2, 3, 2], frameDuration: runDuration, loop: true },
 } as const satisfies Record<AnimationName, Animation>;
 
+const missingFrames = [0, 1] as const;
 const animalFrames = [0, 1, 2, 1, 0, 1, 2, 3] as const;
 
 export const animalAnimations = {
@@ -130,15 +132,15 @@ export const animalAnimations = {
 		frameDuration: 0.3,
 		loop: true,
 	},
-	idle_up: { frames: animalFrames, frameDuration: 0.3, loop: true },
+	idle_up: { frames: animalFrames, frameDuration: idleDuration, loop: true },
 	idle_left: {
 		frames: animalFrames,
-		frameDuration: 0.3,
+		frameDuration: idleDuration,
 		loop: true,
 	},
 	idle_right: {
 		frames: animalFrames,
-		frameDuration: 0.3,
+		frameDuration: idleDuration,
 		loop: true,
 	},
 
@@ -184,3 +186,17 @@ export const animalAnimations = {
 		loop: true,
 	},
 } as const satisfies Record<AnimationName, Animation>;
+
+export function getAnimalAnimation(
+	animalId: AnimalID | SecretAnimalID,
+	animation: AnimationName,
+): Animation {
+	if (animalId === "missing") {
+		return {
+			frames: missingFrames,
+			frameDuration: 0.5,
+			loop: true,
+		};
+	}
+	return animalAnimations[animation];
+}

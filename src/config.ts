@@ -1,3 +1,5 @@
+import.meta.hot.accept();
+
 export const SCALE = 1;
 export const GAME_WIDTH = 240 * SCALE;
 export const GAME_HEIGHT = 160 * SCALE;
@@ -11,9 +13,9 @@ export type MovementType = "walk" | "run";
 export const DEFAULT_MOVEMENT: MovementType = "walk";
 
 export const movementSpeeds = {
-  walk: 100,
-  run: 160,
+	walk: 100,
+	run: 160,
 } as const satisfies Record<MovementType, number>;
 
 export const DEBUG_TILES = false;
-export const DEBUG_OVERLAY = false;
+export const DEBUG_OVERLAY = true;

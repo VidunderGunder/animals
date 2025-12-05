@@ -1,8 +1,14 @@
 # Animals
 
-![Gameplay](./gameplay.gif)
-
 Nostalgic GBA inspired game about catching animals and making them battle
+
+<div>
+  <img src="./gameplay.gif" alt="Gameplay" width="45%" />
+</div>
+<div>
+  <img src="./biodex.gif" alt="BioDex" width="45%" />
+</div>
+
 
 ## Getting Started
 
@@ -25,11 +31,12 @@ If you want to work on pixel art or level design, you need:
 
 ## Features
 
-- Real-time battle system
+- Dance battle system
 - Catching animals
 - Fun movement system
-  - Walk, jump, roll, run
+  - Walk, run, jump, roll, 
+  - Parkour
   - Skateboarding with tricks
 - Electric guitar (Zelda inspired, but real-time)
 - Dialog system using [Rapid Serial Visual Presentation (RSVP)](https://www.youtube.com/watch?v=5yddeRrd0hA), not text boxes
-  - Voices/noiees are synthesized vocals (only vowels from words)
+  - Voices/noises are synthesized (only vowels from words?)

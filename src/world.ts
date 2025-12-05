@@ -1,3 +1,5 @@
+import.meta.hot.accept();
+
 export const world = [
 	[-1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1] as const,
 	[-1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1] as const,

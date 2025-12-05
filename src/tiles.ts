@@ -1,3 +1,5 @@
+import.meta.hot.accept();
+
 import { ctx } from "./canvas";
 import { TILE_SIZE } from "./config";
 

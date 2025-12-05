@@ -1,3 +1,5 @@
+// import.meta.hot.accept();
+
 export const pressedKeys = new Set<string>();
 
 export const directions = ["up", "down", "left", "right"] as const;
@@ -8,12 +10,16 @@ export function isMove(action: Action | undefined): action is Direction {
 	return directions.some((a) => a === action);
 }
 
-export const allActions = [...directions, "primary", "secondary"] as const;
+export const allActions = [
+	...directions,
+	"primary",
+	"secondary",
+	"start",
+] as const;
 export type Action = (typeof allActions)[number];
 export const activeActions = new Set<Action>();
 
 export let movementIntent: Direction | null = null;
-
 export function setMovementIntent(intent: Direction | null) {
 	movementIntent = intent;
 }
@@ -25,6 +31,7 @@ export const keyMap: Record<Action, string[]> = {
 	right: ["ArrowRight"],
 	primary: [" "],
 	secondary: ["Shift"],
+	start: ["Enter", "Escape"],
 };
 export const reverseKeyMap: Record<string, Action> = {};
 for (const [action, keys] of Object.entries(keyMap)) {

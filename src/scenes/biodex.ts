@@ -1,12 +1,22 @@
+// import.meta.hot.accept();
+
 import { animalIds, animals, stageIds } from "../animals";
 import { ctx } from "../canvas";
-import { TILE_SIZE } from "../config";
-import { type Direction, directions } from "../input";
+import { GAME_HEIGHT, GAME_WIDTH, TILE_SIZE } from "../config";
+import { activeActions, type Direction, directions } from "../input";
 import {
 	type AnimationName,
 	animalAnimations,
 	animalDirectionRow,
+	player,
 } from "../state";
+import { returnToOverworld } from "./overworld";
+
+export function openBioDex() {
+	activeActions.delete("start");
+	player.disabled = true;
+	biodexState.show = true;
+}
 
 export type BioDexState = {
 	show: boolean;
@@ -19,14 +29,10 @@ export type BioDexState = {
 	animationCurrent: AnimationName;
 	animationFrameIndex: number;
 	animationTimer: number;
-
-	/** Whether player interaction is disabled */
-	disabled: boolean;
-	paused: boolean;
 };
 
 export const biodexState: BioDexState = {
-	show: true,
+	show: false,
 	index: 0,
 
 	direction: "down",
@@ -34,9 +40,6 @@ export const biodexState: BioDexState = {
 	animationCurrent: "idle_down",
 	animationFrameIndex: 0,
 	animationTimer: 0,
-
-	disabled: false,
-	paused: false,
 };
 
 function updateAnimation(dt: number) {
@@ -60,21 +63,43 @@ function updateAnimation(dt: number) {
 }
 
 function update(dt: number) {
-	//
+	if (activeActions.has("start")) {
+		returnToOverworld();
+		return;
+	}
 	updateAnimation(dt);
 }
 
 function draw() {
+	ctx.drawImage(
+		document.getElementById("laptop") as HTMLImageElement,
+		0,
+		0,
+		GAME_WIDTH,
+		GAME_HEIGHT,
+		0,
+		0,
+		GAME_WIDTH,
+		GAME_HEIGHT,
+	);
 	animalIds
-		.slice(biodexState.index, biodexState.index + 5)
+		.slice(biodexState.index, biodexState.index + 8)
 		.forEach((id, animalIndex) => {
 			const animal = animals[id];
 			stageIds.forEach((stageId, stageIndex) => {
-				const stage = animal.stages[stageId];
-				if (!stage) return;
-				const animalSprite = document.getElementById(
+				const stage = animal.stages[stageId] ?? animals.missing.stages[stageId];
+
+				let animalSprite = document.getElementById(
 					stage.spriteId,
-				) as HTMLImageElement;
+				) as HTMLImageElement | null;
+
+				const isMissing = animal.stages[stageId] === undefined || !animalSprite;
+
+				if (!animalSprite) {
+					animalSprite = document.getElementById(
+						animals.missing.stages[stageId].spriteId,
+					) as HTMLImageElement;
+				}
 
 				for (
 					let directionIndex = 0;
@@ -107,12 +132,15 @@ function draw() {
 					const dw = stage.width; // 16
 					const dh = stage.height; // 16
 
-					const y = animalIndex * TILE_SIZE;
+					const y = 1 * TILE_SIZE + animalIndex * TILE_SIZE;
 					const x =
+						(stageIndex * TILE_SIZE) / 2 +
+						1 * TILE_SIZE +
 						stageIndex * TILE_SIZE * directions.length +
 						directionIndex * TILE_SIZE;
 
 					ctx.save();
+					ctx.globalAlpha = isMissing ? 0.25 : 1.0;
 					// Draw so that (0,0) = feet position:
 					if (direction === "right") {
 						// Mirror right-facing sprites
