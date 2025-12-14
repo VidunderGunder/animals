@@ -8,10 +8,10 @@ export const BASE_HEIGHT = BASE_WIDTH / ASPECT_RATIO;
 export const GAME_WIDTH = BASE_WIDTH * SCALE;
 export const GAME_HEIGHT = BASE_HEIGHT * SCALE;
 export const TILE_SIZE = 16;
-export const FPS_LIMIT = 200;
+export const FPS_LIMIT = Infinity;
 
-export const PLAYER_SPRITE_WIDTH = 16;
-export const PLAYER_SPRITE_HEIGHT = 24;
+export const CHARACTER_SPRITE_WIDTH = 16;
+export const CHARACTER_SPRITE_HEIGHT = 24;
 
 export type MovementType = "walk" | "run";
 export const DEFAULT_MOVEMENT: MovementType = "walk";

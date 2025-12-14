@@ -1,12 +1,22 @@
-import type { AnimalID, SecretAnimalID } from "./characters/animals";
+import type {
+	AnimalAnimationKey,
+	AnimalID,
+	SecretAnimalKey,
+} from "./characters/animals";
 import {
+	characters,
+	idleDurationDefault,
+	runDurationDefault,
+	walkDurationDefault,
+} from "./characters/characters";
+import {
+	CHARACTER_SPRITE_HEIGHT,
+	CHARACTER_SPRITE_WIDTH,
 	DEFAULT_MOVEMENT,
 	movementSpeeds,
-	PLAYER_SPRITE_HEIGHT,
-	PLAYER_SPRITE_WIDTH,
 } from "./config";
 import type { Direction } from "./input";
-import type { AnimationID } from "./scenes/laptop/moves";
+import type { CharacterAnimationID } from "./scenes/laptop/moves";
 
 export type Player = {
 	/** Current tile coordinates */
@@ -32,7 +42,7 @@ export type Player = {
 	moveProgress: number;
 
 	/** Current animation state */
-	animationCurrent: AnimationID;
+	animationCurrent: CharacterAnimationID;
 	animationFrameIndex: number;
 	animationTimer: number;
 
@@ -48,8 +58,8 @@ export const player: Player = {
 	tileX: startTileX,
 	tileY: startTileY,
 	facingDirection: "down",
-	height: PLAYER_SPRITE_HEIGHT,
-	width: PLAYER_SPRITE_WIDTH,
+	height: CHARACTER_SPRITE_HEIGHT,
+	width: CHARACTER_SPRITE_WIDTH,
 	speed: movementSpeeds[DEFAULT_MOVEMENT],
 	movingDirection: null,
 	moveFromX: startTileX,
@@ -85,35 +95,27 @@ export type Animation = {
 	frameDuration: number;
 };
 
-const idleDuration = 300;
-const walkDuration = 130;
-const runDuration = 80;
-
-export const playerAnimations = {
-	idle: { frames: [0], frameDuration: idleDuration },
-	walk: { frames: [1, 2, 3, 2], frameDuration: walkDuration },
-	run: { frames: [1, 2, 3, 2], frameDuration: runDuration },
-} as const satisfies Record<AnimationID, Animation>;
+export const playerAnimations = characters.player.animations;
 
 const animalFrames = [0, 1, 2, 1, 0, 1, 2, 3] as const;
 
 export const animalAnimations = {
-	idle: { frames: animalFrames, frameDuration: idleDuration },
+	idle: { frames: animalFrames, frameDuration: idleDurationDefault },
 
 	walk: {
 		frames: animalFrames,
-		frameDuration: walkDuration,
+		frameDuration: walkDurationDefault,
 	},
 
 	run: {
 		frames: animalFrames,
-		frameDuration: runDuration,
+		frameDuration: runDurationDefault,
 	},
-} as const satisfies Record<AnimationID, Animation>;
+} as const satisfies Record<AnimalAnimationKey, Animation>;
 
 export function getAnimalAnimation(
-	animalId: AnimalID | SecretAnimalID,
-	animation: AnimationID,
+	animalId: AnimalID | SecretAnimalKey,
+	animation: AnimalAnimationKey,
 ): Animation {
 	if (animalId === "missing") {
 		return {

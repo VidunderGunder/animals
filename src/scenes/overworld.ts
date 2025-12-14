@@ -1,16 +1,16 @@
-import { createImageElement } from "../assets";
 import { ctx } from "../canvas";
+import { characters } from "../characters/characters";
 import {
 	ASPECT_RATIO_X,
 	ASPECT_RATIO_Y,
+	CHARACTER_SPRITE_HEIGHT,
+	CHARACTER_SPRITE_WIDTH,
 	DEBUG_OVERLAY,
 	DEBUG_TILES,
 	DEFAULT_MOVEMENT,
 	GAME_HEIGHT,
 	GAME_WIDTH,
 	movementSpeeds,
-	PLAYER_SPRITE_HEIGHT,
-	PLAYER_SPRITE_WIDTH,
 	SCALE,
 	TILE_SIZE,
 } from "../config";
@@ -24,12 +24,7 @@ import { player, playerAnimations, playerDirectionRow } from "../state";
 import { drawTile, tileMaps } from "../tiles";
 import { world } from "../world";
 import { laptopState, openLaptop } from "./laptop/laptop";
-import type { AnimationID } from "./laptop/moves";
-
-export const playerSpriteSheet = createImageElement("/people/player.png");
-export const playerSkateSpriteSheet = createImageElement(
-	"/people/player-skate.png",
-);
+import type { CharacterAnimationID } from "./laptop/moves";
 
 const WORLD_WIDTH_TILES = world[0]?.length ?? 0;
 const WORLD_HEIGHT_TILES = world.length;
@@ -90,7 +85,7 @@ function getPlayerWorldPosition() {
 	};
 }
 
-function getPlayerAnimation(): AnimationID {
+function getPlayerAnimation(): CharacterAnimationID {
 	const isMovingFaster = getIsMovingFaster();
 	if (isMovingFaster) return "run";
 	const isMoving = getIsMoving();
@@ -280,10 +275,10 @@ function draw(dt: number) {
 	const row = playerDirectionRow[player.facingDirection];
 
 	// Source rect in the sprite sheet: 16x24 frames
-	const sx = frameColumn * PLAYER_SPRITE_WIDTH;
-	const sy = row * PLAYER_SPRITE_HEIGHT;
-	const sw = PLAYER_SPRITE_WIDTH;
-	const sh = PLAYER_SPRITE_HEIGHT;
+	const sx = frameColumn * CHARACTER_SPRITE_WIDTH;
+	const sy = row * CHARACTER_SPRITE_HEIGHT;
+	const sw = CHARACTER_SPRITE_WIDTH;
+	const sh = CHARACTER_SPRITE_HEIGHT;
 
 	// Destination size: keep 1:1 pixel ratio (no scaling for now)
 	const dw = player.width; // 16
@@ -293,7 +288,17 @@ function draw(dt: number) {
 	// - X: center horizontally  → -dw / 2
 	// - Y: feet at bottom       → -dh
 
-	ctx.drawImage(playerSkateSpriteSheet, sx, sy, sw, sh, -dw / 2, -dh, dw, dh);
+	ctx.drawImage(
+		characters.player.spriteSheet,
+		sx,
+		sy,
+		sw,
+		sh,
+		-dw / 2,
+		-dh,
+		dw,
+		dh,
+	);
 
 	ctx.restore();
 

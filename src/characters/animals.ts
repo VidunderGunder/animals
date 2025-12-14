@@ -1,12 +1,14 @@
 import { createImageElement } from "../assets";
 import { capitalizeTyped } from "../types";
 
-export const stageIds = [
+export type AnimalAnimationKey = "walk" | "run" | "idle";
+
+export const stageKeys = [
 	"baby",
 	"adult",
 	"cool",
 ] as const satisfies readonly string[];
-export type AnimalStageId = (typeof stageIds)[number];
+export type AnimalStageKey = (typeof stageKeys)[number];
 
 export type AnimalStage = {
 	name: string;
@@ -16,12 +18,12 @@ export type AnimalStage = {
 };
 
 export type Animal = {
-	stages: Record<AnimalStageId, AnimalStage>;
+	stages: Record<AnimalStageKey, AnimalStage>;
 };
 
 export const secretAnimalIds = ["missing"] as const satisfies readonly string[];
-export type SecretAnimalID = (typeof secretAnimalIds)[number];
-export const animalIds = [
+export type SecretAnimalKey = (typeof secretAnimalIds)[number];
+export const animalKeys = [
 	"platypus",
 	"bee",
 	"robovac",
@@ -32,9 +34,9 @@ export const animalIds = [
 	"cat",
 	"dog",
 ] as const satisfies readonly string[];
-export type AnimalID = (typeof animalIds)[number];
+export type AnimalID = (typeof animalKeys)[number];
 
-const isOverlap = animalIds.some((id: string) =>
+const isOverlap = animalKeys.some((id: string) =>
 	secretAnimalIds.some((secretId) => secretId === id),
 );
 if (isOverlap) {
@@ -45,7 +47,7 @@ function createAnimalProps({
 	id,
 	stageOverrides,
 }: {
-	id: AnimalID | SecretAnimalID;
+	id: AnimalID | SecretAnimalKey;
 	stageOverrides?: Partial<AnimalStage>;
 }): Animal {
 	return {
@@ -80,9 +82,9 @@ function createAnimalProps({
 	};
 }
 
-const temp: Partial<Record<AnimalID | SecretAnimalID, Animal>> = {};
+const temp: Partial<Record<AnimalID | SecretAnimalKey, Animal>> = {};
 
-for (const id of animalIds) {
+for (const id of animalKeys) {
 	temp[id] = createAnimalProps({ id });
 }
 
@@ -94,5 +96,5 @@ temp.missing = createAnimalProps({
 });
 
 export const animals = Object.freeze(
-	temp as Record<AnimalID | SecretAnimalID, Animal>,
+	temp as Record<AnimalID | SecretAnimalKey, Animal>,
 );

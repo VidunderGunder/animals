@@ -1,13 +1,18 @@
 // import { animalIds, animals, stageIds } from "../../animals";
 
 import { ctx } from "../../canvas";
-import { animalIds, animals, stageIds } from "../../characters/animals";
+import {
+	type AnimalAnimationKey,
+	animalKeys,
+	animals,
+	stageKeys,
+} from "../../characters/animals";
 import { GAME_HEIGHT, GAME_WIDTH, TILE_SIZE } from "../../config";
 import { activeActions, type Direction, directions } from "../../input";
 import { animalAnimations, animalDirectionRow } from "../../state";
 import { returnToOverworld } from "../overworld";
 import { laptopHeight, laptopWidth } from "./laptop";
-import type { AnimationID } from "./moves";
+import type { CharacterAnimationID } from "./moves";
 
 export type BioDexState = {
 	index: number;
@@ -16,7 +21,7 @@ export type BioDexState = {
 	direction: Direction;
 
 	/** Current animation state */
-	animationCurrent: AnimationID;
+	animationCurrent: AnimalAnimationKey;
 	animationFrameIndex: number;
 	animationTimer: number;
 };
@@ -56,11 +61,11 @@ function update(dt: number) {
 }
 
 function draw() {
-	animalIds
+	animalKeys
 		.slice(biodexState.index, biodexState.index + 8)
 		.forEach((id, animalIndex) => {
 			const animal = animals[id];
-			stageIds.forEach((stageId, stageIndex) => {
+			stageKeys.forEach((stageId, stageIndex) => {
 				const stage = animal.stages[stageId] ?? animals.missing.stages[stageId];
 
 				const isMissing =
@@ -76,7 +81,7 @@ function draw() {
 
 					if (!direction) continue;
 
-					const animName: AnimationID = "idle";
+					const animName: CharacterAnimationID = "idle";
 					const anim = animalAnimations[animName];
 
 					const row = animalDirectionRow[direction];
