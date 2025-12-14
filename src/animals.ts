@@ -1,212 +1,257 @@
-import.meta.hot.accept();
+import { createImageElement } from "./assets";
 
 export const stageIds = [
-	"baby",
-	"adult",
-	"cool",
+  "baby",
+  "adult",
+  "cool",
 ] as const satisfies readonly string[];
 export type AnimalStageId = (typeof stageIds)[number];
 
 export type AnimalStage = {
-	name: string;
-	spriteId: string;
-	width: number;
-	height: number;
+  name: string;
+  sprite: HTMLImageElement | undefined;
+  width: number;
+  height: number;
 };
 
 export type Animal = {
-	stages: Record<AnimalStageId, AnimalStage | undefined>;
+  stages: Record<AnimalStageId, AnimalStage | undefined>;
 };
 
 export const secretAnimalIds = ["missing"] as const satisfies readonly string[];
 export type SecretAnimalID = (typeof secretAnimalIds)[number];
 export const animalIds = [
-	"platypus",
-	"bee",
-	"robovac",
-	"penguin",
-	"raccoon",
-	"duck",
-	"swan",
-	"cat",
-	"dog",
+  "platypus",
+  "bee",
+  "robovac",
+  "penguin",
+  "raccoon",
+  "duck",
+  "swan",
+  "cat",
+  "dog",
 ] as const satisfies readonly string[];
 export type AnimalID = (typeof animalIds)[number];
 
 export const animals = {
-	missing: {
-		stages: {
-			baby: {
-				name: "Missing (baby)",
-				spriteId: "missing-sprite",
-				width: 16,
-				height: 16,
-			},
-			adult: {
-				name: "Missing",
-				spriteId: "missing-sprite",
-				width: 16,
-				height: 16,
-			},
-			cool: {
-				name: "Missing (cool)",
-				spriteId: "missing-sprite",
-				width: 16,
-				height: 16,
-			},
-		},
-	},
-	robovac: {
-		stages: {
-			baby: {
-				name: "Tiny Robovac",
-				spriteId: "robovac-baby-sprite",
-				width: 16,
-				height: 16,
-			},
-			adult: {
-				name: "Robovac",
-				spriteId: "robovac-sprite",
-				width: 16,
-				height: 16,
-			},
-			cool: {
-				name: "Robovac (with knife)",
-				spriteId: "robovac-cool-sprite",
-				width: 16,
-				height: 16,
-			},
-		},
-	},
-	bee: {
-		stages: {
-			baby: {
-				name: "Baby Bee",
-				spriteId: "bee-baby-sprite",
-				width: 16,
-				height: 16,
-			},
-			adult: { name: "Bee", spriteId: "bee-sprite", width: 16, height: 16 },
-			cool: {
-				name: "Queen",
-				spriteId: "bee-cool-sprite",
-				width: 16,
-				height: 16,
-			},
-		},
-	},
-	penguin: {
-		stages: {
-			baby: {
-				name: "Baby Penguin",
-				spriteId: "penguin-baby-sprite",
-				width: 16,
-				height: 16,
-			},
-			// adult: { name: "Penguin", spriteId: "penguin-sprite" },
-			// cool: { name: "Cool Penguin", spriteId: "penguin-cool-sprite" },
-			adult: undefined,
-			cool: undefined,
-		},
-	},
-	cat: {
-		stages: {
-			baby: undefined,
-			adult: undefined,
-			cool: undefined,
-		},
-	},
-	dog: {
-		stages: {
-			baby: undefined,
-			adult: undefined,
-			cool: undefined,
-		},
-	},
-	raccoon: {
-		stages: {
-			baby: {
-				name: "Baby Raccoon",
-				spriteId: "raccoon-baby-sprite",
-				width: 16,
-				height: 16,
-			},
-			adult: {
-				name: "Raccoon",
-				spriteId: "raccoon-sprite",
-				width: 16,
-				height: 16,
-			},
-			cool: {
-				name: "Cool Raccoon",
-				spriteId: "raccoon-cool-sprite",
-				width: 16,
-				height: 16,
-			},
-		},
-	},
-	duck: {
-		stages: {
-			baby: undefined,
-			adult: {
-				name: "Duck",
-				spriteId: "duck-sprite",
-				width: 16,
-				height: 16,
-			},
-			cool: undefined,
-		},
-	},
-	swan: {
-		stages: {
-			baby: undefined,
-			adult: {
-				name: "Swan",
-				spriteId: "swan-sprite",
-				width: 16,
-				height: 16,
-			},
-			cool: undefined,
-		},
-	},
-	platypus: {
-		stages: {
-			baby: {
-				name: "Baby Platypus",
-				spriteId: "platypus-baby-sprite",
-				width: 16,
-				height: 16,
-			},
-			adult: {
-				name: "Platypus",
-				spriteId: "platypus-sprite",
-				width: 16,
-				height: 16,
-			},
-			cool: {
-				name: "Cool Platypus",
-				spriteId: "platypus-cool-sprite",
-				width: 16,
-				height: 16,
-			},
-		},
-	},
+  missing: {
+    stages: {
+      baby: {
+        name: "Missing (baby)",
+        sprite: createImageElement("/animals/missing.png"),
+        width: 16,
+        height: 16,
+      },
+      adult: {
+        name: "Missing",
+        sprite: createImageElement("/animals/missing.png"),
+        width: 16,
+        height: 16,
+      },
+      cool: {
+        name: "Missing (cool)",
+        sprite: createImageElement("/animals/missing.png"),
+        width: 16,
+        height: 16,
+      },
+    },
+  },
+  robovac: {
+    stages: {
+      baby: {
+        name: "Tiny Robovac",
+        sprite: createImageElement("/animals/robovac-baby.png"),
+        width: 16,
+        height: 16,
+      },
+      adult: {
+        name: "Robovac",
+        sprite: createImageElement("/animals/robovac.png"),
+        width: 16,
+        height: 16,
+      },
+      cool: {
+        name: "Robovac (with knife)",
+        sprite: createImageElement("/animals/robovac-cool.png"),
+        width: 16,
+        height: 16,
+      },
+    },
+  },
+  bee: {
+    stages: {
+      baby: {
+        name: "Baby Bee",
+        sprite: createImageElement("/animals/bee-baby.png"),
+        width: 16,
+        height: 16,
+      },
+      adult: {
+        name: "Bee",
+        sprite: createImageElement("/animals/bee.png"),
+        width: 16,
+        height: 16,
+      },
+      cool: {
+        name: "Queen",
+        sprite: createImageElement("/animals/bee-cool.png"),
+        width: 16,
+        height: 16,
+      },
+    },
+  },
+  penguin: {
+    stages: {
+      baby: {
+        name: "Baby Penguin",
+        sprite: createImageElement("/animals/penguin-baby.png"),
+        width: 16,
+        height: 16,
+      },
+      adult: {
+        name: "Penguin",
+        sprite: createImageElement("/animals/penguin.png"),
+        width: 16,
+        height: 16,
+      },
+      cool: {
+        name: "Cool Penguin",
+        sprite: createImageElement("/animals/penguin-cool.png"),
+        width: 16,
+        height: 16,
+      },
+    },
+  },
+  cat: {
+    stages: {
+      baby: {
+        name: "Kitten",
+        sprite: createImageElement("/animals/cat-baby.png"),
+        width: 16,
+        height: 16,
+      },
+      adult: {
+        name: "Cat",
+        sprite: createImageElement("/animals/cat.png"),
+        width: 16,
+        height: 16,
+      },
+      cool: {
+        name: "Cool Cat",
+        sprite: createImageElement("/animals/cat-cool.png"),
+        width: 16,
+        height: 16,
+      },
+    },
+  },
+  dog: {
+    stages: {
+      baby: {
+        name: "Puppy",
+        sprite: createImageElement("/animals/dog-baby.png"),
+        width: 16,
+        height: 16,
+      },
+      adult: {
+        name: "Dog",
+        sprite: createImageElement("/animals/dog.png"),
+        width: 16,
+        height: 16,
+      },
+      cool: {
+        name: "Dawg",
+        sprite: createImageElement("/animals/dog-cool.png"),
+        width: 16,
+        height: 16,
+      },
+    },
+  },
+  raccoon: {
+    stages: {
+      baby: {
+        name: "Baby Raccoon",
+        sprite: createImageElement("/animals/raccoon-baby.png"),
+        width: 16,
+        height: 16,
+      },
+      adult: {
+        name: "Raccoon",
+        sprite: createImageElement("/animals/raccoon.png"),
+        width: 16,
+        height: 16,
+      },
+      cool: {
+        name: "Cool Raccoon",
+        sprite: createImageElement("/animals/raccoon-cool.png"),
+        width: 16,
+        height: 16,
+      },
+    },
+  },
+  duck: {
+    stages: {
+      baby: {
+        name: "Duckling",
+        sprite: createImageElement("/animals/duck-baby.png"),
+        width: 16,
+        height: 16,
+      },
+      adult: {
+        name: "Duck",
+        sprite: createImageElement("/animals/duck.png"),
+        width: 16,
+        height: 16,
+      },
+      cool: {
+        name: "Cool Duck",
+        sprite: createImageElement("/animals/duck-cool.png"),
+        width: 16,
+        height: 16,
+      },
+    },
+  },
+  swan: {
+    stages: {
+      baby: {
+        name: "Cygnet",
+        sprite: createImageElement("/animals/swan-baby.png"),
+        width: 16,
+        height: 16,
+      },
+      adult: {
+        name: "Swan",
+        sprite: createImageElement("/animals/swan.png"),
+        width: 16,
+        height: 16,
+      },
+      cool: {
+        name: "Black Swan",
+        sprite: createImageElement("/animals/swan-cool.png"),
+        width: 16,
+        height: 16,
+      },
+    },
+  },
+  platypus: {
+    stages: {
+      baby: {
+        name: "Baby Platypus",
+        sprite: createImageElement("/animals/platypus-baby.png"),
+        width: 16,
+        height: 16,
+      },
+      adult: {
+        name: "Platypus",
+        sprite: createImageElement("/animals/platypus.png"),
+        width: 16,
+        height: 16,
+      },
+      cool: {
+        name: "Cool Platypus",
+        sprite: createImageElement("/animals/platypus-cool.png"),
+        width: 16,
+        height: 16,
+      },
+    },
+  },
 } as const satisfies Record<AnimalID | SecretAnimalID, Animal>;
-
-export function allSpritesExist() {
-	const missing: string[] = [];
-	for (const animal of Object.values(animals)) {
-		for (const stage of Object.values(animal.stages)) {
-			if (!stage) continue;
-			if (!document.getElementById(stage.spriteId)) {
-				missing.push(stage.spriteId);
-			}
-		}
-	}
-
-	if (missing.length > 0) {
-		throw new Error(`Missing sprites: ${missing.join(", ")}`);
-	}
-
-	return true;
-}

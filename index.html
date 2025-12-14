@@ -25,7 +25,7 @@
         /* biome-ignore lint/suspicious/noDuplicateProperties: <Intentional> */
         image-rendering: crisp-edges;
 
-        /* Keep aspect ratio 3:2 and fit window */
+        /* Keep aspect original ratio and fit window */
         width: min(100vw, 100vh * (3 / 2));
         height: min(100vh, 100vw * (2 / 3));
       }
@@ -38,34 +38,6 @@
   </head>
   <body>
     <canvas id="canvas"></canvas>
-    <img src="assets/player.png" id="player-sprite" />
-    <img src="assets/tileset-grass.png" id="tileset-grass" />
-
-    <img src="assets/laptop.png" id="laptop" />
-
-    <img src="assets/animals/missing.png" id="missing-sprite" />
-
-    <img src="assets/animals/bee.png" id="bee-sprite" />
-    <img src="assets/animals/bee-baby.png" id="bee-baby-sprite" />
-    <img src="assets/animals/bee-cool.png" id="bee-cool-sprite" />
-
-    <img src="assets/animals/robovac.png" id="robovac-sprite" />
-    <img src="assets/animals/robovac-baby.png" id="robovac-baby-sprite" />
-    <img src="assets/animals/robovac-cool.png" id="robovac-cool-sprite" />
-
-    <img src="assets/animals/penguin-baby.png" id="penguin-baby-sprite" />
-
-    <img src="assets/animals/duck.png" id="duck-sprite" />
-
-    <img src="assets/animals/swan.png" id="swan-sprite" />
-
-    <img src="assets/animals/raccoon-baby.png" id="raccoon-baby-sprite" />
-    <img src="assets/animals/raccoon.png" id="raccoon-sprite" />
-
-    <img src="assets/animals/platypus.png" id="platypus-sprite" />
-    <img src="assets/animals/platypus-baby.png" id="platypus-baby-sprite" />
-    <img src="assets/animals/platypus-cool.png" id="platypus-cool-sprite" />
-
-    <script src="src/index.ts" type="module"></script>
+    <script src="/src/main.ts" type="module"></script>
   </body>
 </html>
