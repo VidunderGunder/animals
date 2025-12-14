@@ -1,0 +1,17 @@
+{
+  "recommendations": [
+    "biomejs.biome",
+    "bierner.github-markdown-preview",
+    "bierner.markdown-checkbox",
+    "bierner.markdown-emoji",
+    "bierner.markdown-preview-github-styles",
+    "bierner.markdown-yaml-preamble",
+    "bierner.markdown-mermaid",
+    "eamodio.gitlens",
+    "hancel.markdown-image",
+    "oven.bun-vscode",
+    "yzhang.markdown-all-in-one",
+    "YoavBls.pretty-ts-errors",
+    "usernamehw.errorlens"
+  ]
+}
