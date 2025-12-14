@@ -7,39 +7,38 @@ let isRenderPaused = false;
 let rafId: number | null = null;
 
 document.addEventListener("visibilitychange", () => {
-  if (document.hidden) {
-    isRenderPaused = true;
-  } else {
-    // Reset timing when returning so dt doesn't explode
-    isRenderPaused = false;
-    previousFrameTimestamp = 0;
-    rafId = requestAnimationFrame(loop);
-  }
+	if (document.hidden) {
+		isRenderPaused = true;
+	} else {
+		// Reset timing when returning so dt doesn't explode
+		isRenderPaused = false;
+		previousFrameTimestamp = 0;
+		rafId = requestAnimationFrame(loop);
+	}
 });
 
 function loop(timestamp: number) {
-  if (isRenderPaused) return;
+	if (isRenderPaused) return;
 
-  if (!previousFrameTimestamp) previousFrameTimestamp = timestamp;
-  const elapsed = timestamp - previousFrameTimestamp;
+	if (!previousFrameTimestamp) previousFrameTimestamp = timestamp;
+	const dt = timestamp - previousFrameTimestamp;
 
-  if (elapsed < 1000 / FPS_LIMIT) {
-    rafId = requestAnimationFrame(loop);
-    return;
-  }
+	if (dt < 1000 / FPS_LIMIT) {
+		rafId = requestAnimationFrame(loop);
+		return;
+	}
 
-  const dt = elapsed / 1000;
-  previousFrameTimestamp = timestamp;
+	previousFrameTimestamp = timestamp;
 
-  overworld(dt);
-  laptop(dt);
+	overworld(dt);
+	laptop(dt);
 
-  rafId = requestAnimationFrame(loop);
+	rafId = requestAnimationFrame(loop);
 }
 
 export function startGame() {
-  if (rafId !== null) return;
-  previousFrameTimestamp = 0;
-  rafId = requestAnimationFrame(loop);
-  openLaptop();
+	if (rafId !== null) return;
+	previousFrameTimestamp = 0;
+	rafId = requestAnimationFrame(loop);
+	openLaptop();
 }

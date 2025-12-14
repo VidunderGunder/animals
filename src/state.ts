@@ -85,9 +85,9 @@ export type Animation = {
 	frameDuration: number;
 };
 
-const idleDuration = 0.3;
-const walkDuration = 0.13;
-const runDuration = 0.08;
+const idleDuration = 300;
+const walkDuration = 130;
+const runDuration = 80;
 
 export const playerAnimations = {
 	idle: { frames: [0], frameDuration: idleDuration },

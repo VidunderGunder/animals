@@ -17,21 +17,21 @@ export type MovementType = "walk" | "run";
 export const DEFAULT_MOVEMENT: MovementType = "walk";
 
 export const movementSpeeds = {
-  walk: 100,
-  run: 160,
+	walk: 0.1,
+	run: 0.16,
 } as const satisfies Record<MovementType, number>;
 
 export const DEBUG_TILES = false;
 export const DEBUG_OVERLAY = true;
 
 function isValidDimensions() {
-  if (Number.isInteger(GAME_WIDTH) && Number.isInteger(GAME_HEIGHT)) {
-    return true;
-  } else {
-    throw new Error(
-      `GAME_WIDTH and GAME_HEIGHT must be integers. Current values: GAME_WIDTH=${GAME_WIDTH}, GAME_HEIGHT=${GAME_HEIGHT}`
-    );
-  }
+	if (Number.isInteger(GAME_WIDTH) && Number.isInteger(GAME_HEIGHT)) {
+		return true;
+	} else {
+		throw new Error(
+			`GAME_WIDTH and GAME_HEIGHT must be integers. Current values: GAME_WIDTH=${GAME_WIDTH}, GAME_HEIGHT=${GAME_HEIGHT}`,
+		);
+	}
 }
 
 isValidDimensions();
