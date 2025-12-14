@@ -198,7 +198,7 @@ function updatePlayer(dt: number) {
 	updatePlayerAnimation(dt);
 }
 
-function draw() {
+function draw(dt: number) {
 	const { x: playerWorldX, y: playerWorldY } = getPlayerWorldPosition();
 
 	// Camera keeps player centered
@@ -318,13 +318,14 @@ function draw() {
 		ctx.shadowOffsetY = 1;
 		ctx.shadowBlur = 1;
 		[
+			`fps: ${Math.round(1000 / dt)}`,
 			`res: ${GAME_WIDTH}x${GAME_HEIGHT} (${SCALE}x, ${ASPECT_RATIO_X}:${ASPECT_RATIO_Y})`,
 			`tile: (${player.tileX}, ${player.tileY})`,
 			`facing: ${player.facingDirection}`,
 			`moving: ${player.movingDirection}`,
-			`running: ${getIsMovingFaster()}`,
+			`faster: ${getIsMovingFaster()}`,
 		].forEach((line, index) => {
-			ctx.fillText(line, 4, 4 + index * 10);
+			ctx.fillText(line, 4, 2 + index * 8);
 		});
 		ctx.restore();
 	}
@@ -332,5 +333,5 @@ function draw() {
 
 export function overworld(dt: number) {
 	updatePlayer(dt);
-	draw();
+	draw(dt);
 }
