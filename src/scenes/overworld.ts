@@ -325,18 +325,24 @@ function draw() {
 
   // Optional debug overlay (tile coords, direction, run state)
   if (DEBUG_OVERLAY) {
+    ctx.save();
     ctx.fillStyle = "#ffffff";
-    ctx.font = "8px monospace";
+    ctx.font = "8px Tiny5";
     ctx.textBaseline = "top";
+    ctx.shadowColor = "rgba(0,0,0,0.2)";
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 1;
+    ctx.shadowBlur = 1;
     [
-      `resolution=${GAME_WIDTH}x${GAME_HEIGHT} (${SCALE}x, ${ASPECT_RATIO_X}:${ASPECT_RATIO_Y})`,
-      `tile=(${player.tileX}, ${player.tileY})`,
-      `dir=${player.facingDirection}`,
-      `moving=${player.movingDirection}`,
-      `running=${getIsMovingFaster()}`,
+      `res: ${GAME_WIDTH}x${GAME_HEIGHT} (${SCALE}x, ${ASPECT_RATIO_X}:${ASPECT_RATIO_Y})`,
+      `tile: (${player.tileX}, ${player.tileY})`,
+      `facing: ${player.facingDirection}`,
+      `moving: ${player.movingDirection}`,
+      `running: ${getIsMovingFaster()}`,
     ].forEach((line, index) => {
       ctx.fillText(line, 4, 4 + index * 10);
     });
+    ctx.restore();
   }
 }
 
