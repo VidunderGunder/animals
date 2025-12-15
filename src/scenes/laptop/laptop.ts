@@ -12,11 +12,12 @@ export function openLaptop() {
 	laptopState.show = true;
 }
 
-const laptopModes = ["biodex", "moves"] as const;
+const laptopModes = ["biodex", "moves", "nothing"] as const;
+type LaptopMode = (typeof laptopModes)[number];
 
 export type LaptopState = {
 	show: boolean;
-	mode: "biodex" | "moves";
+	mode: LaptopMode;
 };
 
 export const laptopState: LaptopState = {
@@ -27,6 +28,14 @@ export const laptopState: LaptopState = {
 const laptopSprite = createImageElement("/laptop.png");
 export const laptopWidth = laptopSprite.naturalWidth;
 export const laptopHeight = laptopSprite.naturalHeight;
+
+function nextLaptopMode() {
+	const currentModeIndex = laptopModes.indexOf(laptopState.mode);
+	const nextModeIndex = (currentModeIndex + 1) % laptopModes.length;
+	const nextMode = laptopModes[nextModeIndex];
+	if (nextMode === undefined) throw new Error("Invalid laptop mode");
+	laptopState.mode = nextMode;
+}
 
 export function laptop(dt: number) {
 	if (!laptopState.show) return;
@@ -45,11 +54,7 @@ export function laptop(dt: number) {
 
 	if (activeActions.has("select")) {
 		activeActions.delete("select");
-		const currentModeIndex = laptopModes.indexOf(laptopState.mode);
-		const nextModeIndex = (currentModeIndex + 1) % laptopModes.length;
-		const nextMode = laptopModes[nextModeIndex];
-		if (nextMode === undefined) throw new Error("Invalid laptop mode");
-		laptopState.mode = nextMode;
+		nextLaptopMode();
 	}
 
 	if (laptopState.mode === "biodex") biodex(dt);

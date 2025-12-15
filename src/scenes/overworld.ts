@@ -1,10 +1,8 @@
 import { ctx } from "../canvas";
-import { characters } from "../characters/characters";
+import { renderFrameLayer } from "../characters/characters";
 import {
 	ASPECT_RATIO_X,
 	ASPECT_RATIO_Y,
-	CHARACTER_SPRITE_HEIGHT,
-	CHARACTER_SPRITE_WIDTH,
 	DEBUG_OVERLAY,
 	DEBUG_TILES,
 	DEFAULT_MOVEMENT,
@@ -20,7 +18,7 @@ import {
 	movementIntent,
 	setMovementIntent,
 } from "../input";
-import { player, playerAnimations, playerDirectionRow } from "../state";
+import { player, playerAnimations } from "../state";
 import { drawTile, tileMaps } from "../tiles";
 import { world } from "../world";
 import { laptopState, openLaptop } from "./laptop/laptop";
@@ -104,6 +102,13 @@ function updatePlayerAnimation(dt: number) {
 	}
 
 	const anim = playerAnimations[desiredAnimation];
+
+	if (!anim) {
+		throw new Error(
+			`Character player is missing animation ${desiredAnimation}`,
+		);
+	}
+
 	player.animationTimer += dt;
 
 	if (player.animationTimer >= anim.frameDuration) {
@@ -265,40 +270,41 @@ function draw(dt: number) {
 	const animName = player.animationCurrent;
 	const anim = playerAnimations[animName];
 
-	const frameColumn = anim.frames[player.animationFrameIndex];
-	if (frameColumn === undefined) {
+	if (!anim) {
+		throw new Error(`Character player is missing animation ${animName}`);
+	}
+
+	const frameLayers = anim.frames[player.animationFrameIndex];
+	if (frameLayers === undefined) {
 		throw new Error(
 			`Invalid animation frame index for ${animName}, index ${player.animationFrameIndex} but frames are ${anim.frames.length} long`,
 		);
 	}
 
-	const row = playerDirectionRow[player.facingDirection];
-
-	// Source rect in the sprite sheet: 16x24 frames
-	const sx = frameColumn * CHARACTER_SPRITE_WIDTH;
-	const sy = row * CHARACTER_SPRITE_HEIGHT;
-	const sw = CHARACTER_SPRITE_WIDTH;
-	const sh = CHARACTER_SPRITE_HEIGHT;
-
-	// Destination size: keep 1:1 pixel ratio (no scaling for now)
 	const dw = player.width; // 16
 	const dh = player.height; // 24
 
-	// Draw so that (0,0) = feet position:
-	// - X: center horizontally  → -dw / 2
-	// - Y: feet at bottom       → -dh
+	if (!frameLayers[0]) return;
 
-	ctx.drawImage(
-		characters.player.spriteSheet,
-		sx,
-		sy,
-		sw,
-		sh,
-		-dw / 2,
-		-dh,
-		dw,
-		dh,
-	);
+	renderFrameLayer({
+		sheet: frameLayers[0].sheet,
+		index: frameLayers[0].index,
+		direction: player.facingDirection,
+		x: -dw / 2,
+		y: -dh,
+	});
+
+	// ctx.drawImage(
+	// 	characters.player.spriteSheet,
+	// 	sx,
+	// 	sy,
+	// 	sw,
+	// 	sh,
+	// 	-dw / 2,
+	// 	-dh,
+	// 	dw,
+	// 	dh,
+	// );
 
 	ctx.restore();
 
@@ -317,7 +323,7 @@ function draw(dt: number) {
 		ctx.save();
 		ctx.fillStyle = "#ffffff";
 		ctx.font = "8px Tiny5";
-		ctx.globalAlpha = laptopState.show ? 0.5 : 1.0;
+		ctx.globalAlpha = laptopState.show ? 0.25 : 1.0;
 		ctx.textBaseline = "top";
 		ctx.shadowColor = laptopState.show ? "rgba(0,0,0,0)" : "rgba(0,0,0,0.05)";
 		ctx.shadowOffsetX = 0;

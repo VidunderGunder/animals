@@ -3,6 +3,7 @@ import {
 	type CharacterKey,
 	characterKeys,
 	characters,
+	renderFrameLayers,
 } from "../../characters/characters";
 import {
 	CHARACTER_SPRITE_HEIGHT,
@@ -15,12 +16,13 @@ import { activeActions, type Direction, directions } from "../../input";
 import { returnToOverworld } from "../overworld";
 import { laptopHeight, laptopWidth } from "./laptop";
 
-const requiredAnimationIds = ["idle", "walk"] as const;
+const requiredAnimationIds = ["idle", "walk", "jump"] as const;
 const optionalAnimationIds = [
 	"run",
 	"rideIdle",
 	"rideSlow",
 	"rideFast",
+	"kickflip",
 ] as const;
 const animationIds = [
 	...requiredAnimationIds,
@@ -63,20 +65,20 @@ export const movesState: MovesState = {
 };
 
 export function initializeMovesState() {
-	characterKeys.forEach((personId) => {
-		const person = characters[personId];
+	characterKeys.forEach((key) => {
+		const person = characters[key];
 		animationIds.forEach((animationId) => {
 			const animation = person.animations[animationId];
 			if (!animation && optionalAnimationIds.some((id) => animationId === id))
 				return;
 			if (!animation) {
 				throw new Error(
-					`Person ${personId} is missing required animation ${animationId}`,
+					`Character ${key} is missing required animation ${animationId}`,
 				);
 			}
 			directions.forEach((direction) => {
 				movesState.entities.push({
-					personId,
+					personId: key,
 					direction,
 					animationCurrent: animationId,
 					animationFrameIndex: 0,
@@ -93,13 +95,21 @@ function update(dt: number) {
 		return;
 	}
 	movesState.entities.forEach((entity) => {
-		const person = characters[entity.personId];
-		const anim = person.animations[entity.animationCurrent];
+		const character = characters[entity.personId];
+		let animation = character.animations[entity.animationCurrent];
+
+		if (!animation) {
+			console.warn(
+				`Character ${entity.personId} is missing animation ${entity.animationCurrent}, defaulting to walk`,
+			);
+			animation = character.animations.walk;
+		}
+
 		entity.animationTimer += dt;
-		if (entity.animationTimer >= anim.frameDuration) {
-			entity.animationTimer -= anim.frameDuration;
+		if (entity.animationTimer >= animation.frameDuration) {
+			entity.animationTimer -= animation.frameDuration;
 			const nextIndex = entity.animationFrameIndex + 1;
-			if (nextIndex >= anim.frames.length) {
+			if (nextIndex >= animation.frames.length) {
 				entity.animationFrameIndex = 0;
 			} else {
 				entity.animationFrameIndex = nextIndex;
@@ -115,28 +125,29 @@ const marginY = 4;
 
 export function draw() {
 	movesState.entities.forEach((entity, i) => {
-		const person = characters[entity.personId];
-		const animation =
-			entity.animationCurrent in person.animations
-				? person.animations[
-						entity.animationCurrent as keyof typeof person.animations
+		const character = characters[entity.personId];
+		let animation =
+			entity.animationCurrent in character.animations
+				? character.animations[
+						entity.animationCurrent as keyof typeof character.animations
 					]
-				: person.animations.walk;
+				: character.animations.walk;
 
-		const frame = animation.frames[entity.animationFrameIndex];
-		if (frame === undefined) {
+		if (!animation) {
+			console.warn(
+				`Character ${entity.personId} is missing animation ${entity.animationCurrent}, defaulting to walk`,
+			);
+			animation = character.animations.walk;
+		}
+
+		const frameLayers = animation.frames[entity.animationFrameIndex];
+		if (frameLayers === undefined) {
 			throw new Error(
 				`Invalid animation frame index for ${entity.animationCurrent}, index ${entity.animationFrameIndex} but frames are ${animation.frames.length} long`,
 			);
 		}
 
 		const directionIndex = directionToRow[entity.direction];
-
-		const sx = frame * CHARACTER_SPRITE_WIDTH;
-		const sy = directionIndex * CHARACTER_SPRITE_HEIGHT;
-
-		const w = CHARACTER_SPRITE_WIDTH;
-		const h = CHARACTER_SPRITE_HEIGHT;
 
 		const laptopOffsetX = (GAME_WIDTH - laptopWidth) / 2;
 		const laptopOffsetY = GAME_HEIGHT - laptopHeight;
@@ -173,7 +184,12 @@ export function draw() {
 		}
 		ctx.restore();
 
-		ctx.drawImage(person.spriteSheet, sx, sy, w, h, x, y + textYOffset, w, h);
+		renderFrameLayers({
+			frameLayers,
+			direction: entity.direction,
+			x,
+			y: y + textYOffset,
+		});
 	});
 }
 
