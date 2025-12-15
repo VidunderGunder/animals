@@ -317,11 +317,12 @@ function draw(dt: number) {
 		ctx.save();
 		ctx.fillStyle = "#ffffff";
 		ctx.font = "8px Tiny5";
+		ctx.globalAlpha = laptopState.show ? 0.5 : 1.0;
 		ctx.textBaseline = "top";
-		ctx.shadowColor = "rgba(0,0,0,0.2)";
+		ctx.shadowColor = laptopState.show ? "rgba(0,0,0,0)" : "rgba(0,0,0,0.05)";
 		ctx.shadowOffsetX = 0;
 		ctx.shadowOffsetY = 1;
-		ctx.shadowBlur = 1;
+		ctx.shadowBlur = 0;
 		[
 			`fps: ${Math.round(1000 / dt)}`,
 			`res: ${GAME_WIDTH}x${GAME_HEIGHT} (${SCALE}x, ${ASPECT_RATIO_X}:${ASPECT_RATIO_Y})`,

@@ -160,7 +160,6 @@ export function draw() {
 		const y = moveYOffset + laptopOffsetY + textYOffset * row + marginY * row;
 
 		ctx.save();
-
 		ctx.fillStyle = "#deeaeb";
 		ctx.font = `${textHeight}px Tiny5`;
 		ctx.textBaseline = "top";
@@ -172,9 +171,9 @@ export function draw() {
 		if (i % 4 === 0) {
 			ctx.fillText(entity.animationCurrent, x + 2, y);
 		}
+		ctx.restore();
 
 		ctx.drawImage(person.spriteSheet, sx, sy, w, h, x, y + textYOffset, w, h);
-		ctx.restore();
 	});
 }
 
