@@ -1,5 +1,7 @@
 import { ctx } from "../../canvas";
 import {
+	animationIds,
+	type CharacterAnimationID,
 	type CharacterKey,
 	characterKeys,
 	characters,
@@ -15,25 +17,6 @@ import {
 import { activeActions, type Direction, directions } from "../../input";
 import { returnToOverworld } from "../overworld";
 import { laptopHeight, laptopWidth } from "./laptop";
-
-const requiredAnimationIds = ["idle", "walk", "jump"] as const;
-const optionalAnimationIds = [
-	"run",
-	"rideIdle",
-	"rideSlow",
-	"rideFast",
-	"kickflip",
-] as const;
-const animationIds = [
-	...requiredAnimationIds,
-	...optionalAnimationIds,
-] as const;
-
-export type ReuqiredCharacterAnimationID =
-	(typeof requiredAnimationIds)[number];
-export type OptionalCharacterAnimationID =
-	(typeof optionalAnimationIds)[number];
-export type CharacterAnimationID = (typeof animationIds)[number];
 
 export type EntitiesState = {
 	personId: CharacterKey;
@@ -66,16 +49,7 @@ export const movesState: MovesState = {
 
 export function initializeMovesState() {
 	characterKeys.forEach((key) => {
-		const person = characters[key];
 		animationIds.forEach((animationId) => {
-			const animation = person.animations[animationId];
-			if (!animation && optionalAnimationIds.some((id) => animationId === id))
-				return;
-			if (!animation) {
-				throw new Error(
-					`Character ${key} is missing required animation ${animationId}`,
-				);
-			}
 			directions.forEach((direction) => {
 				movesState.entities.push({
 					personId: key,
@@ -126,19 +100,10 @@ const marginY = 4;
 export function draw() {
 	movesState.entities.forEach((entity, i) => {
 		const character = characters[entity.personId];
-		let animation =
-			entity.animationCurrent in character.animations
-				? character.animations[
-						entity.animationCurrent as keyof typeof character.animations
-					]
-				: character.animations.walk;
-
-		if (!animation) {
-			console.warn(
-				`Character ${entity.personId} is missing animation ${entity.animationCurrent}, defaulting to walk`,
-			);
-			animation = character.animations.walk;
-		}
+		const animation =
+			character.animations[
+				entity.animationCurrent as keyof typeof character.animations
+			];
 
 		const frameLayers = animation.frames[entity.animationFrameIndex];
 		if (frameLayers === undefined) {

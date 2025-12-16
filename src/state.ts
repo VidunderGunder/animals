@@ -4,6 +4,7 @@ import type {
 	SecretAnimalKey,
 } from "./characters/animals";
 import {
+	type CharacterAnimationID,
 	characters,
 	idleDurationDefault,
 	runDurationDefault,
@@ -16,7 +17,6 @@ import {
 	movementSpeeds,
 } from "./config";
 import type { Direction } from "./input";
-import type { CharacterAnimationID } from "./scenes/laptop/moves";
 
 export type Player = {
 	/** Current tile coordinates */

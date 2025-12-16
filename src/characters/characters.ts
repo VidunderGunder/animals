@@ -2,11 +2,19 @@ import { createImageElement } from "../assets";
 import { ctx } from "../canvas";
 import { CHARACTER_SPRITE_HEIGHT, CHARACTER_SPRITE_WIDTH } from "../config";
 import type { Direction } from "../input";
-import {
-	directionToRow,
-	type OptionalCharacterAnimationID,
-	type ReuqiredCharacterAnimationID,
-} from "../scenes/laptop/moves";
+import { directionToRow } from "../scenes/laptop/moves";
+
+type OnRenderProps = {
+	/** Destination x on the canvas */
+	x: number;
+	/** Destination y on the canvas */
+	y: number;
+	/** Width of the frame */
+	w: number;
+	/** Height of the frame */
+	h: number;
+	direction: Direction;
+};
 
 type FrameLayer = {
 	/** The sprite sheet image element */
@@ -17,20 +25,8 @@ type FrameLayer = {
 	h?: number;
 	/** Column index of the frame in the sprite sheet */
 	index: number;
-	onBeforeRender?: (props: {
-		x: number;
-		y: number;
-		h: number;
-		w: number;
-		direction: Direction;
-	}) => void;
-	onAfterRender?: (props: {
-		x: number;
-		y: number;
-		h: number;
-		w: number;
-		direction: Direction;
-	}) => void;
+	onBeforeRender?: (props: OnRenderProps) => void;
+	onAfterRender?: (props: OnRenderProps) => void;
 };
 
 export function renderFrameLayer({
@@ -96,12 +92,25 @@ export type Animation = {
 	loop: boolean;
 };
 
-type Animations = Record<ReuqiredCharacterAnimationID, Animation> &
-	Partial<Record<OptionalCharacterAnimationID, Animation>>;
+type Animations = Record<CharacterAnimationID, Animation>;
 
 export type Character = {
 	animations: Animations;
 };
+
+export const animationIds = [
+	"idle",
+	"walk",
+	"jump",
+	"run",
+	"rideIdle",
+	"rideSlow",
+	"rideFast",
+	"kickflip",
+	"hop",
+] as const;
+
+export type CharacterAnimationID = (typeof animationIds)[number];
 
 export const idleDurationDefault = 350;
 export const walkDurationDefault = 130;
@@ -109,6 +118,7 @@ export const runDurationDefault = 80;
 export const rideSlowDurationDefault = 500;
 export const rideFastDurationDefault = 700;
 export const jumpDurationDefault = 140;
+export const hopDurationDefault = 60;
 
 const playerSpriteSheet = createImageElement("/characters/player.png");
 const skateboardSpriteSheet = createImageElement("/characters/skateboard.png");
@@ -125,76 +135,68 @@ function layerFactory(sheet: HTMLImageElement) {
 	};
 }
 
+function moveUpWithShadow(props: OnRenderProps, height: number) {
+	const { x, y, h, w } = props;
+
+	// shadow under player
+
+	ctx.fillStyle =
+		height < 4
+			? `rgba(0, 0, 0, ${(0.125 / 4) * height})`
+			: "rgba(0, 0, 0, 0.125)";
+	ctx.beginPath();
+
+	const center = x + w / 2;
+	const bottom = y + h - 4;
+
+	const rx = Math.max(w * 0.28 - height / 5, 0);
+	const ry = 2 * (1 - height / 16);
+	ctx.ellipse(center, bottom, rx, ry, 0, 0, Math.PI * 2);
+	ctx.fill();
+
+	ctx.translate(0, -height);
+}
+
 function getJumpFrames(sheet: HTMLImageElement = playerSpriteSheet) {
 	const layer = layerFactory(sheet);
 	return [
 		[
 			layer({
 				index: 1,
-				onBeforeRender({ x, y, h, w }) {
-					// shadow under player
-					ctx.fillStyle = "rgba(0, 0, 0, 0.1)";
-					ctx.beginPath();
-					ctx.ellipse(x + w / 2, y + h - 4, 4, 1.5, 0, 0, Math.PI * 2);
-					ctx.fill();
-
-					ctx.translate(0, -2 - 5);
+				onBeforeRender(props) {
+					moveUpWithShadow(props, 9);
 				},
 			}),
 		],
 		[
 			layer({
 				index: 1,
-				onBeforeRender({ x, y, h, w }) {
-					// shadow under player
-					ctx.fillStyle = "rgba(0, 0, 0, 0.1)";
-					ctx.beginPath();
-					ctx.ellipse(x + w / 2, y + h - 4, 3, 1, 0, 0, Math.PI * 2);
-					ctx.fill();
-
-					ctx.translate(0, -2 - 9);
+				onBeforeRender(props) {
+					moveUpWithShadow(props, 10);
 				},
 			}),
 		],
 		[
 			layer({
 				index: 2,
-				onBeforeRender({ x, y, h, w }) {
-					// shadow under player
-					ctx.fillStyle = "rgba(0, 0, 0, 0.1)";
-					ctx.beginPath();
-					ctx.ellipse(x + w / 2, y + h - 4, 2, 1, 0, 0, Math.PI * 2);
-					ctx.fill();
-
-					ctx.translate(0, -2 - 6);
+				onBeforeRender(props) {
+					moveUpWithShadow(props, 7);
 				},
 			}),
 		],
 		[
 			layer({
 				index: 4,
-				onBeforeRender({ x, y, h, w }) {
-					// shadow under player
-					ctx.fillStyle = "rgba(0, 0, 0, 0.1)";
-					ctx.beginPath();
-					ctx.ellipse(x + w / 2, y + h - 4, 4, 1.5, 0, 0, Math.PI * 2);
-					ctx.fill();
-
-					ctx.translate(0, -2 - 2);
+				onBeforeRender(props) {
+					moveUpWithShadow(props, 3);
 				},
 			}),
 		],
 		[
 			layer({
 				index: 8,
-				onBeforeRender({ x, y, h, w }) {
-					// shadow under player
-					ctx.fillStyle = "rgba(0, 0, 0, 0.025)";
-					ctx.beginPath();
-					ctx.ellipse(x + w / 2, y + h - 4, 5, 2, 0, 0, Math.PI * 2);
-					ctx.fill();
-
-					ctx.translate(0, 0);
+				onBeforeRender(props) {
+					moveUpWithShadow(props, 1);
 				},
 			}),
 		],
@@ -350,6 +352,22 @@ function getDefaultAnimations({
 			frameDuration: jumpDurationDefault,
 			loop: false,
 		},
+		hop: {
+			frames: [6, 7, 5, 1].map((height) => {
+				return [
+					{
+						sheet: characterSpriteSheet,
+						index: 0,
+						onBeforeRender(props) {
+							moveUpWithShadow(props, height);
+						},
+					},
+				];
+			}),
+
+			frameDuration: hopDurationDefault,
+			loop: false,
+		},
 	};
 }
 
@@ -365,3 +383,14 @@ export const characters = {
 
 export type CharacterKey = keyof typeof characters;
 export const characterKeys = Object.keys(characters) as CharacterKey[];
+
+// Crash early if dangerous empty frames are detected
+Object.entries(characters).forEach(([key, character]) => {
+	Object.entries(character.animations).forEach(([animationId, animation]) => {
+		if (animation.frames.length === 0) {
+			throw new Error(
+				`Character "${key}" has animation "${animationId}" with no frames defined.`,
+			);
+		}
+	});
+});

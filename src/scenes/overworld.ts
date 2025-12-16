@@ -1,5 +1,8 @@
 import { ctx } from "../canvas";
-import { renderFrameLayer } from "../characters/characters";
+import {
+	type CharacterAnimationID,
+	renderFrameLayer,
+} from "../characters/characters";
 import {
 	ASPECT_RATIO_X,
 	ASPECT_RATIO_Y,
@@ -22,7 +25,6 @@ import { player, playerAnimations } from "../state";
 import { drawTile, tileMaps } from "../tiles";
 import { world } from "../world";
 import { laptopState, openLaptop } from "./laptop/laptop";
-import type { CharacterAnimationID } from "./laptop/moves";
 
 const WORLD_WIDTH_TILES = world[0]?.length ?? 0;
 const WORLD_HEIGHT_TILES = world.length;
