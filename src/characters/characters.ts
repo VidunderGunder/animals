@@ -25,6 +25,12 @@ type FrameLayer = {
 	h?: number;
 	/** Column index of the frame in the sprite sheet */
 	index: number;
+
+	/**
+	 * Rotates 90 degrees clockwise for each increment, by offsetting the row used for direction.
+	 */
+	directionOffset?: 1 | 2 | 3;
+
 	onBeforeRender?: (props: OnRenderProps) => void;
 	onAfterRender?: (props: OnRenderProps) => void;
 };
@@ -33,6 +39,7 @@ export function renderFrameLayer({
 	sheet,
 	index,
 	direction,
+	directionOffset = 0,
 	w,
 	h,
 	x,
@@ -51,7 +58,8 @@ export function renderFrameLayer({
 	w ??= CHARACTER_SPRITE_WIDTH;
 	h ??= CHARACTER_SPRITE_HEIGHT;
 
-	const directionIndex = directionToRow[direction];
+	// Force directionOffset to be within 0-3
+	const directionIndex = (directionToRow[direction] + directionOffset) % 4;
 
 	ctx.save();
 	onBeforeRender?.({ x, y, h, w, direction });
@@ -108,6 +116,7 @@ export const animationIds = [
 	"rideFast",
 	"kickflip",
 	"hop",
+	"spin",
 ] as const;
 
 export type CharacterAnimationID = (typeof animationIds)[number];
@@ -138,8 +147,6 @@ function layerFactory(sheet: HTMLImageElement) {
 function moveUpWithShadow(props: OnRenderProps, height: number) {
 	const { x, y, h, w } = props;
 
-	// shadow under player
-
 	ctx.fillStyle =
 		height < 4
 			? `rgba(0, 0, 0, ${(0.125 / 4) * height})`
@@ -149,8 +156,8 @@ function moveUpWithShadow(props: OnRenderProps, height: number) {
 	const center = x + w / 2;
 	const bottom = y + h - 4;
 
-	const rx = Math.max(w * 0.28 - height / 5, 0);
-	const ry = 2 * (1 - height / 16);
+	const rx = Math.max(w * 0.28 - height / 8, 0);
+	const ry = 2 * (1 - height / 14);
 	ctx.ellipse(center, bottom, rx, ry, 0, 0, Math.PI * 2);
 	ctx.fill();
 
@@ -367,6 +374,15 @@ function getDefaultAnimations({
 
 			frameDuration: hopDurationDefault,
 			loop: false,
+		},
+		spin: {
+			frames: [
+				[layer({ index: 0, directionOffset: 1 })],
+				[layer({ index: 0, directionOffset: 2 })],
+				[layer({ index: 0, directionOffset: 3 })],
+			],
+			frameDuration: 100,
+			loop: true,
 		},
 	};
 }

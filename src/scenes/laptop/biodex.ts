@@ -103,17 +103,19 @@ function draw() {
 					const dw = stage.width; // 16
 					const dh = stage.height; // 16
 
-					const y =
-						1 * TILE_SIZE +
-						animalIndex * TILE_SIZE +
-						GAME_HEIGHT -
-						laptopHeight;
 					const x =
 						(stageIndex * TILE_SIZE) / 2 +
 						1 * TILE_SIZE +
 						stageIndex * TILE_SIZE * directions.length +
 						directionIndex * TILE_SIZE +
-						(GAME_WIDTH - laptopWidth) / 2;
+						(GAME_WIDTH - laptopWidth) / 2 +
+						TILE_SIZE * 1.5;
+					const y =
+						1 * TILE_SIZE +
+						animalIndex * TILE_SIZE +
+						GAME_HEIGHT -
+						laptopHeight +
+						TILE_SIZE * 0.5;
 
 					ctx.save();
 					ctx.globalAlpha = isMissing ? 0.25 : 1.0;

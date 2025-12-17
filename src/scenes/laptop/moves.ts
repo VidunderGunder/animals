@@ -33,8 +33,8 @@ export type EntitiesState = {
 export const directionToRow: Record<Direction, number> = {
 	down: 0,
 	left: 1,
-	right: 2,
-	up: 3,
+	up: 2,
+	right: 3,
 } as const;
 
 export type MovesState = {
@@ -94,7 +94,7 @@ function update(dt: number) {
 
 const cols = 3;
 const perCol = 4;
-const marginXOfSpriteWidth = 0.5;
+const marginXOfSpriteWidth = 1;
 const marginY = 4;
 
 export function draw() {
@@ -114,8 +114,8 @@ export function draw() {
 
 		const directionIndex = directionToRow[entity.direction];
 
-		const laptopOffsetX = (GAME_WIDTH - laptopWidth) / 2;
-		const laptopOffsetY = GAME_HEIGHT - laptopHeight;
+		const laptopOffsetX = (GAME_WIDTH - laptopWidth) / 2 + TILE_SIZE;
+		const laptopOffsetY = GAME_HEIGHT - laptopHeight + TILE_SIZE * 0.5;
 
 		const col = Math.floor(i / perCol);
 		const row = Math.floor(i / (cols * perCol));
@@ -142,10 +142,9 @@ export function draw() {
 		ctx.shadowColor = "rgba(0,0,0,0.05)";
 		ctx.shadowOffsetX = 0;
 		ctx.shadowOffsetY = 1;
-		// ctx.shadowBlur = 1;
 
 		if (i % 4 === 0) {
-			ctx.fillText(entity.animationCurrent, x + 2, y);
+			ctx.fillText(`${entity.personId} ${entity.animationCurrent}`, x + 2, y);
 		}
 		ctx.restore();
 
