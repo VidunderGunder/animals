@@ -123,7 +123,7 @@ export function draw() {
 		const moveXOffset =
 			((perCol + marginXOfSpriteWidth) * CHARACTER_SPRITE_WIDTH * col) %
 			((perCol + marginXOfSpriteWidth) * cols * CHARACTER_SPRITE_WIDTH);
-		const moveYOffset = TILE_SIZE + row * CHARACTER_SPRITE_HEIGHT;
+		const moveYOffset = 13 + row * CHARACTER_SPRITE_HEIGHT;
 
 		const textHeight = 8;
 		const textYOffset = textHeight + row;
