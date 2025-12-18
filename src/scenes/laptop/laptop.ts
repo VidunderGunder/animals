@@ -22,7 +22,7 @@ export type LaptopState = {
 
 export const laptopState: LaptopState = {
 	show: false,
-	mode: "biodex",
+	mode: "moves",
 };
 
 const laptopSprite = createImageElement("/laptop.png");
