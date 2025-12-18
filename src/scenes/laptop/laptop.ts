@@ -22,12 +22,14 @@ export type LaptopState = {
 
 export const laptopState: LaptopState = {
 	show: false,
-	mode: "moves",
+	mode: "biodex",
 };
 
 const laptopSprite = createImageElement("/laptop.png");
-export const laptopWidth = laptopSprite.naturalWidth;
-export const laptopHeight = laptopSprite.naturalHeight;
+// export const laptopWidth = laptopSprite.naturalWidth; // Must be done after laptopSprite.complete is true
+export const laptopWidth = GAME_WIDTH; // Using static width for now
+// export const laptopHeight = laptopSprite.naturalHeight; // Must be done after laptopSprite.complete is true
+export const laptopHeight = GAME_HEIGHT; // Using static height for now
 
 function nextLaptopMode() {
 	const currentModeIndex = laptopModes.indexOf(laptopState.mode);

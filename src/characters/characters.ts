@@ -39,7 +39,7 @@ export function renderFrameLayer({
 	sheet,
 	index,
 	direction,
-	directionOffset = 0,
+	directionOffset,
 	w,
 	h,
 	x,
@@ -49,6 +49,8 @@ export function renderFrameLayer({
 }: {
 	/** Facing direction -> row in sprite sheet */
 	direction?: Direction;
+	/** Direction offset for rotation */
+	directionOffset?: 1 | 2 | 3;
 	/** Destination x on the canvas */
 	x: number;
 	/** Destination y on the canvas */
@@ -59,7 +61,8 @@ export function renderFrameLayer({
 	h ??= CHARACTER_SPRITE_HEIGHT;
 
 	// Force directionOffset to be within 0-3
-	const directionIndex = (directionToRow[direction] + directionOffset) % 4;
+	const directionIndex =
+		(directionToRow[direction] + (directionOffset ?? 0)) % 4;
 
 	ctx.save();
 	onBeforeRender?.({ x, y, h, w, direction });
@@ -220,7 +223,7 @@ function getDefaultAnimations({
 
 	return {
 		idle: {
-			frames: [[layer({ index: 0 })]],
+			frames: [[layer({ index: 2 })]],
 			frameDuration: idleDurationDefault,
 			loop: true,
 		},
@@ -364,7 +367,7 @@ function getDefaultAnimations({
 				return [
 					{
 						sheet: characterSpriteSheet,
-						index: 0,
+						index: 2,
 						onBeforeRender(props) {
 							moveUpWithShadow(props, height);
 						},
@@ -377,9 +380,12 @@ function getDefaultAnimations({
 		},
 		spin: {
 			frames: [
-				[layer({ index: 0, directionOffset: 1 })],
-				[layer({ index: 0, directionOffset: 2 })],
-				[layer({ index: 0, directionOffset: 3 })],
+				[layer({ index: 2 })],
+				// [layer({ index: 3 })], // Charge the spin
+				// [layer({ index: 3 })],
+				[layer({ index: 2, directionOffset: 1 })],
+				[layer({ index: 2, directionOffset: 2 })],
+				[layer({ index: 2, directionOffset: 3 })],
 			],
 			frameDuration: 100,
 			loop: true,

@@ -1,24 +1,24 @@
 {
-  "name": "animals",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "^2.3.8",
-    "@total-typescript/ts-reset": "^0.6.1",
-    "@types/bun": "latest",
-    "typescript": "~5.9.3",
-    "vite": "npm:rolldown-vite@7.2.5"
-  },
-  "overrides": {
-    "vite": "npm:rolldown-vite@7.2.5"
-  },
-  "trustedDependencies": [
-    "@biomejs/biome"
-  ]
+	"name": "animals",
+	"private": true,
+	"version": "0.0.0",
+	"type": "module",
+	"scripts": {
+		"dev": "vite --host",
+		"build": "tsc && vite build",
+		"preview": "vite preview"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.3.8",
+		"@total-typescript/ts-reset": "^0.6.1",
+		"@types/bun": "latest",
+		"typescript": "~5.9.3",
+		"vite": "npm:rolldown-vite@7.2.5"
+	},
+	"overrides": {
+		"vite": "npm:rolldown-vite@7.2.5"
+	},
+	"trustedDependencies": [
+		"@biomejs/biome"
+	]
 }

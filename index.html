@@ -2,7 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
     <title>Animals</title>
     <link rel="stylesheet" href="reset.css" />
     <style>
@@ -15,6 +18,15 @@
       body {
         margin: 0;
         height: 100%;
+        overflow: hidden;
+      }
+
+      html,
+      body,
+      canvas {
+        -webkit-touch-callout: none; /* disables long-press menu */
+        -webkit-user-select: none;
+        user-select: none;
       }
 
       body {
@@ -22,17 +34,23 @@
         justify-content: center;
         align-items: center;
         background: #101010;
+
+        touch-action: none;
       }
 
       canvas {
-        /* Scale the GBA resolution up but keep it pixelated */
         image-rendering: pixelated;
         /* biome-ignore lint/suspicious/noDuplicateProperties: <Intentional> */
         image-rendering: crisp-edges;
 
         /* Keep aspect original ratio and fit window */
-        width: min(100vw, 100vh * (3 / 2));
-        height: min(100vh, 100vw * (2 / 3));
+        width: min(100dvw, 100vh * (3 / 2));
+        height: min(100dvh, 100vw * (2 / 3));
+        max-width: 100%;
+        max-height: 100%;
+
+        touch-action: none; /* already good */
+        -webkit-tap-highlight-color: transparent;
       }
 
       img {
@@ -40,9 +58,9 @@
         display: none;
       }
     </style>
+    <script src="/src/main.ts" type="module"></script>
   </head>
   <body>
     <canvas id="canvas"></canvas>
-    <script src="/src/main.ts" type="module"></script>
   </body>
 </html>
