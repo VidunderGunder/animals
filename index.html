@@ -79,8 +79,13 @@
       @media (max-aspect-ratio: 2/3) {
         /* Corresponds 8:7 */
         /* @media (max-aspect-ratio: 2/3.1) { */
+
+        #canvas {
+          padding-top: 4px;
+        }
         body {
-          background-color: #dddbdb;
+          /* background-color: #dddbdb; */
+          background-color: #161616;
           justify-content: start;
         }
         .controller-portrait {
@@ -115,6 +120,8 @@
         max-width: 100%;
         pointer-events: none;
         user-select: none;
+        position: absolute;
+        top: -11px;
       "
       src="/controller-portrait-border.png"
       alt="controller"
@@ -160,7 +167,7 @@
           z-index: -1;
           pointer-events: none;
           user-select: none;
-          filter: brightness(0.25) saturate(0.6);
+          filter: brightness(0.2) saturate(0.5);
         "
       >
         <img
@@ -205,7 +212,7 @@
           pointer-events: none;
           user-select: none;
         "
-        src="/controller-portrait-light.png"
+        src="/controller-portrait-dark.png"
         alt="controller"
       />
     </div>
