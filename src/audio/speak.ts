@@ -164,8 +164,6 @@ export function speak(
 		const ch = text[i];
 		if (!ch) continue;
 
-		const next = text[i + 1];
-
 		if (ch === " ") {
 			t += 0.04 / tempo;
 			continue;
@@ -201,10 +199,6 @@ export function speak(
 	// schedule with a timeout; AudioContext time -> ms
 	const ms = Math.max(0, (disconnectAt - audioCtx.currentTime) * 1000);
 	setTimeout(dc, ms);
-}
-
-function isConstantsOnly(str: string) {
-	return /^[bcdfghjklmnpqrstvwxyz]+$/.test(str);
 }
 
 function playVowel(
