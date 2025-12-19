@@ -7,7 +7,6 @@
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
     <title>Animals</title>
-    <link rel="stylesheet" href="src/reset.css" />
     <style>
       @font-face {
         font-family: "Tiny5";
@@ -17,10 +16,9 @@
       html,
       body {
         margin: 0;
-        height: 100%;
+        height: 100dvh;
         min-height: 100%;
         overflow: hidden;
-        /* background-color: #181b1f; */
       }
 
       html,
@@ -36,7 +34,7 @@
         flex-direction: column;
         justify-content: start;
         align-items: center;
-        background: #181b1f;
+        background-color: black;
 
         touch-action: none;
       }
@@ -54,6 +52,9 @@
 
         touch-action: none; /* already good */
         -webkit-tap-highlight-color: transparent;
+
+        border: none;
+        background-color: black;
       }
 
       img {
@@ -61,24 +62,116 @@
         display: none;
       }
 
-      img#controller-portrait {
-        display: block;
+      .controller-portrait {
+        display: none !important;
+      }
 
-        right: 0;
-        width: 100dvw;
-        max-width: 100%;
-        pointer-events: none;
-        user-select: none;
+      @media (pointer: coarse) {
+        body {
+          background-color: #dddbdb;
+        }
+        .controller-portrait {
+          display: block !important;
+        }
       }
     </style>
     <script src="/src/main.ts" type="module"></script>
   </head>
   <body>
+    <img
+      style="
+        display: block;
+        width: 100dvw;
+        max-width: 100%;
+        pointer-events: none;
+        user-select: none;
+      "
+      src="/controller-portrait-border.png"
+      alt="controller"
+      class="controller-portrait"
+    />
     <canvas id="canvas"></canvas>
     <img
-      id="controller-portrait"
-      src="/controller-portrait.png"
+      style="
+        display: block;
+        width: 100dvw;
+        max-width: 100%;
+        pointer-events: none;
+        user-select: none;
+      "
+      src="/controller-portrait-border.png"
       alt="controller"
+      class="controller-portrait"
     />
+    <div
+      style="
+        flex-grow: 1;
+        width: 100%;
+        height: min-content;
+        position: relative;
+        box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.75);
+      "
+      class="controller-portrait"
+    >
+      <div
+        style="
+          background-color: black;
+          inset: 0;
+          position: absolute;
+          z-index: -1;
+        "
+      ></div>
+      <div
+        style="
+          position: absolute;
+          inset: 0;
+          overflow: hidden;
+          z-index: -1;
+          pointer-events: none;
+          user-select: none;
+          filter: brightness(0.25) saturate(0.6);
+        "
+      >
+        <img
+          style="
+            display: block;
+            width: 100dvw;
+            max-width: 100%;
+            position: absolute;
+            bottom: -50px;
+          "
+          src="/pcb.jpg"
+          alt="pcb"
+        />
+      </div>
+      <img
+        style="
+          z-index: -1;
+          position: absolute;
+          bottom: 0;
+          display: block;
+          width: 100dvw;
+          max-width: 100%;
+          pointer-events: none;
+          user-select: none;
+          filter: drop-shadow(0 0 10px rgba(0, 0, 0, 0.75));
+        "
+        src="/controller-wires.png"
+        alt="controller"
+      />
+    </div>
+    <div id="controller-portrait" class="controller-portrait">
+      <img
+        style="
+          display: block;
+          width: 100dvw;
+          max-width: 100%;
+          pointer-events: none;
+          user-select: none;
+        "
+        src="/controller-portrait-light.png"
+        alt="controller"
+      />
+    </div>
   </body>
 </html>
