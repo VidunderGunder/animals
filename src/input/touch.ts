@@ -1,6 +1,21 @@
 import { haptic } from "./haptic";
 import { type Action, activeActions, type Direction } from "./input";
 
+let lastTouchEnd = 0;
+
+// iOS double-tap prevention hack
+document.addEventListener(
+	"touchend",
+	(e) => {
+		const now = Date.now();
+		if (now - lastTouchEnd <= 300) {
+			e.preventDefault(); // best-effort: blocks double-tap behaviors in some iOS versions
+		}
+		lastTouchEnd = now;
+	},
+	{ passive: false },
+);
+
 const DEBUG_TOUCH_CONTROLLER: boolean = import.meta.env.DEV && false;
 
 type PointerBinding = {
