@@ -3,7 +3,7 @@
 import { haptic } from "./haptic";
 import { type Action, activeActions } from "./input";
 
-const DEBUG_TOUCH_CONTROLLER: boolean = false;
+const DEBUG_TOUCH_CONTROLLER: boolean = true;
 
 type PointerBinding = {
 	action: Action;
@@ -108,10 +108,10 @@ export function initVirtualGamepad() {
 		" right: 0%; top: 4%; height: 30%; width: 13.5%; aspect-ratio: auto; border-radius: 10%;";
 	const zl = makeButton("zl");
 	zl.style.cssText +=
-		" left: 13.5%; top: 4%; height: 13.75%; width: 15.5%; aspect-ratio: auto; border-radius: 12.5%;";
+		" left: 13.75%; top: 4%; height: 13.75%; width: 15%; aspect-ratio: auto; border-radius: 12.5%;";
 	const zr = makeButton("zr");
 	zr.style.cssText +=
-		" right: 13.5%; top: 4%; height: 13.75%; width: 15.5%; aspect-ratio: auto; border-radius: 12.5%;";
+		" right: 13.75%; top: 4%; height: 13.75%; width: 15%; aspect-ratio: auto; border-radius: 12.5%;";
 
 	// If OS interrupts, clean up stuck actions
 	window.addEventListener("blur", releaseAll);
