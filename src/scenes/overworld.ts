@@ -67,8 +67,8 @@ function getIsMoving(): boolean {
 function getIsMovingFaster(): boolean {
 	const isMoving = getIsMoving();
 	if (!isMoving) return false;
-	const secondaryPressed = activeActions.has("secondary");
-	return DEFAULT_MOVEMENT === "run" ? !secondaryPressed : secondaryPressed;
+	const bPressed = activeActions.has("b");
+	return DEFAULT_MOVEMENT === "run" ? !bPressed : bPressed;
 }
 
 /** Get interpolated player world position in pixels */
