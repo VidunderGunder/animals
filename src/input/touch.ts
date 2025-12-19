@@ -42,21 +42,7 @@ function makeButton(action: Action): HTMLButtonElement {
 			: "background: transparent;",
 	].join(" ");
 
-	// Prevent scrolling / text selection
 	b.style.touchAction = "none";
-
-	/**
-	 *
-	 * This:
-	 *
-	 * -webkit-touch-callout: none;
-	 * -webkit-user-select: none;
-	 * user-select: none;
-	 */
-
-	if ("webkitTouchCallout" in b.style) b.style.webkitTouchCallout = "none";
-	b.style.webkitUserSelect = "none";
-	b.style.userSelect = "none";
 
 	b.addEventListener("pointerdown", (e) => {
 		(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
@@ -69,42 +55,31 @@ function makeButton(action: Action): HTMLButtonElement {
 		release(e.pointerId);
 	};
 
-	b.addEventListener("pointerup", up);
-	b.addEventListener("pointercancel", up);
-	b.addEventListener("pointerleave", up);
+	const pointerUpEvents = [
+		"pointerup",
+		"pointercancel",
+		"pointerleave",
+	] as const satisfies (keyof HTMLElementEventMap)[];
+	pointerUpEvents.forEach((eventKey) => {
+		b.addEventListener(eventKey, up);
+	});
 
-	b.addEventListener(
+	const touchEvents = [
 		"touchstart",
-		(e) => {
-			e.returnValue = false;
-			e.preventDefault();
-		},
-		{ passive: false },
-	);
-	b.addEventListener(
 		"touchend",
-		(e) => {
-			e.returnValue = false;
-			e.preventDefault();
-		},
-		{ passive: false },
-	);
-	b.addEventListener(
 		"touchcancel",
-		(e) => {
-			e.returnValue = false;
-			e.preventDefault();
-		},
-		{ passive: false },
-	);
-	b.addEventListener(
 		"touchmove",
-		(e) => {
-			e.preventDefault();
-			e.returnValue = false;
-		},
-		{ passive: false },
-	);
+	] as const satisfies (keyof HTMLElementEventMap)[];
+	touchEvents.forEach((eventKey) => {
+		b.addEventListener(
+			eventKey,
+			(e) => {
+				e.returnValue = false;
+				e.preventDefault();
+			},
+			{ passive: false },
+		);
+	});
 
 	controller.appendChild(b);
 
