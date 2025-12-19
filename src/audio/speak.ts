@@ -270,6 +270,7 @@ function playVowel(
 	const noiseHP = audioCtx.createBiquadFilter();
 	noiseHP.type = "highpass";
 	noiseHP.frequency.value = 3500 + Math.random() * 800;
+
 	// connect
 	osc1.connect(mix);
 	osc2.connect(osc2Gain).connect(mix);
@@ -359,7 +360,7 @@ function playVowel(
 		}
 	};
 
-	return dur * 0.85; // return effective “advance” time (keeps speech snappy)
+	return dur * 0.85; // keeps speech snappy
 }
 
 function makeSoftClipCurve(amount = 1) {
@@ -390,26 +391,16 @@ function lerp(a: number, b: number, t: number) {
 }
 
 function intensityToGain(intensity: number) {
-	// Keep intensity=1 unchanged.
-	// Above 1, reduce loudness using a gentle power curve.
-	//  4  -> 0.5
-	//  16 -> 0.25
-	//  20 -> ~0.223
 	if (!Number.isFinite(intensity) || intensity <= 1) return 1;
 	return intensity ** -1;
 }
 
 function intensityToCompressor(intensity: number) {
-	// Make the shared compressor work harder when intensity is high.
-	// We only *increase* compression above intensity=1.
 	const i = Math.max(1, intensity);
 
-	// More intensity -> lower threshold (more compression)
-	// log scaling so 2->small change, 20->bigger but not insane
-	const extraDb = 10 * Math.log10(i); // 1->0dB, 10->10dB, 20->13dB
+	const extraDb = 10 * Math.log10(i);
 	const threshold = clamp(-20 - extraDb, -40, -18);
 
-	// More intensity -> higher ratio
 	const ratio = clamp(6 + Math.log2(i) * 2.2, 6, 18);
 
 	return { threshold, ratio };
