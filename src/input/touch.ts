@@ -3,7 +3,7 @@
 import { haptic } from "./haptic";
 import { type Action, activeActions } from "./input";
 
-const DEBUG_TOUCH_CONTROLLER: boolean = true;
+const DEBUG_TOUCH_CONTROLLER: boolean = false;
 
 type PointerBinding = {
 	action: Action;
