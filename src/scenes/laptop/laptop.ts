@@ -25,11 +25,15 @@ export const laptopState: LaptopState = {
 	mode: "moves",
 };
 
-const laptopSprite = createImageElement("/laptop.png");
 // export const laptopWidth = laptopSprite.naturalWidth; // Must be done after laptopSprite.complete is true
-export const laptopWidth = GAME_WIDTH; // Using static width for now
+export let laptopWidth = 0; // Using static width for now
 // export const laptopHeight = laptopSprite.naturalHeight; // Must be done after laptopSprite.complete is true
-export const laptopHeight = GAME_HEIGHT; // Using static height for now
+export let laptopHeight = 0; // Using static height for now
+const laptopSprite = createImageElement("/laptop.png");
+laptopSprite.onload = () => {
+	laptopWidth = laptopSprite.naturalWidth;
+	laptopHeight = laptopSprite.naturalHeight;
+};
 
 function nextLaptopMode() {
 	const currentModeIndex = laptopModes.indexOf(laptopState.mode);
@@ -42,17 +46,18 @@ function nextLaptopMode() {
 export function laptop(dt: number) {
 	if (!laptopState.show) return;
 
-	ctx.drawImage(
-		laptopSprite,
-		0,
-		0,
-		laptopWidth,
-		laptopHeight,
-		(GAME_WIDTH - laptopWidth) / 2,
-		GAME_HEIGHT - laptopHeight,
-		laptopWidth,
-		laptopHeight,
-	);
+	if (laptopSprite.complete)
+		ctx.drawImage(
+			laptopSprite,
+			0,
+			0,
+			laptopWidth,
+			laptopHeight,
+			(GAME_WIDTH - laptopWidth) / 2,
+			(GAME_HEIGHT - laptopHeight) / 2,
+			laptopWidth,
+			laptopHeight,
+		);
 
 	if (activeActions.has("select")) {
 		activeActions.delete("select");

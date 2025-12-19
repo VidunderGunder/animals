@@ -113,8 +113,7 @@ function draw() {
 					const y =
 						1 * TILE_SIZE +
 						animalIndex * TILE_SIZE +
-						GAME_HEIGHT -
-						laptopHeight +
+						(GAME_HEIGHT - laptopHeight) / 2 +
 						TILE_SIZE * 0.5;
 
 					ctx.save();

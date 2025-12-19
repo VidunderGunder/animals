@@ -46,8 +46,8 @@
         image-rendering: crisp-edges;
 
         /* Keep aspect original ratio and fit window */
-        width: min(100dvw, 100vh * (3 / 2));
-        height: min(100dvh, 100vw * (2 / 3));
+        width: min(100dvw, 100vh * (4 / 3));
+        height: min(100dvh, 100vw * (3 / 4));
         max-width: 100%;
         max-height: 100%;
 
@@ -70,7 +70,12 @@
         display: none;
       }
 
-      @media (max-aspect-ratio: 2/2.9) {
+      /* Corresponds to 3:2 */
+      /* @media (max-aspect-ratio: 2/2.9) { */
+      /* Corresponds 4:3 */
+      @media (max-aspect-ratio: 2/3) {
+        /* Corresponds 8:7 */
+        /* @media (max-aspect-ratio: 2/3.1) { */
         body {
           background-color: #dddbdb;
           justify-content: start;
@@ -84,7 +89,12 @@
         display: none;
       }
 
-      @media (max-aspect-ratio: 2/3.225) {
+      /* Corresponds to 3:2 */
+      /* @media (max-aspect-ratio: 2/3.225) { */
+      /* Corresponds to 4:3 */
+      @media (max-aspect-ratio: 2/3.4) {
+        /* Corresponds to 8:7 */
+        /* @media (max-aspect-ratio: 2/3.7) { */
         .controller-portrait-extra-borders {
           display: block;
         }

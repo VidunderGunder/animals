@@ -1,6 +1,6 @@
 export const SCALE = 1.2;
-export const ASPECT_RATIO_X = 3;
-export const ASPECT_RATIO_Y = 2;
+export const ASPECT_RATIO_X = 4;
+export const ASPECT_RATIO_Y = 3;
 export const ASPECT_RATIO = ASPECT_RATIO_X / ASPECT_RATIO_Y; // Must match CSS in index.html
 export const BASE_WIDTH = 240;
 export const BASE_HEIGHT = BASE_WIDTH / ASPECT_RATIO;

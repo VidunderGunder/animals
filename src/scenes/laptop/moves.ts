@@ -115,7 +115,7 @@ export function draw() {
 		const directionIndex = directionToRow[entity.direction];
 
 		const laptopOffsetX = (GAME_WIDTH - laptopWidth) / 2 + TILE_SIZE;
-		const laptopOffsetY = GAME_HEIGHT - laptopHeight + TILE_SIZE * 0.5;
+		const laptopOffsetY = (GAME_HEIGHT - laptopHeight) / 2 + TILE_SIZE * 0.5;
 
 		const col = Math.floor(i / perCol);
 		const row = Math.floor(i / (cols * perCol));
