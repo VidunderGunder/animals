@@ -1,7 +1,7 @@
 import { haptic } from "./haptic";
 import { type Action, activeActions, type Direction } from "./input";
 
-const DEBUG_TOUCH_CONTROLLER: boolean = import.meta.env.DEV && true;
+const DEBUG_TOUCH_CONTROLLER: boolean = import.meta.env.DEV && false;
 
 let lastTouchEnd = 0;
 
