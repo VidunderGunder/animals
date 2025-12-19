@@ -9,7 +9,7 @@ import {
 } from "../../characters/animals";
 import type { CharacterAnimationID } from "../../characters/characters";
 import { GAME_HEIGHT, GAME_WIDTH, TILE_SIZE } from "../../config";
-import { activeActions, type Direction, directions } from "../../input";
+import { activeActions, type Direction, directions } from "../../input/input";
 import { animalAnimations, animalDirectionRow } from "../../state";
 import { returnToOverworld } from "../overworld";
 import { laptopHeight, laptopWidth } from "./laptop";

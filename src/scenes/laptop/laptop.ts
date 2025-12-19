@@ -1,7 +1,7 @@
 import { createImageElement } from "../../assets";
 import { ctx } from "../../canvas";
 import { GAME_HEIGHT, GAME_WIDTH } from "../../config";
-import { activeActions } from "../../input";
+import { activeActions } from "../../input/input";
 import { player } from "../../state";
 import { biodex } from "./biodex";
 import { moves } from "./moves";

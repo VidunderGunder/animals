@@ -14,7 +14,7 @@ import {
 	GAME_WIDTH,
 	TILE_SIZE,
 } from "../../config";
-import { activeActions, type Direction, directions } from "../../input";
+import { activeActions, type Direction, directions } from "../../input/input";
 import { returnToOverworld } from "../overworld";
 import { laptopHeight, laptopWidth } from "./laptop";
 

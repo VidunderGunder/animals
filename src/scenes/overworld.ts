@@ -20,7 +20,7 @@ import {
 	type Direction,
 	movementIntent,
 	setMovementIntent,
-} from "../input";
+} from "../input/input";
 import { player, playerAnimations } from "../state";
 import { drawTile, tileMaps } from "../tiles";
 import { world } from "../world";

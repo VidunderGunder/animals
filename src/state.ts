@@ -16,7 +16,7 @@ import {
 	DEFAULT_MOVEMENT,
 	movementSpeeds,
 } from "./config";
-import type { Direction } from "./input";
+import type { Direction } from "./input/input";
 
 export type Player = {
 	/** Current tile coordinates */

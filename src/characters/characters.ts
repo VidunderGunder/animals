@@ -1,7 +1,7 @@
 import { createImageElement } from "../assets";
 import { ctx } from "../canvas";
 import { CHARACTER_SPRITE_HEIGHT, CHARACTER_SPRITE_WIDTH } from "../config";
-import type { Direction } from "../input";
+import type { Direction } from "../input/input";
 import { directionToRow } from "../scenes/laptop/moves";
 
 type OnRenderProps = {
