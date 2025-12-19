@@ -1,4 +1,3 @@
-import { speak } from "./audio/speak";
 import { FPS_LIMIT } from "./config";
 import { laptop, openLaptop } from "./scenes/laptop/laptop";
 import { overworld } from "./scenes/overworld";
