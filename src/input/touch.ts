@@ -16,7 +16,7 @@ document.addEventListener(
 	{ passive: false },
 );
 
-const DEBUG_TOUCH_CONTROLLER: boolean = import.meta.env.DEV && false;
+const DEBUG_TOUCH_CONTROLLER: boolean = import.meta.env.DEV && true;
 
 type PointerBinding = {
 	action: Action;
@@ -270,9 +270,11 @@ export function initVirtualGamepad() {
 	y.style.cssText += " right: 31%; top: 38%;";
 
 	const start = makeButton("start");
-	start.style.cssText += " right: 34.75%; top: 72.25%; width: 10%;";
+	start.style.cssText +=
+		" right: 33.75%; top: 72.25%; width: 12%; aspect-ratio: 1 / 1.5; border-radius: 1em;";
 	const select = makeButton("select");
-	select.style.cssText += " left: 34.75%; top: 72.25%; width: 10%;";
+	select.style.cssText +=
+		" left: 33.75%; top: 72.25%; width: 12%; aspect-ratio: 1 / 1.5; border-radius: 1em;";
 
 	const l = makeButton("l");
 	l.style.cssText +=
