@@ -17,7 +17,9 @@ import {
 } from "../config";
 import {
 	activeActions,
+	allActions,
 	type Direction,
+	directions,
 	movementIntent,
 	setMovementIntent,
 } from "../input/input";
@@ -30,7 +32,11 @@ const WORLD_WIDTH_TILES = world[0]?.length ?? 0;
 const WORLD_HEIGHT_TILES = world.length;
 
 export function returnToOverworld() {
-	activeActions.delete("start");
+	allActions
+		.filter((e) => !directions.some((d) => d === e))
+		.forEach((e) => {
+			activeActions.delete(e);
+		});
 
 	laptopState.show = false;
 

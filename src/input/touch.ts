@@ -1,5 +1,3 @@
-// src/input/virtualGamepad.ts
-
 import { haptic } from "./haptic";
 import { type Action, activeActions } from "./input";
 
@@ -47,6 +45,19 @@ function makeButton(action: Action): HTMLButtonElement {
 	// Prevent scrolling / text selection
 	b.style.touchAction = "none";
 
+	/**
+	 *
+	 * This:
+	 *
+	 * -webkit-touch-callout: none;
+	 * -webkit-user-select: none;
+	 * user-select: none;
+	 */
+
+	if ("webkitTouchCallout" in b.style) b.style.webkitTouchCallout = "none";
+	b.style.webkitUserSelect = "none";
+	b.style.userSelect = "none";
+
 	b.addEventListener("pointerdown", (e) => {
 		(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
 		e.preventDefault();
@@ -61,6 +72,39 @@ function makeButton(action: Action): HTMLButtonElement {
 	b.addEventListener("pointerup", up);
 	b.addEventListener("pointercancel", up);
 	b.addEventListener("pointerleave", up);
+
+	b.addEventListener(
+		"touchstart",
+		(e) => {
+			e.returnValue = false;
+			e.preventDefault();
+		},
+		{ passive: false },
+	);
+	b.addEventListener(
+		"touchend",
+		(e) => {
+			e.returnValue = false;
+			e.preventDefault();
+		},
+		{ passive: false },
+	);
+	b.addEventListener(
+		"touchcancel",
+		(e) => {
+			e.returnValue = false;
+			e.preventDefault();
+		},
+		{ passive: false },
+	);
+	b.addEventListener(
+		"touchmove",
+		(e) => {
+			e.preventDefault();
+			e.returnValue = false;
+		},
+		{ passive: false },
+	);
 
 	controller.appendChild(b);
 

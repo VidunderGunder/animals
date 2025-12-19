@@ -64,7 +64,7 @@ export function initializeMovesState() {
 }
 
 function update(dt: number) {
-	if (activeActions.has("start")) {
+	if (activeActions.has("start") || activeActions.has("b")) {
 		returnToOverworld();
 		return;
 	}
