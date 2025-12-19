@@ -1,5 +1,44 @@
 const audioCtx = new AudioContext();
 
+// bcdfghjklmnpqrstvwxyz
+const consonants = [
+	"b",
+	"c",
+	"d",
+	"f",
+	"g",
+	"h",
+	"j",
+	"k",
+	"l",
+	"m",
+	"n",
+	"p",
+	"q",
+	"r",
+	"s",
+	"t",
+	"v",
+	"w",
+	"x",
+	"y",
+	"z",
+] as const;
+type Consonant = (typeof consonants)[number];
+
+function isConsonant(char: string): char is Consonant {
+	return consonants.some((c) => c === char);
+}
+
+function isWordOfConsonantsOnly(word: string) {
+	for (let i = 0; i < word.length; i++) {
+		const char = word[i];
+		if (!char) continue;
+		if (!isConsonant(char)) return false;
+	}
+	return true;
+}
+
 const vowels = ["a", "e", "i", "o", "u"] as const;
 type Vowel = (typeof vowels)[number];
 
@@ -8,15 +47,14 @@ function isVowel(char: string): char is Vowel {
 }
 
 type SpeechOptions = {
-	pitch?: number; // 0.5 (deep) to 2.0 (high)
-	tempo?: number; // 0.5 (slow) to 2.0 (fast)
-	seed?: number; // optional deterministic randomness
-	intensity?: number; // 0..1 (how animated)
+	pitch?: number;
+	tempo?: number;
+	intensity?: number;
 };
 
 const defaultOptions = {
 	pitch: 1,
-	tempo: 0.6,
+	tempo: 1,
 	intensity: 1,
 } as const satisfies SpeechOptions;
 
@@ -49,18 +87,37 @@ const SOFT_CLIP_CURVE = makeSoftClipCurve(1);
 // 0.5s shared noise buffer (we slice it by setting playbackRate + stop time)
 const NOISE_BUFFER = makeNoiseBuffer(audioCtx, 0.5);
 
-export function speak(word: string, options: SpeechOptions = defaultOptions) {
+export function speak(
+	sentence: string,
+	options: SpeechOptions = defaultOptions,
+) {
+	// Replace consonant-only words with "i" to make them more vocalic, e.g. "ttttkkkppp" -> "i"
+	// Remove any symbols or numbers
+	const vocalWords = sentence
+		.trim()
+		.split(" ")
+		.map((word) => {
+			const letters = word.toLowerCase().replace(/[^a-zA-Z]/g, "");
+			if (isWordOfConsonantsOnly(letters)) return "i";
+			return letters;
+		})
+		.join(" ");
+
 	if (audioCtx.state === "suspended") void audioCtx.resume();
 
-	const tempo = options.tempo ?? defaultOptions.tempo;
+	const tempoUser = options.tempo ?? defaultOptions.tempo;
+	const tempo = tempoUser * 0.65;
 
 	const intensityUser = options.intensity ?? defaultOptions.intensity;
-	const intensityInternal = intensityUser * 0.5;
+	const intensity = intensityUser * 0.2;
+
+	const pitchUser = options.pitch ?? defaultOptions.pitch;
+	const pitch = pitchUser * 1.1;
 
 	const now = audioCtx.currentTime;
 	let t = now + 0.01;
 
-	const text = word.toLowerCase();
+	const text = vocalWords.toLowerCase();
 
 	// overlap amount: higher tempo => slightly more overlap
 	const overlap = 0.035 / tempo;
@@ -69,7 +126,7 @@ export function speak(word: string, options: SpeechOptions = defaultOptions) {
 	const utteranceBus = audioCtx.createGain();
 
 	// Make loud intensities quieter, but keep intensity=1 unchanged
-	const loudnessGain = intensityToGain(intensityInternal);
+	const loudnessGain = intensityToGain(intensity);
 
 	// Small safety trim so intensity spikes don't jump your ears even if source waveshape clips
 	const safetyTrim = 0.95;
@@ -81,7 +138,7 @@ export function speak(word: string, options: SpeechOptions = defaultOptions) {
 
 	// ---- Compressor automation for this utterance ----
 	const { threshold: compThresh, ratio: compRatio } =
-		intensityToCompressor(intensityInternal);
+		intensityToCompressor(intensity);
 
 	// Save current "defaults" (what you set at initialization)
 	const defaultThresh = -20;
@@ -98,7 +155,9 @@ export function speak(word: string, options: SpeechOptions = defaultOptions) {
 	// ---- Synthesis scheduling ----
 	const speechOptionsInternal: SpeechOptions = {
 		...options,
-		intensity: intensityInternal,
+		tempo,
+		intensity,
+		pitch,
 	};
 
 	for (let i = 0; i < text.length; i++) {
@@ -123,12 +182,7 @@ export function speak(word: string, options: SpeechOptions = defaultOptions) {
 		if (isVowel(ch)) {
 			const dur = playVowel(ch, t, speechOptionsInternal, utteranceBus);
 			t += Math.max(0.02 / tempo, dur - overlap);
-			continue;
 		}
-
-		// consonant as “melt” transition
-		const dur = playConsonant(ch, t, next, speechOptionsInternal, utteranceBus);
-		t += Math.max(0.015 / tempo, dur - overlap * 0.75);
 	}
 
 	// ---- Cleanup: restore compressor + disconnect bus after it’s done ----
@@ -149,176 +203,8 @@ export function speak(word: string, options: SpeechOptions = defaultOptions) {
 	setTimeout(dc, ms);
 }
 
-function playConsonant(
-	c: string,
-	time: number,
-	next: string | undefined,
-	options: SpeechOptions = defaultOptions,
-	bus?: AudioNode,
-) {
-	const pitch = options.pitch ?? defaultOptions.pitch;
-	const tempo = options.tempo ?? defaultOptions.tempo;
-
-	// classify (keep it simple)
-	const isFric = "sfxzhv".includes(c) || c === "h";
-	const isNasal = "mn".includes(c);
-	const isLiquid = "lrwy".includes(c);
-	const isPlosive = "ptkbdg".includes(c);
-
-	// consonants should be short and soft; no percussive envelopes
-	const dur =
-		(isPlosive
-			? 0.028
-			: isFric
-				? 0.05
-				: isNasal
-					? 0.055
-					: isLiquid
-						? 0.045
-						: 0.035) / tempo;
-
-	const attack = 0.006 / tempo;
-	const release = 0.04 / tempo;
-
-	// pick a “target mouth shape”
-	const targetFormant =
-		next && isVowel(next)
-			? VOWEL_FORMANTS[next].freq
-			: isFric
-				? 3200
-				: isNasal
-					? 450
-					: isLiquid
-						? 900
-						: 1400;
-
-	const startFormant = isFric
-		? targetFormant * 0.85
-		: isNasal
-			? targetFormant * 1.1
-			: isLiquid
-				? targetFormant * 0.95
-				: isPlosive
-					? targetFormant * 0.9
-					: targetFormant * 0.98;
-
-	// ----- nodes -----
-	const out = audioCtx.createGain();
-	out.gain.value = 0;
-
-	const formant = audioCtx.createBiquadFilter();
-	formant.type = "bandpass";
-	formant.Q.value = isFric ? 7 : isNasal ? 5 : isLiquid ? 6 : 6;
-
-	const lp = audioCtx.createBiquadFilter();
-	lp.type = "lowpass";
-	lp.frequency.value = isFric ? 7000 : 5200;
-
-	const shaper = audioCtx.createWaveShaper();
-	shaper.curve = makeSoftClipCurve(0.8);
-	shaper.oversample = "2x";
-
-	// voiced body
-	const osc = audioCtx.createOscillator();
-	osc.type = isNasal ? "sine" : "triangle";
-
-	const base = (170 + Math.random() * 70) * pitch;
-	const f0 = isLiquid
-		? base * 1.05
-		: isNasal
-			? base * 0.85
-			: isPlosive
-				? base * 0.95
-				: base;
-
-	osc.frequency.setValueAtTime(f0 * 0.98, time);
-	osc.frequency.exponentialRampToValueAtTime(f0 * 1.01, time + dur * 0.6);
-
-	// subtle hiss layer for fricatives — NOT bursty
-	let noise: AudioBufferSourceNode | null = null;
-	let noiseGain: GainNode | null = null;
-	let noiseBP: BiquadFilterNode | null = null;
-
-	if (isFric) {
-		noise = audioCtx.createBufferSource();
-		noise.buffer = makeNoiseBuffer(audioCtx, dur + 0.1 / tempo);
-		noise.loop = false;
-
-		noiseGain = audioCtx.createGain();
-		noiseGain.gain.value = 0;
-
-		noiseBP = audioCtx.createBiquadFilter();
-		noiseBP.type = "bandpass";
-		noiseBP.Q.value = c === "h" ? 1.2 : 3.5;
-		noiseBP.frequency.value =
-			c === "f" || c === "v" ? 2200 : c === "h" ? 1200 : 4200;
-
-		const nPeak = (c === "h" ? 0.018 : 0.032) * (0.8 + Math.random() * 0.5);
-		noiseGain.gain.setValueAtTime(0.0001, time);
-		noiseGain.gain.exponentialRampToValueAtTime(nPeak, time + attack);
-		noiseGain.gain.exponentialRampToValueAtTime(0.0001, time + dur + release);
-
-		noise.connect(noiseBP).connect(noiseGain).connect(formant);
-	}
-
-	// ----- connect graph -----
-	const dest = bus ?? hp; // default to your shared chain
-	osc.connect(formant).connect(lp).connect(shaper).connect(out).connect(dest);
-
-	// ----- envelope -----
-	const peak =
-		(isPlosive
-			? 0.055
-			: isFric
-				? 0.07
-				: isNasal
-					? 0.065
-					: isLiquid
-						? 0.06
-						: 0.058) *
-		(0.85 + Math.random() * 0.4);
-
-	out.gain.setValueAtTime(0.0001, time);
-	out.gain.exponentialRampToValueAtTime(peak, time + attack);
-	out.gain.exponentialRampToValueAtTime(peak * 0.55, time + attack + dur * 0.6);
-	out.gain.exponentialRampToValueAtTime(0.0001, time + dur + release);
-
-	// ----- mouth motion -----
-	formant.frequency.setValueAtTime(startFormant, time);
-	formant.frequency.exponentialRampToValueAtTime(
-		Math.max(60, targetFormant),
-		time + dur * 0.85,
-	);
-
-	if (isPlosive) {
-		out.gain.exponentialRampToValueAtTime(peak * 0.45, time + dur * 0.25);
-		out.gain.exponentialRampToValueAtTime(peak, time + dur * 0.5);
-	}
-
-	// schedule
-	const stopAt = time + dur + release + 0.03;
-	osc.start(time);
-	osc.stop(stopAt);
-
-	if (noise) {
-		noise.start(time);
-		noise.stop(stopAt);
-	}
-
-	osc.onended = () => {
-		try {
-			osc.disconnect();
-			formant.disconnect();
-			lp.disconnect();
-			shaper.disconnect();
-			out.disconnect();
-			noise?.disconnect();
-			noiseBP?.disconnect();
-			noiseGain?.disconnect();
-		} catch {}
-	};
-
-	return dur;
+function isConstantsOnly(str: string) {
+	return /^[bcdfghjklmnpqrstvwxyz]+$/.test(str);
 }
 
 function playVowel(
