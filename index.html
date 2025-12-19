@@ -7,7 +7,7 @@
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
     <title>Animals</title>
-    <link rel="stylesheet" href="reset.css" />
+    <link rel="stylesheet" href="src/reset.css" />
     <style>
       @font-face {
         font-family: "Tiny5";
@@ -18,7 +18,9 @@
       body {
         margin: 0;
         height: 100%;
+        min-height: 100%;
         overflow: hidden;
+        /* background-color: #181b1f; */
       }
 
       html,
@@ -31,9 +33,10 @@
 
       body {
         display: flex;
-        justify-content: center;
+        flex-direction: column;
+        justify-content: start;
         align-items: center;
-        background: #101010;
+        background: #181b1f;
 
         touch-action: none;
       }
@@ -57,10 +60,25 @@
         /* Hide images used as spritesheets */
         display: none;
       }
+
+      img#controller-portrait {
+        display: block;
+
+        right: 0;
+        width: 100dvw;
+        max-width: 100%;
+        pointer-events: none;
+        user-select: none;
+      }
     </style>
     <script src="/src/main.ts" type="module"></script>
   </head>
   <body>
     <canvas id="canvas"></canvas>
+    <img
+      id="controller-portrait"
+      src="/controller-portrait.png"
+      alt="controller"
+    />
   </body>
 </html>
