@@ -16,7 +16,7 @@ document.addEventListener(
 	{ passive: false },
 );
 
-const DEBUG_TOUCH_CONTROLLER: boolean = import.meta.env.DEV && true;
+const DEBUG_TOUCH_CONTROLLER: boolean = import.meta.env.DEV && false;
 
 type PointerBinding = {
 	action: Action;
