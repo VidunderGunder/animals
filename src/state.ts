@@ -51,8 +51,8 @@ export type Player = {
 	paused: boolean;
 };
 
-export const startTileX = 8;
-export const startTileY = 8;
+export const startTileX = 10;
+export const startTileY = 10;
 
 export const player: Player = {
 	tileX: startTileX,
