@@ -14,8 +14,7 @@ import {
 	GAME_WIDTH,
 	TILE_SIZE,
 } from "../../config";
-import { activeActions, type Direction, directions } from "../../input/input";
-import { returnToOverworld } from "../overworld";
+import { type Direction, directions } from "../../input/input";
 import { laptopHeight, laptopWidth } from "./laptop";
 
 export type EntitiesState = {
@@ -64,10 +63,6 @@ export function initializeMovesState() {
 }
 
 function update(dt: number) {
-	if (activeActions.has("start") || activeActions.has("b")) {
-		returnToOverworld();
-		return;
-	}
 	movesState.entities.forEach((entity) => {
 		const character = characters[entity.personId];
 		let animation = character.animations[entity.animationCurrent];

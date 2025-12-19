@@ -172,7 +172,7 @@ function updatePlayer(dt: number) {
 				const isOutOfBounds =
 					outOfBoundsX ||
 					outOfBoundsY ||
-					world[targetTileY]?.[targetTileX] === -1;
+					(world[targetTileY]?.[targetTileX] ?? -1) < 0;
 				const isCollisionTile = tileMaps.grass.colisionIndices.includes(
 					world[targetTileY]?.[targetTileX] ?? -1,
 				);

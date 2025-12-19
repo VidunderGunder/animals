@@ -3,6 +3,7 @@ import { ctx } from "../../canvas";
 import { GAME_HEIGHT, GAME_WIDTH } from "../../config";
 import { activeActions } from "../../input/input";
 import { player } from "../../state";
+import { returnToOverworld } from "../overworld";
 import { biodex } from "./biodex";
 import { moves } from "./moves";
 
@@ -12,7 +13,7 @@ export function openLaptop() {
 	laptopState.show = true;
 }
 
-const laptopModes = ["biodex", "moves", "nothing"] as const;
+const laptopModes = ["biodex", "moves"] as const;
 type LaptopMode = (typeof laptopModes)[number];
 
 export type LaptopState = {
@@ -62,6 +63,10 @@ export function laptop(dt: number) {
 	if (activeActions.has("select")) {
 		activeActions.delete("select");
 		nextLaptopMode();
+	}
+
+	if (activeActions.has("start") || activeActions.has("b")) {
+		returnToOverworld();
 	}
 
 	if (laptopState.mode === "biodex") biodex(dt);

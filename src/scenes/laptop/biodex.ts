@@ -9,9 +9,8 @@ import {
 } from "../../characters/animals";
 import type { CharacterAnimationID } from "../../characters/characters";
 import { GAME_HEIGHT, GAME_WIDTH, TILE_SIZE } from "../../config";
-import { activeActions, type Direction, directions } from "../../input/input";
+import { type Direction, directions } from "../../input/input";
 import { animalAnimations, animalDirectionRow } from "../../state";
-import { returnToOverworld } from "../overworld";
 import { laptopHeight, laptopWidth } from "./laptop";
 
 export type BioDexState = {
@@ -53,10 +52,6 @@ function updateAnimation(dt: number) {
 }
 
 function update(dt: number) {
-	if (activeActions.has("start") || activeActions.has("b")) {
-		returnToOverworld();
-		return;
-	}
 	updateAnimation(dt);
 }
 

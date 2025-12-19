@@ -1,6 +1,8 @@
 import { haptic } from "./haptic";
 import { type Action, activeActions, type Direction } from "./input";
 
+const DEBUG_TOUCH_CONTROLLER: boolean = import.meta.env.DEV && true;
+
 let lastTouchEnd = 0;
 
 // iOS double-tap prevention hack
@@ -15,8 +17,6 @@ document.addEventListener(
 	},
 	{ passive: false },
 );
-
-const DEBUG_TOUCH_CONTROLLER: boolean = import.meta.env.DEV && false;
 
 type PointerBinding = {
 	action: Action;
@@ -271,10 +271,10 @@ export function initVirtualGamepad() {
 
 	const start = makeButton("start");
 	start.style.cssText +=
-		" right: 33.75%; top: 72.25%; width: 12%; aspect-ratio: 1 / 1.5; border-radius: 1em;";
+		" right: 34.5%; top: 6%; width: 12%; aspect-ratio: 1 / 1.5; border-radius: 1em;";
 	const select = makeButton("select");
 	select.style.cssText +=
-		" left: 33.75%; top: 72.25%; width: 12%; aspect-ratio: 1 / 1.5; border-radius: 1em;";
+		" left: 34.5%; top: 6%; width: 12%; aspect-ratio: 1 / 1.5; border-radius: 1em;";
 
 	const l = makeButton("l");
 	l.style.cssText +=
