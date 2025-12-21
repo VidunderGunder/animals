@@ -56,7 +56,14 @@ const unlockEvents = [
 	"pointerup",
 	"mousedown",
 	"keydown",
-] as const;
+	"click",
+	"dblclick",
+	"contextmenu",
+	"wheel",
+	"focus",
+	"focusin",
+	"focusout",
+] as const satisfies readonly (keyof WindowEventMap)[];
 
 function unlockHandler() {
 	void unlockAudio().catch(() => {});
@@ -65,9 +72,11 @@ function unlockHandler() {
 	});
 }
 
-unlockEvents.forEach((eventName) => {
-	window.addEventListener(eventName, unlockHandler, { passive: true });
-});
+export function initializeAudio() {
+	unlockEvents.forEach((eventName) => {
+		window.addEventListener(eventName, unlockHandler, { passive: true });
+	});
+}
 
 export function setHapticsVolume(v: number) {
 	const { hapticsGain } = getAudio();
