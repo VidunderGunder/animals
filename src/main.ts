@@ -7,5 +7,11 @@ import { initVirtualGamepad } from "./input/touch";
 
 initKeyboard();
 initVirtualGamepad();
-initializeAudio();
+
+document.addEventListener("visibilitychange", () => {
+	if (!document.hidden) {
+		initializeAudio();
+	}
+});
+
 startGame();
