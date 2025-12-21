@@ -1,7 +1,7 @@
-import { haptic } from "./haptic";
+import { hapticAudio, hapticHack } from "./haptic";
 import { type Action, activeActions, type Direction } from "./input";
 
-const DEBUG_TOUCH_CONTROLLER: boolean = import.meta.env.DEV && false;
+const DEBUG_TOUCH_CONTROLLER: boolean = import.meta.env.DEV && true;
 
 let lastTouchEnd = 0;
 
@@ -18,9 +18,32 @@ document.addEventListener(
 	{ passive: false },
 );
 
+const groups = ["dpad", "abxy"] as const;
+type Group = (typeof groups)[number];
+
+const groupActions = {
+	dpad: {
+		left: "left",
+		right: "right",
+		up: "up",
+		down: "down",
+	},
+	abxy: {
+		left: "y",
+		right: "a",
+		up: "x",
+		down: "b",
+	},
+} as const satisfies Record<Group, Record<Direction, Action>>;
+
+function isGroup(str: unknown): str is Group {
+	if (typeof str !== "string") return false;
+	return groups.some((g) => g === str);
+}
+
 type PointerBinding = {
 	action: Action;
-	group?: "dpad";
+	group?: Group;
 };
 
 const pointers = new Map<number, PointerBinding>();
@@ -32,7 +55,7 @@ function press(
 ) {
 	pointers.set(pointerId, { action, group });
 	activeActions.add(action);
-	haptic();
+	hapticAudio();
 }
 
 function release(pointerId: number) {
@@ -54,7 +77,7 @@ function switchAction(pointerId: number, newAction: Action) {
 	activeActions.delete(binding.action);
 	binding.action = newAction;
 	activeActions.add(newAction);
-	haptic();
+	hapticAudio();
 }
 
 // biome-ignore lint/style/noNonNullAssertion: <intentional>
@@ -68,11 +91,17 @@ function pointInEl(el: HTMLElement, x: number, y: number): boolean {
 	return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
 }
 
-function getDpadDirFromPoint(
+function getActionFromPoint(
 	area: HTMLElement,
+	actions: {
+		left: Action;
+		right: Action;
+		up: Action;
+		down: Action;
+	},
 	x: number,
 	y: number,
-): Direction | null {
+): Action | null {
 	const r = area.getBoundingClientRect();
 	const cx = r.left + r.width / 2;
 	const cy = r.top + r.height / 2;
@@ -85,33 +114,39 @@ function getDpadDirFromPoint(
 	const mag = Math.hypot(nx, ny);
 	if (mag < 0.18) return null;
 
-	if (Math.abs(nx) > Math.abs(ny)) return nx < 0 ? "left" : "right";
-	return ny < 0 ? "up" : "down";
+	if (Math.abs(nx) > Math.abs(ny)) return nx < 0 ? actions.left : actions.right;
+	return ny < 0 ? actions.up : actions.down;
 }
 
-function tryStartDpadFromPoint(
+function tryStartGroupFromPoint(
+	group: Group,
 	pointerId: number,
 	x: number,
 	y: number,
 ): boolean {
 	if (pointers.has(pointerId)) return false;
 
-	const area = groupAreas.get("dpad");
+	const area = groupAreas.get(group);
 	if (!area) return false;
 	if (!pointInEl(area, x, y)) return false;
 
-	const dir = getDpadDirFromPoint(area, x, y);
-	if (!dir) return true;
+	const action = getActionFromPoint(area, groupActions[group], x, y);
+	if (!action) return true;
 
-	press(pointerId, dir, "dpad");
+	press(pointerId, action, group);
 	return true;
 }
 
-function updateDpadFromPoint(pointerId: number, x: number, y: number) {
+function updateGroupFromPoint(
+	group: Group,
+	pointerId: number,
+	x: number,
+	y: number,
+) {
 	const binding = pointers.get(pointerId);
-	if (!binding || binding.group !== "dpad") return;
+	if (!binding || binding.group !== group) return;
 
-	const area = groupAreas.get("dpad");
+	const area = groupAreas.get(group);
 	if (!area) return;
 
 	if (!pointInEl(area, x, y)) {
@@ -119,8 +154,8 @@ function updateDpadFromPoint(pointerId: number, x: number, y: number) {
 		return;
 	}
 
-	const dir = getDpadDirFromPoint(area, x, y);
-	if (dir) switchAction(pointerId, dir);
+	const action = getActionFromPoint(area, groupActions[group], x, y);
+	if (action) switchAction(pointerId, action);
 }
 
 function makeButton(
@@ -183,18 +218,19 @@ function makeButton(
 		},
 	);
 
-	(["touchstart", "touchend", "touchcancel", "touchmove"] as const).forEach(
-		(eventName) => {
-			b.addEventListener(
-				eventName,
-				(e) => {
-					e.returnValue = false;
-					e.preventDefault();
-				},
-				{ passive: false },
-			);
-		},
-	);
+	(
+		["onclick", "touchstart", "touchend", "touchcancel", "touchmove"] as const
+	).forEach((eventName) => {
+		b.addEventListener(
+			eventName,
+			(e) => {
+				e.returnValue = false;
+				hapticHack();
+				e.preventDefault();
+			},
+			{ passive: false },
+		);
+	});
 
 	controller.appendChild(b);
 	return b;
@@ -222,52 +258,68 @@ export function initVirtualGamepad() {
 	controller.appendChild(dpadArea);
 	groupAreas.set("dpad", dpadArea);
 
-	dpadArea.addEventListener("pointerdown", (e) => {
-		(dpadArea as HTMLElement).setPointerCapture(e.pointerId);
-		e.preventDefault();
-		tryStartDpadFromPoint(e.pointerId, e.clientX, e.clientY);
-	});
+	const abxyArea = document.createElement("div");
+	abxyArea.style.cssText = [
+		"position: absolute;",
+		"right: 1.5%;",
+		"top: 21%;",
+		"width: 45.5%;",
+		"height: 52%;",
+		"pointer-events: auto;",
+		"touch-action: none;",
+		"border-radius: 40%;",
+		DEBUG_TOUCH_CONTROLLER ? "background: rgba(0, 255, 0, 0.10);" : "",
+	].join(" ");
+	controller.appendChild(abxyArea);
+	groupAreas.set("abxy", abxyArea);
 
-	dpadArea.addEventListener("pointermove", (e) => {
-		e.preventDefault();
+	const areas = {
+		dpad: dpadArea,
+		abxy: abxyArea,
+	} as const satisfies Record<Group, HTMLElement>;
 
-		updateDpadFromPoint(e.pointerId, e.clientX, e.clientY);
+	Object.entries(areas).forEach(([group, area]) => {
+		if (!isGroup(group)) return;
 
-		if (!pointers.has(e.pointerId)) {
+		area.addEventListener("pointerdown", (e) => {
+			(area as HTMLElement).setPointerCapture(e.pointerId);
+			e.preventDefault();
+			tryStartGroupFromPoint(group, e.pointerId, e.clientX, e.clientY);
+		});
+
+		area.addEventListener("pointermove", (e) => {
+			e.preventDefault();
+
+			updateGroupFromPoint(group, e.pointerId, e.clientX, e.clientY);
+
+			if (!pointers.has(e.pointerId)) {
+				const el = document.elementFromPoint(e.clientX, e.clientY);
+				const onButton = !!el?.closest?.("button[data-action]");
+				if (!onButton)
+					tryStartGroupFromPoint(group, e.pointerId, e.clientX, e.clientY);
+			}
+		});
+
+		(["pointerup", "pointercancel"] as const).forEach((name) => {
+			area.addEventListener(name, (e) => {
+				e.preventDefault();
+				release(e.pointerId);
+			});
+		});
+
+		controller.addEventListener("pointermove", (e) => {
+			if (pointers.has(e.pointerId)) return;
+
 			const el = document.elementFromPoint(e.clientX, e.clientY);
 			const onButton = !!el?.closest?.("button[data-action]");
-			if (!onButton) tryStartDpadFromPoint(e.pointerId, e.clientX, e.clientY);
-		}
-	});
+			if (onButton) return;
 
-	(["pointerup", "pointercancel"] as const).forEach((name) => {
-		dpadArea.addEventListener(name, (e) => {
-			e.preventDefault();
-			release(e.pointerId);
+			if (tryStartGroupFromPoint(group, e.pointerId, e.clientX, e.clientY)) {
+				area.setPointerCapture(e.pointerId);
+				e.preventDefault();
+			}
 		});
 	});
-
-	controller.addEventListener("pointermove", (e) => {
-		if (pointers.has(e.pointerId)) return;
-
-		const el = document.elementFromPoint(e.clientX, e.clientY);
-		const onButton = !!el?.closest?.("button[data-action]");
-		if (onButton) return;
-
-		if (tryStartDpadFromPoint(e.pointerId, e.clientX, e.clientY)) {
-			dpadArea.setPointerCapture(e.pointerId);
-			e.preventDefault();
-		}
-	});
-
-	const a = makeButton("a");
-	a.style.cssText += " right: 3%; top: 38%;";
-	const b = makeButton("b");
-	b.style.cssText += " right: 17%; top: 54%;";
-	const x = makeButton("x");
-	x.style.cssText += " right: 17%; top: 22%;";
-	const y = makeButton("y");
-	y.style.cssText += " right: 31%; top: 38%;";
 
 	const start = makeButton("start");
 	start.style.cssText +=
