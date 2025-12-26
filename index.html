@@ -49,8 +49,8 @@
         image-rendering: crisp-edges;
 
         /* Keep aspect original ratio and fit window */
-        width: min(100dvw, 100vh * (4 / 3));
-        height: min(100dvh, 100vw * (3 / 4));
+        /* width: min(100dvw, 100vh * (16 / 9));
+        height: min(100dvh, 100vw * (9 / 16)); */
         max-width: 100%;
         max-height: 100%;
 
@@ -75,9 +75,9 @@
 
       /* Corresponds to 3:2 */
       /* @media (max-aspect-ratio: 2/2.9) { */
-      /* Corresponds 4:3 */
+      /* Corresponds to 4:3 */
       @media (max-aspect-ratio: 2/3) {
-        /* Corresponds 8:7 */
+        /* Corresponds to 8:7 */
         /* @media (max-aspect-ratio: 2/3.1) { */
 
         #canvas {
@@ -110,6 +110,7 @@
         }
       }
     </style>
+    <style id="canvas-css"></style>
     <script src="/src/main.ts" type="module"></script>
   </head>
   <body>
@@ -188,6 +189,13 @@
         "
         src="/controller-portrait-dark.png"
         alt="controller"
+      />
+    </div>
+    <div style="display: hidden">
+      <img
+        id="player-sprite-sheet"
+        src="/characters/player-simple.png"
+        alt="player sprite sheet"
       />
     </div>
   </body>

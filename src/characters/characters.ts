@@ -132,7 +132,8 @@ export const rideFastDurationDefault = 700;
 export const jumpDurationDefault = 140;
 export const hopDurationDefault = 60;
 
-const playerSpriteSheet = createImageElement("/characters/player.png");
+// const playerSpriteSheet = createImageElement("/characters/player.png");
+const playerSpriteSheet = createImageElement("/characters/player-simple.png");
 const skateboardSpriteSheet = createImageElement("/characters/skateboard.png");
 
 function layerFactory(sheet: HTMLImageElement) {
