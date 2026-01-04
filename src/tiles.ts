@@ -1,6 +1,6 @@
-import { createImageElement } from "./assets";
-import { ctx } from "./canvas";
+import { createImageElement } from "./assets/image";
 import { TILE_SIZE } from "./config";
+import { ctx } from "./gfx/canvas";
 
 export type TileSet = "grass";
 

@@ -1,5 +1,5 @@
 import { FPS_LIMIT } from "./config";
-import { laptop, openLaptop } from "./scenes/laptop/laptop";
+import { laptop } from "./scenes/laptop/laptop";
 import { overworld } from "./scenes/overworld";
 
 let previousFrameTimestamp = 0;
@@ -30,6 +30,7 @@ function loop(timestamp: number) {
 
 	previousFrameTimestamp = timestamp;
 
+	// overworldLegacy(dt);
 	overworld(dt);
 	laptop(dt);
 
@@ -40,5 +41,10 @@ export function startGame() {
 	if (rafId !== null) return;
 	previousFrameTimestamp = 0;
 	rafId = requestAnimationFrame(loop);
-	openLaptop();
+
+	// speak("Hey there welcome to the game", {
+	// 	intensity: 1,
+	// 	tempo: 1,
+	// 	pitch: 1,
+	// });
 }

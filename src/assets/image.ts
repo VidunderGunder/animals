@@ -7,14 +7,14 @@ const availableImages = Object.keys(
 
 const missingPath = "/animals/missing.png";
 if (!availableImages.includes(missingPath)) {
-	console.warn(`Missing image not found: ${missingPath}`);
+	console.warn(`Missing image (placeholder) not found: ${missingPath}`);
 }
-const missingAnimalImageElement = new Image();
-missingAnimalImageElement.src = "/animals/missing.png";
+const missingImageElement = new Image();
+missingImageElement.src = missingPath;
 
 export function createImageElement(
 	src: string,
-	fallback: HTMLImageElement = missingAnimalImageElement,
+	fallback: HTMLImageElement = missingImageElement,
 ): HTMLImageElement {
 	const img = new Image();
 	if (!availableImages.includes(src)) {

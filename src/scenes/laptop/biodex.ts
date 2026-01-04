@@ -1,6 +1,5 @@
 // import { animalIds, animals, stageIds } from "../../animals";
 
-import { ctx } from "../../canvas";
 import {
 	type AnimalAnimationKey,
 	animalKeys,
@@ -9,6 +8,7 @@ import {
 } from "../../characters/animals";
 import type { CharacterAnimationID } from "../../characters/characters";
 import { GAME_HEIGHT, GAME_WIDTH, TILE_SIZE } from "../../config";
+import { ctx } from "../../gfx/canvas";
 import { type Direction, directions } from "../../input/input";
 import { animalAnimations, animalDirectionRow } from "../../state";
 import { laptopHeight, laptopWidth } from "./laptop";

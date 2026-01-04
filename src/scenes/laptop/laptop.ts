@@ -1,9 +1,9 @@
-import { createImageElement } from "../../assets";
-import { ctx } from "../../canvas";
+import { createImageElement } from "../../assets/image";
 import { GAME_HEIGHT, GAME_WIDTH } from "../../config";
+import { ctx } from "../../gfx/canvas";
 import { activeActions } from "../../input/input";
 import { player } from "../../state";
-import { returnToOverworld } from "../overworld";
+import { returnToOverworld } from "../overworld-legacy";
 import { biodex } from "./biodex";
 import { moves } from "./moves";
 

@@ -1,4 +1,4 @@
-import { ctx } from "../canvas";
+import { createImageElement } from "../assets/image";
 import {
 	type CharacterAnimationID,
 	renderFrameLayer,
@@ -7,7 +7,6 @@ import {
 	ASPECT_RATIO_X,
 	ASPECT_RATIO_Y,
 	DEBUG_OVERLAY,
-	DEBUG_TILES,
 	DEFAULT_MOVEMENT,
 	GAME_HEIGHT,
 	GAME_WIDTH,
@@ -15,6 +14,7 @@ import {
 	SCALE,
 	TILE_SIZE,
 } from "../config";
+import { clear, ctx } from "../gfx/canvas";
 import {
 	activeActions,
 	allActions,
@@ -24,12 +24,7 @@ import {
 	setMovementIntent,
 } from "../input/input";
 import { player, playerAnimations } from "../state";
-import { drawTile, tileMaps } from "../tiles";
-import { world } from "../world";
 import { laptopState, openLaptop } from "./laptop/laptop";
-
-const WORLD_WIDTH_TILES = world[0]?.length ?? 0;
-const WORLD_HEIGHT_TILES = world.length;
 
 export function returnToOverworld() {
 	allActions
@@ -77,20 +72,6 @@ function getIsMovingFaster(): boolean {
 	return DEFAULT_MOVEMENT === "run" ? !bPressed : bPressed;
 }
 
-/** Get interpolated player world position in pixels */
-function getPlayerWorldPosition() {
-	const t = player.moveProgress;
-	const interpTileX =
-		player.moveFromX + (player.moveToX - player.moveFromX) * t;
-	const interpTileY =
-		player.moveFromY + (player.moveToY - player.moveFromY) * t;
-
-	return {
-		x: interpTileX * TILE_SIZE,
-		y: interpTileY * TILE_SIZE,
-	};
-}
-
 function getPlayerAnimation(): CharacterAnimationID {
 	const isMovingFaster = getIsMovingFaster();
 	if (isMovingFaster) return "run";
@@ -131,9 +112,102 @@ function updatePlayerAnimation(dt: number) {
 	}
 }
 
+/** Get interpolated player world position in pixels */
+function getPlayerPosition() {
+	const t = player.moveProgress;
+	const interpTileX =
+		player.moveFromX + (player.moveToX - player.moveFromX) * t;
+	const interpTileY =
+		player.moveFromY + (player.moveToY - player.moveFromY) * t;
+
+	return {
+		x: interpTileX * TILE_SIZE,
+		y: interpTileY * TILE_SIZE,
+	};
+}
+
+function getVisibleTileRange(playerX: number, playerY: number) {
+	const cameraX = playerX - GAME_WIDTH / 2 + TILE_SIZE / 2;
+	const cameraY = playerY - GAME_HEIGHT / 2 + TILE_SIZE / 2;
+
+	const minTileX = Math.floor(cameraX / TILE_SIZE) - 1;
+	const minTileY = Math.floor(cameraY / TILE_SIZE) - 1;
+	const maxTileX = Math.ceil((cameraX + GAME_WIDTH) / TILE_SIZE) + 1;
+	const maxTileY = Math.ceil((cameraY + GAME_HEIGHT) / TILE_SIZE) + 1;
+
+	return {
+		minTileX,
+		minTileY,
+		maxTileX,
+		maxTileY,
+	};
+}
+
+const sublayers = ["ground", "back", "front"] as const;
+
+const worldImageLayers: {
+	z: number;
+	ground?: HTMLImageElement;
+	back?: HTMLImageElement;
+	front?: HTMLImageElement;
+}[] = [
+	{
+		z: 0,
+		ground: createImageElement("/world/start/scenery.png"),
+	},
+	{
+		z: 0,
+		ground: createImageElement("/world/start/obstacle-course/0-ground.png"),
+		back: createImageElement("/world/start/obstacle-course/0-back.png"),
+		front: createImageElement("/world/start/obstacle-course/0-front.png"),
+	},
+	{
+		z: 1,
+		ground: createImageElement("/world/start/obstacle-course/1-ground.png"),
+		back: createImageElement("/world/start/obstacle-course/1-back.png"),
+		front: createImageElement("/world/start/obstacle-course/1-front.png"),
+	},
+];
+
+let tilesYCount = 0;
+let tilesXCount = 0;
+
+function setTilesCountsIfNotSet() {
+	if (!tilesYCount || !tilesXCount) {
+		const firstImage =
+			worldImageLayers[0]?.ground ||
+			worldImageLayers[0]?.back ||
+			worldImageLayers[0]?.front;
+		if (!firstImage || !firstImage.complete || firstImage.naturalWidth === 0)
+			return;
+		tilesXCount = firstImage.naturalWidth / TILE_SIZE;
+		tilesYCount = firstImage.naturalHeight / TILE_SIZE;
+	}
+}
+
+function isWorldImagesReady() {
+	return worldImageLayers.every((layer) => {
+		const groundReady = layer.ground
+			? layer.ground.complete && layer.ground.naturalWidth > 0
+			: true;
+		const backReady = layer.back
+			? layer.back.complete && layer.back.naturalWidth > 0
+			: true;
+		const frontReady = layer.front
+			? layer.front.complete && layer.front.naturalWidth > 0
+			: true;
+		return groundReady && backReady && frontReady;
+	});
+}
+
 /** Update player and world state */
 function updatePlayer(dt: number) {
 	if (player.paused) return;
+
+	const isReady = isWorldImagesReady();
+	if (!isReady) return;
+
+	setTilesCountsIfNotSet();
 
 	if (!player.disabled && activeActions.has("start")) openLaptop();
 
@@ -165,17 +239,10 @@ function updatePlayer(dt: number) {
 				// Start moving
 				player.movingDirection = desired;
 
-				const outOfBoundsX =
-					targetTileX < 0 || targetTileX >= WORLD_WIDTH_TILES;
-				const outOfBoundsY =
-					targetTileY < 0 || targetTileY >= WORLD_HEIGHT_TILES;
-				const isOutOfBounds =
-					outOfBoundsX ||
-					outOfBoundsY ||
-					(world[targetTileY]?.[targetTileX] ?? -1) < 0;
-				const isCollisionTile = tileMaps.grass.colisionIndices.includes(
-					world[targetTileY]?.[targetTileX] ?? -1,
-				);
+				const outOfBoundsX = targetTileX < 0 || targetTileX >= tilesXCount;
+				const outOfBoundsY = targetTileY < 0 || targetTileY >= tilesYCount;
+				const isOutOfBounds = outOfBoundsX || outOfBoundsY;
+				const isCollisionTile = false; // Placeholder for collision detection
 
 				if (isOutOfBounds || isCollisionTile) return;
 
@@ -206,60 +273,111 @@ function updatePlayer(dt: number) {
 	updatePlayerAnimation(dt);
 }
 
+function update(dt: number) {
+	updatePlayer(dt);
+}
+
 function draw(dt: number) {
-	const { x: playerWorldX, y: playerWorldY } = getPlayerWorldPosition();
+	const isReady = isWorldImagesReady();
+	if (!isReady) return;
 
-	// Camera keeps player centered
-	const cameraX = playerWorldX - GAME_WIDTH / 2 + TILE_SIZE / 2;
-	const cameraY = playerWorldY - GAME_HEIGHT / 2 + TILE_SIZE / 2;
+	setTilesCountsIfNotSet();
+	clear();
 
-	// Clear screen
-	ctx.fillStyle = "#101010";
-	ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+	const { x: playerX, y: playerY } = getPlayerPosition();
 
-	// Compute visible tile range
-	const minTileX = Math.floor(cameraX / TILE_SIZE) - 1;
-	const minTileY = Math.floor(cameraY / TILE_SIZE) - 1;
-	const maxTileX = Math.ceil((cameraX + GAME_WIDTH) / TILE_SIZE) + 1;
-	const maxTileY = Math.ceil((cameraY + GAME_HEIGHT) / TILE_SIZE) + 1;
+	const cameraX = playerX - GAME_WIDTH / 2 + TILE_SIZE / 2;
+	const cameraY = playerY - GAME_HEIGHT / 2 + TILE_SIZE / 2;
 
-	const overlappingTiles: { x: number; y: number; tileIndex: number }[] = [];
+	const { minTileX, minTileY, maxTileX, maxTileY } = getVisibleTileRange(
+		playerX,
+		playerY,
+	);
 
-	// Draw tiles
-	for (let ty = minTileY; ty <= maxTileY; ty++) {
-		if (ty < 0 || ty >= WORLD_HEIGHT_TILES) continue;
+	// Clamp visible tile range to world bounds
+	const startX = Math.max(0, minTileX);
+	const startY = Math.max(0, minTileY);
+	const endX = Math.min(tilesXCount - 1, maxTileX);
+	const endY = Math.min(tilesYCount - 1, maxTileY);
 
-		for (let tx = minTileX; tx <= maxTileX; tx++) {
-			if (tx < 0 || tx >= WORLD_WIDTH_TILES) continue;
+	// Draw each layer tile-by-tile
+	for (const layer of worldImageLayers) {
+		for (let ty = startY; ty <= endY; ty++) {
+			sublayers.forEach((sublayer) => {
+				const image = layer[sublayer];
+				if (!image) return;
 
-			const tile = world[ty]?.[tx];
-			if (tile === undefined) continue;
+				const sy = ty * TILE_SIZE;
 
-			const worldX = tx * TILE_SIZE;
-			const worldY = ty * TILE_SIZE;
-			const screenX = Math.round(worldX - cameraX);
-			const screenY = Math.round(worldY - cameraY);
+				for (let tx = startX; tx <= endX; tx++) {
+					const shouldDrawPlayer =
+						sublayer === "back" &&
+						layer.z === player.z &&
+						(playerY === endY
+							? player.tileY
+							: Math.max(player.moveToY, player.tileY) === ty) &&
+						tx === endX;
 
-			if (tileMaps.grass.inFrontOfPlayerIndices.includes(tile)) {
-				overlappingTiles.push({ x: screenX, y: screenY, tileIndex: tile });
-				continue;
-			}
+					if (shouldDrawPlayer) {
+						drawPlayer();
+					}
 
-			drawTile({
-				tileset: "grass",
-				tileIndex: tile,
-				x: screenX,
-				y: screenY,
+					const sx = tx * TILE_SIZE;
+
+					// World pixel position of this tile
+					const worldPx = tx * TILE_SIZE;
+					const worldPy = ty * TILE_SIZE;
+
+					// Screen pixel position
+					const dx = Math.round(worldPx - cameraX);
+					const dy = Math.round(worldPy - cameraY);
+
+					ctx.drawImage(
+						image,
+						sx,
+						sy,
+						TILE_SIZE,
+						TILE_SIZE,
+						dx,
+						dy,
+						TILE_SIZE,
+						TILE_SIZE,
+					);
+				}
 			});
-
-			// Light grid outline for debugging tile boundaries
-			if (DEBUG_TILES) {
-				ctx.strokeStyle = "rgba(255, 50, 153, 0.34)";
-				ctx.lineWidth = 1.5;
-				ctx.strokeRect(screenX, screenY, TILE_SIZE - 1, TILE_SIZE - 1);
-			}
 		}
 	}
+
+	// Optional debug overlay (tile coords, direction, run state)
+	if (DEBUG_OVERLAY) {
+		ctx.save();
+		ctx.fillStyle = "#ffffff";
+		ctx.font = "8px Tiny5";
+		ctx.globalAlpha = laptopState.show ? 0.25 : 1.0;
+		ctx.textBaseline = "top";
+		ctx.shadowColor = laptopState.show ? "#00000000" : "#0000000d";
+		ctx.shadowOffsetX = 0;
+		ctx.shadowOffsetY = 1;
+		ctx.shadowBlur = 0;
+		[
+			`fps: ${Math.round(1000 / dt)}`,
+			`res: ${GAME_WIDTH}x${GAME_HEIGHT} (${SCALE}x, ${ASPECT_RATIO_X}:${ASPECT_RATIO_Y})`,
+			`tile: (${player.tileX}, ${player.tileY})`,
+			`facing: ${player.facingDirection}`,
+			`moving: ${player.movingDirection}`,
+			`faster: ${getIsMovingFaster()}`,
+		].forEach((line, index) => {
+			ctx.fillText(line, 4, 2 + index * 8);
+		});
+		ctx.restore();
+	}
+}
+
+function drawPlayer() {
+	const { x: playerWorldX, y: playerWorldY } = getPlayerPosition();
+
+	const cameraX = playerWorldX - GAME_WIDTH / 2 + TILE_SIZE / 2;
+	const cameraY = playerWorldY - GAME_HEIGHT / 2 + TILE_SIZE / 2;
 
 	// Draw player
 	// Player collision tile top-left, in screen space
@@ -294,6 +412,16 @@ function draw(dt: number) {
 
 	if (!frameLayers[0]) return;
 
+	ctx.fillStyle = "#00000013";
+	// Draw shadow under player
+	ctx.beginPath();
+	const center = 0;
+	const bottom = -4;
+	const rx = 6;
+	const ry = 3;
+	ctx.ellipse(center, bottom, rx, ry, 0, 0, Math.PI * 2);
+	ctx.fill();
+
 	renderFrameLayer({
 		sheet: frameLayers[0].sheet,
 		index: frameLayers[0].index,
@@ -302,56 +430,10 @@ function draw(dt: number) {
 		y: -dh,
 	});
 
-	// ctx.drawImage(
-	// 	characters.player.spriteSheet,
-	// 	sx,
-	// 	sy,
-	// 	sw,
-	// 	sh,
-	// 	-dw / 2,
-	// 	-dh,
-	// 	dw,
-	// 	dh,
-	// );
-
 	ctx.restore();
-
-	// Draw any tiles that should be in front of the player
-	for (const tile of overlappingTiles) {
-		drawTile({
-			tileset: "grass",
-			tileIndex: tile.tileIndex,
-			x: tile.x,
-			y: tile.y,
-		});
-	}
-
-	// Optional debug overlay (tile coords, direction, run state)
-	if (DEBUG_OVERLAY) {
-		ctx.save();
-		ctx.fillStyle = "#ffffff";
-		ctx.font = "8px Tiny5";
-		ctx.globalAlpha = laptopState.show ? 0.25 : 1.0;
-		ctx.textBaseline = "top";
-		ctx.shadowColor = laptopState.show ? "rgba(0,0,0,0)" : "rgba(0,0,0,0.05)";
-		ctx.shadowOffsetX = 0;
-		ctx.shadowOffsetY = 1;
-		ctx.shadowBlur = 0;
-		[
-			`fps: ${Math.round(1000 / dt)}`,
-			`res: ${GAME_WIDTH}x${GAME_HEIGHT} (${SCALE}x, ${ASPECT_RATIO_X}:${ASPECT_RATIO_Y})`,
-			`tile: (${player.tileX}, ${player.tileY})`,
-			`facing: ${player.facingDirection}`,
-			`moving: ${player.movingDirection}`,
-			`faster: ${getIsMovingFaster()}`,
-		].forEach((line, index) => {
-			ctx.fillText(line, 4, 2 + index * 8);
-		});
-		ctx.restore();
-	}
 }
 
 export function overworld(dt: number) {
-	updatePlayer(dt);
+	update(dt);
 	draw(dt);
 }

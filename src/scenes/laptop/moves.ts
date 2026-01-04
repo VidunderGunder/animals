@@ -1,4 +1,3 @@
-import { ctx } from "../../canvas";
 import {
 	animationIds,
 	type CharacterAnimationID,
@@ -14,6 +13,7 @@ import {
 	GAME_WIDTH,
 	TILE_SIZE,
 } from "../../config";
+import { ctx } from "../../gfx/canvas";
 import { type Direction, directions } from "../../input/input";
 import { laptopHeight, laptopWidth } from "./laptop";
 
@@ -134,7 +134,7 @@ export function draw() {
 		ctx.fillStyle = "#deeaeb";
 		ctx.font = `${textHeight}px Tiny5`;
 		ctx.textBaseline = "top";
-		ctx.shadowColor = "rgba(0,0,0,0.05)";
+		ctx.shadowColor = "#0000000d";
 		ctx.shadowOffsetX = 0;
 		ctx.shadowOffsetY = 1;
 

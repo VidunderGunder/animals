@@ -1,4 +1,4 @@
-import { createImageElement } from "../assets";
+import { createImageElement } from "../assets/image";
 import { capitalizeTyped } from "../types";
 
 export type AnimalAnimationKey = "walk" | "run" | "idle";

@@ -23,6 +23,9 @@ export type Player = {
 	tileX: number;
 	tileY: number;
 
+	/** Current z position */
+	z: number;
+
 	facingDirection: Direction;
 	movingDirection: Direction | null;
 
@@ -51,12 +54,13 @@ export type Player = {
 	paused: boolean;
 };
 
-export const startTileX = 10;
-export const startTileY = 10;
+export const startTileX = 12;
+export const startTileY = 37;
 
 export const player: Player = {
 	tileX: startTileX,
 	tileY: startTileY,
+	z: 0,
 	facingDirection: "down",
 	height: CHARACTER_SPRITE_HEIGHT,
 	width: CHARACTER_SPRITE_WIDTH,
