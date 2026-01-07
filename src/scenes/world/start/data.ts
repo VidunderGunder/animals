@@ -14,7 +14,6 @@ export type CellRule = {
 };
 
 export type Transition = {
-	kind: "walk" | "ladder" | "stairs" | "jump" | "roll";
 	requireFaster?: boolean;
 
 	// optional: force animation during the transition
@@ -24,7 +23,7 @@ export type Transition = {
 	path: { xPx: number; yPx: number; z: number }[];
 
 	// Final snapped logical state once path completes
-	end: { tileX: number; tileY: number; z: number; nodeId?: string | null };
+	end: { tileX: number; tileY: number; z: number };
 };
 
 export type EdgeRule = {
@@ -160,7 +159,16 @@ const jumpablePlatformEdges = [
 
 jumpablePlatformEdges.forEach(([direction, cells]) => {
 	cells.forEach((cell) => {
-		setEdgeBlocked(cell[0], cell[1], cell[2], direction);
+		// setEdgeBlocked(cell[0], cell[1], cell[2], direction);
+		setEdgeTransition(cell[0], cell[1], cell[2], direction, {
+			path: [],
+			animation: "hop",
+			end: {
+				tileX: cell[0],
+				tileY: cell[1],
+				z: cell[2],
+			},
+		});
 	});
 });
 
@@ -184,42 +192,38 @@ mushroomCells.forEach((cell) => {
 // trigger when moving RIGHT from (13,46,0):
 // (13,46,0) -> (13,45,1) -> (14,45,1)
 setEdgeTransition(13, 46, 0, "right", {
-	kind: "ladder",
 	animation: "walk",
 	path: [
 		{ ...toPx(13, 45), z: 1 },
 		{ ...toPx(14, 45), z: 1 },
 	],
-	end: { tileX: 14, tileY: 45, z: 1, nodeId: null },
+	end: { tileX: 14, tileY: 45, z: 1 },
 });
 
 // Walk back down: moving LEFT from (14,45,1)
 setEdgeTransition(14, 45, 1, "left", {
-	kind: "ladder",
 	animation: "walk",
 	path: [
 		{ ...toPx(13, 45), z: 1 },
 		{ ...toPx(13, 46), z: 0 },
 	],
-	end: { tileX: 13, tileY: 46, z: 0, nodeId: null },
+	end: { tileX: 13, tileY: 46, z: 0 },
 });
 
 setEdgeBlocked(14, 46, 0, "left");
 
 // Fence roll
 setEdgeTransition(8, 52, 0, "down", {
-	kind: "roll",
 	requireFaster: true,
 	animation: "spin",
 	path: [{ ...toPx(8, 54), z: 0 }],
-	end: { tileX: 8, tileY: 54, z: 0, nodeId: null },
+	end: { tileX: 8, tileY: 54, z: 0 },
 });
 setEdgeTransition(8, 53, 0, "up", {
-	kind: "roll",
 	requireFaster: true,
 	animation: "spin",
 	path: [{ ...toPx(8, 51), z: 0 }],
-	end: { tileX: 8, tileY: 51, z: 0, nodeId: null },
+	end: { tileX: 8, tileY: 51, z: 0 },
 });
 
 // Blocking poles
@@ -230,26 +234,22 @@ setEdgeBlocked(9, 52, 0, "down");
 
 // Stairs
 setEdgeTransition(15, 50, 0, "left", {
-	kind: "stairs",
 	animation: "walk",
 	path: [{ ...toPx(14, 49), z: 1 }],
 	end: { tileX: 14, tileY: 49, z: 1 },
 });
 setEdgeTransition(14, 49, 1, "right", {
-	kind: "stairs",
 	animation: "walk",
 	path: [{ ...toPx(15, 50), z: 0 }],
 	end: { tileX: 15, tileY: 50, z: 0 },
 });
 
 setEdgeTransition(9, 50, 0, "right", {
-	kind: "stairs",
 	animation: "walk",
 	path: [{ ...toPx(10, 49), z: 1 }],
 	end: { tileX: 10, tileY: 49, z: 1 },
 });
 setEdgeTransition(10, 49, 1, "left", {
-	kind: "stairs",
 	animation: "walk",
 	path: [{ ...toPx(9, 50), z: 0 }],
 	end: { tileX: 9, tileY: 50, z: 0 },

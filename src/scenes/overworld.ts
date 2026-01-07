@@ -235,30 +235,11 @@ function tryPlanMove(desired: Direction, faster: boolean): Transition | null {
 
 	if (nx < 0 || ny < 0 || nx >= tilesXCount || ny >= tilesYCount) return null;
 
-	const here = startWorldRules.getCellRule(
-		player.tileX,
-		player.tileY,
-		player.z,
-	);
-	const there = startWorldRules.getCellRule(nx, ny, nz);
+	const destination = startWorldRules.getCellRule(nx, ny, nz);
 
-	if (there?.blocked) return null;
-
-	const hereStub = !!here?.jumpStub;
-	const thereStub = !!there?.jumpStub;
-
-	if (hereStub || thereStub) {
-		return {
-			kind: "jump",
-			animation: "jump",
-			path: [{ xPx: nx * TILE_SIZE, yPx: ny * TILE_SIZE, z: nz }],
-			end: { tileX: nx, tileY: ny, z: nz },
-		};
-	}
+	if (destination?.blocked) return null;
 
 	return {
-		kind: "walk",
-		animation: "walk",
 		path: [{ xPx: nx * TILE_SIZE, yPx: ny * TILE_SIZE, z: nz }],
 		end: { tileX: nx, tileY: ny, z: nz },
 	};
