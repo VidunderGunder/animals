@@ -30,7 +30,6 @@ function loop(timestamp: number) {
 
 	previousFrameTimestamp = timestamp;
 
-	// overworldLegacy(dt);
 	overworld(dt);
 	laptop(dt);
 

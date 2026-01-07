@@ -3,7 +3,7 @@ import { GAME_HEIGHT, GAME_WIDTH } from "../../config";
 import { ctx } from "../../gfx/canvas";
 import { activeActions } from "../../input/input";
 import { player } from "../../state";
-import { returnToOverworld } from "../overworld-legacy";
+import { returnToOverworld } from "../overworld";
 import { biodex } from "./biodex";
 import { moves } from "./moves";
 

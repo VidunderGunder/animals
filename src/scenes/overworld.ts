@@ -143,41 +143,35 @@ function getVisibleTileRange(playerX: number, playerY: number) {
 	};
 }
 
-const sublayers = ["ground", "back", "front"] as const;
+const sublayers = ["back", "front"] as const;
 
 const worldImageLayers: {
 	z: number;
-	ground?: HTMLImageElement;
 	back?: HTMLImageElement;
 	front?: HTMLImageElement;
 }[] = [
 	{
 		z: 0,
-		ground: createImageElement("/world/start/scenery.png"),
+		back: createImageElement("/world/start/scenery.png"),
 	},
 	{
 		z: 0,
-		ground: createImageElement("/world/start/obstacle-course/0-ground.png"),
 		back: createImageElement("/world/start/obstacle-course/0-back.png"),
 		front: createImageElement("/world/start/obstacle-course/0-front.png"),
 	},
 	{
 		z: 1,
-		ground: createImageElement("/world/start/obstacle-course/1-ground.png"),
 		back: createImageElement("/world/start/obstacle-course/1-back.png"),
 		front: createImageElement("/world/start/obstacle-course/1-front.png"),
 	},
-];
+] as const;
 
 let tilesYCount = 0;
 let tilesXCount = 0;
 
 function setTilesCountsIfNotSet() {
 	if (!tilesYCount || !tilesXCount) {
-		const firstImage =
-			worldImageLayers[0]?.ground ||
-			worldImageLayers[0]?.back ||
-			worldImageLayers[0]?.front;
+		const firstImage = worldImageLayers[0]?.back || worldImageLayers[0]?.front;
 		if (!firstImage || !firstImage.complete || firstImage.naturalWidth === 0)
 			return;
 		tilesXCount = firstImage.naturalWidth / TILE_SIZE;
@@ -187,16 +181,13 @@ function setTilesCountsIfNotSet() {
 
 function isWorldImagesReady() {
 	return worldImageLayers.every((layer) => {
-		const groundReady = layer.ground
-			? layer.ground.complete && layer.ground.naturalWidth > 0
-			: true;
 		const backReady = layer.back
 			? layer.back.complete && layer.back.naturalWidth > 0
 			: true;
 		const frontReady = layer.front
 			? layer.front.complete && layer.front.naturalWidth > 0
 			: true;
-		return groundReady && backReady && frontReady;
+		return backReady && frontReady;
 	});
 }
 
@@ -300,51 +291,34 @@ function draw(dt: number) {
 	const endX = Math.min(tilesXCount - 1, maxTileX);
 	const endY = Math.min(tilesYCount - 1, maxTileY);
 
-	// Draw each layer tile-by-tile
 	for (const layer of worldImageLayers) {
 		for (let ty = startY; ty <= endY; ty++) {
-			sublayers.forEach((sublayer) => {
+			const sy = ty * TILE_SIZE;
+			const dy = Math.round(sy - cameraY);
+
+			const sx = startX * TILE_SIZE;
+			const dx = Math.round(sx - cameraX);
+
+			const w = (endX - startX + 1) * TILE_SIZE;
+
+			for (const sublayer of sublayers) {
 				const image = layer[sublayer];
-				if (!image) return;
+				if (!image) continue;
 
-				const sy = ty * TILE_SIZE;
+				const shouldDrawPlayer =
+					sublayer === "front" &&
+					layer.z === player.z &&
+					(playerY === endY
+						? player.tileY
+						: Math.max(player.moveToY, player.tileY) === ty);
 
-				for (let tx = startX; tx <= endX; tx++) {
-					const shouldDrawPlayer =
-						sublayer === "back" &&
-						layer.z === player.z &&
-						(playerY === endY
-							? player.tileY
-							: Math.max(player.moveToY, player.tileY) === ty) &&
-						tx === endX;
-
-					if (shouldDrawPlayer) {
-						drawPlayer();
-					}
-
-					const sx = tx * TILE_SIZE;
-
-					// World pixel position of this tile
-					const worldPx = tx * TILE_SIZE;
-					const worldPy = ty * TILE_SIZE;
-
-					// Screen pixel position
-					const dx = Math.round(worldPx - cameraX);
-					const dy = Math.round(worldPy - cameraY);
-
-					ctx.drawImage(
-						image,
-						sx,
-						sy,
-						TILE_SIZE,
-						TILE_SIZE,
-						dx,
-						dy,
-						TILE_SIZE,
-						TILE_SIZE,
-					);
+				if (shouldDrawPlayer) {
+					drawPlayer();
 				}
-			});
+
+				// draw one horizontal strip
+				ctx.drawImage(image, sx, sy, w, TILE_SIZE, dx, dy, w, TILE_SIZE);
+			}
 		}
 	}
 
@@ -362,7 +336,7 @@ function draw(dt: number) {
 		[
 			`fps: ${Math.round(1000 / dt)}`,
 			`res: ${GAME_WIDTH}x${GAME_HEIGHT} (${SCALE}x, ${ASPECT_RATIO_X}:${ASPECT_RATIO_Y})`,
-			`tile: (${player.tileX}, ${player.tileY})`,
+			`tile: (${player.tileX}, ${player.tileY}, ${player.z})`,
 			`facing: ${player.facingDirection}`,
 			`moving: ${player.movingDirection}`,
 			`faster: ${getIsMovingFaster()}`,

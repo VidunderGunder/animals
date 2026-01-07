@@ -41,6 +41,8 @@ export type Player = {
 	moveFromY: number;
 	moveToX: number;
 	moveToY: number;
+	moveFromZ: number;
+	moveToZ: number;
 	/** 0 → start tile, 1 → target tile */
 	moveProgress: number;
 
@@ -56,11 +58,12 @@ export type Player = {
 
 export const startTileX = 12;
 export const startTileY = 37;
+export const startLayerZ = 0;
 
 export const player: Player = {
 	tileX: startTileX,
 	tileY: startTileY,
-	z: 0,
+	z: startLayerZ,
 	facingDirection: "down",
 	height: CHARACTER_SPRITE_HEIGHT,
 	width: CHARACTER_SPRITE_WIDTH,
@@ -68,8 +71,10 @@ export const player: Player = {
 	movingDirection: null,
 	moveFromX: startTileX,
 	moveFromY: startTileY,
+	moveFromZ: startLayerZ,
 	moveToX: startTileX,
 	moveToY: startTileY,
+	moveToZ: startLayerZ,
 	moveProgress: 1,
 	animationCurrent: "idle",
 	animationFrameIndex: 0,
