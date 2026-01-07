@@ -74,45 +74,6 @@ function range(
 	return out;
 }
 
-const blockedCells = [
-	// Dock
-	[12, 36, 0],
-	...range(11, [37, 39]),
-	...range(13, [37, 39]),
-
-	// Beach
-	...range([6, 11], 40),
-	...range([13, 18], 40),
-
-	// Woods
-	[6, 41, 0],
-	...range(19, [41, 56]),
-	...range(5, [41, 56]),
-
-	// Fence
-	...range([5, 10], 57),
-	...range([14, 19], 57),
-
-	// Fence Woods
-	...range([0, 4], 57),
-	...range([20, 24], 57),
-] as const satisfies [number, number, number][];
-
-for (const cell of blockedCells) {
-	cells.set(cellKey(cell[0], cell[1], cell[2]), {
-		blocked: true,
-	});
-}
-
-// Mushroom at 17,42,0 blocks and is interactable
-cells.set(cellKey(17, 42, 0), {
-	blocked: true,
-	interact: {
-		id: "mushroom_17_42",
-		onActivate: () => console.log("Mushroom activated!"),
-	},
-});
-
 // Jump stubs (height configurable)
 const jumpStubHeightPx = 6;
 (
@@ -143,6 +104,81 @@ function setEdgeTransition(
 function setEdgeBlocked(x: number, y: number, z: number, dir: Direction) {
 	edges.set(edgeKey(x, y, z, dir), { blocked: true });
 }
+
+const blockedCells = [
+	// Dock
+	[12, 36, 0],
+	...range(11, [37, 39]),
+	...range(13, [37, 39]),
+
+	// Beach
+	...range([6, 11], 40),
+	...range([13, 18], 40),
+
+	// Woods
+	[6, 41, 0],
+	...range(19, [41, 57]),
+	...range(5, [41, 57]),
+
+	// Fence Woods
+	...range([0, 4], 57),
+	...range([20, 24], 57),
+
+	// Skateboard
+	[14, 58, 0],
+] as const satisfies [number, number, number][];
+
+for (const cell of blockedCells) {
+	cells.set(cellKey(cell[0], cell[1], cell[2]), {
+		blocked: true,
+	});
+}
+
+const stoneFenceCells = [
+	...range([5, 10], 57),
+	...range([14, 19], 57),
+] as const;
+
+stoneFenceCells.forEach((cell) => {
+	setEdgeBlocked(cell[0], cell[1], cell[2], "down");
+	setEdgeBlocked(cell[0], cell[1] + 1, cell[2], "up");
+});
+
+const bridgeCells = [...range([10, 14], 49, 1)] as const;
+
+bridgeCells.forEach((cell) => {
+	setEdgeBlocked(cell[0], cell[1], cell[2], "up");
+	setEdgeBlocked(cell[0], cell[1], cell[2], "down");
+});
+
+const jumpablePlatformEdges = [
+	["up", [...range([14, 17], 45, 1)]],
+	["down", [...range([14, 16], 45, 1), [17, 49, 1]]],
+	["right", [...range(17, [45, 49], 1)]],
+	["left", [...range(17, [46, 49], 1)]],
+] as const satisfies [Direction, [number, number, number][]][];
+
+jumpablePlatformEdges.forEach(([direction, cells]) => {
+	cells.forEach((cell) => {
+		setEdgeBlocked(cell[0], cell[1], cell[2], direction);
+	});
+});
+
+const mushroomCells = [
+	[6, 51, 0],
+	[17, 42, 0],
+] as const;
+
+// Mushroom at 17,42,0 blocks and is interactable
+mushroomCells.forEach((cell) => {
+	cells.set(cellKey(cell[0], cell[1], cell[2]), {
+		blocked: true,
+		interact: {
+			id: "pretty_mushrooms",
+			onActivate: () => console.log("Mushroom activated!"),
+		},
+	});
+});
 
 // Ladder:
 // trigger when moving RIGHT from (13,46,0):
