@@ -8,9 +8,6 @@ export type CellRule = {
 		id: string;
 		onActivate: () => void;
 	};
-	jumpStub?: {
-		heightPx: number; // e.g. 6
-	};
 };
 
 export type Transition = {
@@ -74,18 +71,17 @@ function range(
 }
 
 // Jump stubs (height configurable)
-const jumpStubHeightPx = 6;
-(
-	[
-		[10, 44],
-		[9, 44],
-		[8, 44],
-		[8, 45],
-		[8, 46],
-		[10, 46],
-	] as const
-).forEach(([x, y]) => {
-	cells.set(cellKey(x, y, 0), { jumpStub: { heightPx: jumpStubHeightPx } });
+const stubs = [
+	[10, 44],
+	[9, 44],
+	[8, 44],
+	[8, 45],
+	[8, 46],
+	[10, 46],
+] as const;
+
+stubs.forEach(([x, y]) => {
+	cells.set(cellKey(x, y, 0), { blocked: true });
 });
 
 // --- edge rules (sparse) ---
