@@ -15,43 +15,47 @@ import {
 	CHARACTER_SPRITE_WIDTH,
 	DEFAULT_MOVEMENT,
 	movementSpeeds,
+	TILE_SIZE,
 } from "./config";
 import type { Direction } from "./input/input";
+import type { Transition } from "./scenes/world/start/data";
 
 export type Player = {
-	/** Current tile coordinates */
 	tileX: number;
 	tileY: number;
-
-	/** Current z position */
 	z: number;
 
 	facingDirection: Direction;
 	movingDirection: Direction | null;
 
-	/** Size of sprite in pixels (square) */
 	width: number;
 	height: number;
 
-	/** Movement speed (pixels per second) */
 	speed: number;
 
-	/** Movement interpolation state (tile coordinates) */
-	moveFromX: number;
-	moveFromY: number;
-	moveToX: number;
-	moveToY: number;
-	moveFromZ: number;
-	moveToZ: number;
-	/** 0 → start tile, 1 → target tile */
-	moveProgress: number;
+	/** Render position: collision tile top-left in world pixels (integer) */
+	worldX: number;
+	worldY: number;
 
-	/** Current animation state */
+	/** Remaining waypoints (world pixels) */
+	movePath: { x: number; y: number; z: number }[];
+
+	/** Segment interpolation (world pixels) */
+	moveSegFromX: number;
+	moveSegFromY: number;
+	moveSegFromZ: number;
+	moveSegToX: number;
+	moveSegToY: number;
+	moveSegToZ: number;
+	moveSegProgress: number;
+
+	pendingEnd: Transition["end"] | null;
+	pendingAnim: Transition["animation"] | null;
+
 	animationCurrent: CharacterAnimationID;
 	animationFrameIndex: number;
 	animationTimer: number;
 
-	/** Whether player interaction is disabled */
 	disabled: boolean;
 	paused: boolean;
 };
@@ -69,13 +73,22 @@ export const player: Player = {
 	width: CHARACTER_SPRITE_WIDTH,
 	speed: movementSpeeds[DEFAULT_MOVEMENT],
 	movingDirection: null,
-	moveFromX: startTileX,
-	moveFromY: startTileY,
-	moveFromZ: startLayerZ,
-	moveToX: startTileX,
-	moveToY: startTileY,
-	moveToZ: startLayerZ,
-	moveProgress: 1,
+
+	worldX: startTileX * TILE_SIZE,
+	worldY: startTileY * TILE_SIZE,
+
+	movePath: [],
+	moveSegFromX: startTileX * TILE_SIZE,
+	moveSegFromY: startTileY * TILE_SIZE,
+	moveSegFromZ: startLayerZ,
+	moveSegToX: startTileX * TILE_SIZE,
+	moveSegToY: startTileY * TILE_SIZE,
+	moveSegToZ: startLayerZ,
+	moveSegProgress: 1,
+
+	pendingEnd: null,
+	pendingAnim: null,
+
 	animationCurrent: "idle",
 	animationFrameIndex: 0,
 	animationTimer: 0,
@@ -93,14 +106,12 @@ export const playerDirectionRow: Record<Direction, number> = {
 export const animalDirectionRow: Record<Direction, number> = {
 	down: 0,
 	left: 1,
-	right: 1, // Mirror left for right
+	right: 1,
 	up: 2,
 } as const;
 
 export type Animation = {
-	/** Frame indices in the sprite sheet (column indexes) */
 	frames: readonly number[];
-	/** Seconds each frame is shown */
 	frameDuration: number;
 };
 
@@ -110,16 +121,8 @@ const animalFrames = [0, 1, 2, 1, 0, 1, 2, 3] as const;
 
 export const animalAnimations = {
 	idle: { frames: animalFrames, frameDuration: idleDurationDefault },
-
-	walk: {
-		frames: animalFrames,
-		frameDuration: walkDurationDefault,
-	},
-
-	run: {
-		frames: animalFrames,
-		frameDuration: runDurationDefault,
-	},
+	walk: { frames: animalFrames, frameDuration: walkDurationDefault },
+	run: { frames: animalFrames, frameDuration: runDurationDefault },
 } as const satisfies Record<AnimalAnimationKey, Animation>;
 
 export function getAnimalAnimation(
@@ -127,10 +130,7 @@ export function getAnimalAnimation(
 	animation: AnimalAnimationKey,
 ): Animation {
 	if (animalId === "missing") {
-		return {
-			frames: [0, 1],
-			frameDuration: 0.5,
-		};
+		return { frames: [0, 1], frameDuration: 0.5 };
 	}
 	return animalAnimations[animation];
 }

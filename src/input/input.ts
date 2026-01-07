@@ -52,6 +52,7 @@ export const keyMap: Record<Action, string[]> = {
 	down: ["ArrowDown"],
 	left: ["ArrowLeft"],
 	right: ["ArrowRight"],
+	// Space
 	a: [" "],
 	b: ["Shift"],
 	x: [],

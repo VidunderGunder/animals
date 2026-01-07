@@ -25,6 +25,7 @@ import {
 } from "../input/input";
 import { player, playerAnimations } from "../state";
 import { laptopState, openLaptop } from "./laptop/laptop";
+import { startWorldRules, type Transition } from "./world/start/data";
 
 export function returnToOverworld() {
 	allActions
@@ -39,7 +40,7 @@ export function returnToOverworld() {
 	player.disabled = false;
 }
 
-function dirToTileVector(direction: Direction): { dx: number; dy: number } {
+function dirToDxDy(direction: Direction): { dx: number; dy: number } {
 	switch (direction) {
 		case "up":
 			return { dx: 0, dy: -1 };
@@ -53,7 +54,6 @@ function dirToTileVector(direction: Direction): { dx: number; dy: number } {
 }
 
 function getDesiredDirectionFromInput(): Direction | null {
-	// Priority order if multiple are pressed at once.
 	if (activeActions.has("up")) return "up";
 	if (activeActions.has("down")) return "down";
 	if (activeActions.has("left")) return "left";
@@ -73,10 +73,16 @@ function getIsMovingFaster(): boolean {
 }
 
 function getPlayerAnimation(): CharacterAnimationID {
+	// If a transition is forcing an animation, keep it
+	if (player.pendingAnim === "jump") return "jump";
+	if (player.pendingAnim === "hop") return "hop";
+
 	const isMovingFaster = getIsMovingFaster();
 	if (isMovingFaster) return "run";
+
 	const isMoving = getIsMoving();
 	if (isMoving) return "walk";
+
 	return "idle";
 }
 
@@ -91,7 +97,6 @@ function updatePlayerAnimation(dt: number) {
 	}
 
 	const anim = playerAnimations[desiredAnimation];
-
 	if (!anim) {
 		throw new Error(
 			`Character player is missing animation ${desiredAnimation}`,
@@ -112,18 +117,8 @@ function updatePlayerAnimation(dt: number) {
 	}
 }
 
-/** Get interpolated player world position in pixels */
 function getPlayerPosition() {
-	const t = player.moveProgress;
-	const interpTileX =
-		player.moveFromX + (player.moveToX - player.moveFromX) * t;
-	const interpTileY =
-		player.moveFromY + (player.moveToY - player.moveFromY) * t;
-
-	return {
-		x: interpTileX * TILE_SIZE,
-		y: interpTileY * TILE_SIZE,
-	};
+	return { x: player.worldX, y: player.worldY };
 }
 
 function getVisibleTileRange(playerX: number, playerY: number) {
@@ -191,6 +186,84 @@ function isWorldImagesReady() {
 	});
 }
 
+// --- path mover helpers ---
+function startSegment(toX: number, toY: number, toZ: number) {
+	player.moveSegFromX = player.worldX;
+	player.moveSegFromY = player.worldY;
+	player.moveSegFromZ = player.z;
+
+	player.moveSegToX = toX;
+	player.moveSegToY = toY;
+	player.moveSegToZ = toZ;
+
+	player.moveSegProgress = 0;
+}
+
+function popNextWaypoint(): boolean {
+	const next = player.movePath.shift();
+	if (!next) return false;
+	startSegment(next.x, next.y, next.z);
+	return true;
+}
+
+function snapToSegmentEnd() {
+	player.worldX = player.moveSegToX;
+	player.worldY = player.moveSegToY;
+	player.z = player.moveSegToZ;
+}
+
+function tryPlanMove(desired: Direction, faster: boolean): Transition | null {
+	// Edge rule first
+	const edge = startWorldRules.getEdgeRule(
+		player.tileX,
+		player.tileY,
+		player.z,
+		desired,
+	);
+	if (edge?.blocked) return null;
+
+	if (edge?.transition) {
+		if (edge.transition.requireFaster && !faster) return null;
+		return edge.transition;
+	}
+
+	// Default walk + jump-stub logic
+	const { dx, dy } = dirToDxDy(desired);
+	const nx = player.tileX + dx;
+	const ny = player.tileY + dy;
+	const nz = player.z;
+
+	if (nx < 0 || ny < 0 || nx >= tilesXCount || ny >= tilesYCount) return null;
+
+	const here = startWorldRules.getCellRule(
+		player.tileX,
+		player.tileY,
+		player.z,
+	);
+	const there = startWorldRules.getCellRule(nx, ny, nz);
+
+	if (there?.blocked) return null;
+
+	const hereStub = !!here?.jumpStub;
+	const thereStub = !!there?.jumpStub;
+
+	if (hereStub || thereStub) {
+		return {
+			kind: "jump",
+			animation: "jump",
+			path: [{ xPx: nx * TILE_SIZE, yPx: ny * TILE_SIZE, z: nz }],
+			end: { tileX: nx, tileY: ny, z: nz },
+		};
+	}
+
+	return {
+		kind: "walk",
+		animation: "walk",
+		path: [{ xPx: nx * TILE_SIZE, yPx: ny * TILE_SIZE, z: nz }],
+		end: { tileX: nx, tileY: ny, z: nz },
+	};
+}
+
 /** Update player and world state */
 function updatePlayer(dt: number) {
 	if (player.paused) return;
@@ -202,65 +275,85 @@ function updatePlayer(dt: number) {
 
 	if (!player.disabled && activeActions.has("start")) openLaptop();
 
-	const isMovingFaster = getIsMovingFaster();
+	const faster = getIsMovingFaster();
 
-	// 1. Input intent for this frame
+	// 1) Input intent for this frame
 	const desired = player.disabled ? null : getDesiredDirectionFromInput();
 	setMovementIntent(desired);
 
-	// 2. Speed based on run/walk
-	player.speed = movementSpeeds[isMovingFaster ? "run" : "walk"];
+	// 2) Speed based on run/walk
+	player.speed = movementSpeeds[faster ? "run" : "walk"];
 
-	// 3. Movement start
+	// 2.5) Interaction: activate on current tile (placeholder)
+	// Replace "a" with your actual action name if different.
+	if (!player.disabled && activeActions.has("a") && !player.movingDirection) {
+		startWorldRules
+			.getCellRule(player.tileX, player.tileY, player.z)
+			?.interact?.onActivate();
+	}
+
+	// 3) Movement start
 	if (!player.movingDirection) {
 		if (desired) {
 			player.facingDirection = desired;
-			player.movingDirection = desired;
 
-			const { dx, dy } = dirToTileVector(desired);
-
-			const isNewDirection =
-				player.moveToX !== player.tileX + dx ||
-				player.moveToY !== player.tileY + dy;
-
-			const targetTileX = isNewDirection ? player.tileX + dx : player.moveFromX;
-			const targetTileY = isNewDirection ? player.tileY + dy : player.moveFromY;
-
-			if (targetTileX !== player.tileX || targetTileY !== player.tileY) {
-				// Start moving
+			const planned = tryPlanMove(desired, faster);
+			if (planned) {
 				player.movingDirection = desired;
 
-				const outOfBoundsX = targetTileX < 0 || targetTileX >= tilesXCount;
-				const outOfBoundsY = targetTileY < 0 || targetTileY >= tilesYCount;
-				const isOutOfBounds = outOfBoundsX || outOfBoundsY;
-				const isCollisionTile = false; // Placeholder for collision detection
+				player.pendingEnd = planned.end;
+				player.pendingAnim = planned.animation ?? null;
 
-				if (isOutOfBounds || isCollisionTile) return;
+				player.movePath = planned.path.map((p) => ({
+					x: p.xPx,
+					y: p.yPx,
+					z: p.z,
+				}));
 
-				player.moveFromX = player.tileX;
-				player.moveFromY = player.tileY;
-				player.moveToX = targetTileX;
-				player.moveToY = targetTileY;
-				player.moveProgress = 0;
+				popNextWaypoint();
 			}
 		}
 	}
 
-	// 4. Movement tween
+	// 4) Movement tween (pixel-based segments)
 	if (player.movingDirection) {
-		const distancePx = TILE_SIZE;
-		const moveDuration = distancePx / player.speed; // seconds for one tile
-		player.moveProgress += dt / moveDuration;
+		const dx = player.moveSegToX - player.moveSegFromX;
+		const dy = player.moveSegToY - player.moveSegFromY;
 
-		if (player.moveProgress >= 1) {
-			player.moveProgress = 1;
-			player.tileX = player.moveToX;
-			player.tileY = player.moveToY;
-			player.movingDirection = null;
+		const distancePx = dx === 0 && dy === 0 ? 0 : Math.hypot(dx, dy);
+
+		const moveDuration = distancePx === 0 ? 0 : distancePx / player.speed;
+		player.moveSegProgress += moveDuration === 0 ? 1 : dt / moveDuration;
+
+		if (player.moveSegProgress >= 1) {
+			player.moveSegProgress = 1;
+			snapToSegmentEnd();
+
+			const hasMore = popNextWaypoint();
+			if (!hasMore) {
+				// Movement fully finished: snap logical state
+				if (!player.pendingEnd) {
+					throw new Error(
+						"Invariant: movement finished but pendingEnd is null",
+					);
+				}
+
+				player.tileX = player.pendingEnd.tileX;
+				player.tileY = player.pendingEnd.tileY;
+				player.z = player.pendingEnd.z;
+
+				player.movingDirection = null;
+				player.pendingEnd = null;
+				player.pendingAnim = null;
+			}
+		} else {
+			const t = player.moveSegProgress;
+			player.worldX = Math.round(player.moveSegFromX + dx * t);
+			player.worldY = Math.round(player.moveSegFromY + dy * t);
 		}
 	}
 
-	// 5. Anim AFTER we've updated movement
+	// 5) Anim AFTER we've updated movement
 	updatePlayerAnimation(dt);
 }
 
@@ -285,11 +378,15 @@ function draw(dt: number) {
 		playerY,
 	);
 
-	// Clamp visible tile range to world bounds
 	const startX = Math.max(0, minTileX);
 	const startY = Math.max(0, minTileY);
 	const endX = Math.min(tilesXCount - 1, maxTileX);
 	const endY = Math.min(tilesYCount - 1, maxTileY);
+
+	const playerRenderZ = getPlayerRenderZ();
+
+	// Row used for depth sorting: approximate “feet row”
+	const playerRow = Math.floor((player.worldY + TILE_SIZE - 1) / TILE_SIZE);
 
 	for (const layer of worldImageLayers) {
 		for (let ty = startY; ty <= endY; ty++) {
@@ -306,23 +403,17 @@ function draw(dt: number) {
 				if (!image) continue;
 
 				const shouldDrawPlayer =
-					sublayer === "front" &&
-					layer.z === player.z &&
-					(playerY === endY
-						? player.tileY
-						: Math.max(player.moveToY, player.tileY) === ty);
+					sublayer === "front" && layer.z === playerRenderZ && ty === playerRow;
 
 				if (shouldDrawPlayer) {
 					drawPlayer();
 				}
 
-				// draw one horizontal strip
 				ctx.drawImage(image, sx, sy, w, TILE_SIZE, dx, dy, w, TILE_SIZE);
 			}
 		}
 	}
 
-	// Optional debug overlay (tile coords, direction, run state)
 	if (DEBUG_OVERLAY) {
 		ctx.save();
 		ctx.fillStyle = "#ffffff";
@@ -336,15 +427,27 @@ function draw(dt: number) {
 		[
 			`fps: ${Math.round(1000 / dt)}`,
 			`res: ${GAME_WIDTH}x${GAME_HEIGHT} (${SCALE}x, ${ASPECT_RATIO_X}:${ASPECT_RATIO_Y})`,
-			`tile: (${player.tileX}, ${player.tileY}, ${player.z})`,
+			`tile: (${player.tileX}, ${player.tileY}, z=${player.z})`,
 			`facing: ${player.facingDirection}`,
 			`moving: ${player.movingDirection}`,
 			`faster: ${getIsMovingFaster()}`,
+			`animLock: ${player.pendingAnim ?? "-"}`,
 		].forEach((line, index) => {
 			ctx.fillText(line, 4, 2 + index * 8);
 		});
 		ctx.restore();
 	}
+}
+
+function getPlayerRenderZ(): number {
+	if (!player.movingDirection) return player.z;
+
+	// If this segment changes z, pick which layer to draw on based on progress.
+	const fromZ = player.moveSegFromZ;
+	const toZ = player.moveSegToZ;
+	if (fromZ === toZ) return player.z;
+
+	return player.moveSegProgress < 0.5 ? fromZ : toZ;
 }
 
 function drawPlayer() {
@@ -353,16 +456,11 @@ function drawPlayer() {
 	const cameraX = playerWorldX - GAME_WIDTH / 2 + TILE_SIZE / 2;
 	const cameraY = playerWorldY - GAME_HEIGHT / 2 + TILE_SIZE / 2;
 
-	// Draw player
-	// Player collision tile top-left, in screen space
 	const playerScreenX = Math.round(playerWorldX - cameraX);
 	const playerScreenY = Math.round(playerWorldY - cameraY);
 
-	// We want the player's FEET to sit at the bottom-center of the tile.
-	// - Feet X = center of tile
-	// - Feet Y = bottom of tile
 	const feetScreenX = playerScreenX + TILE_SIZE / 2;
-	const feetScreenY = playerScreenY + TILE_SIZE;
+	const feetScreenY = playerScreenY + TILE_SIZE - 2;
 
 	ctx.save();
 	ctx.translate(feetScreenX, feetScreenY);
@@ -381,13 +479,12 @@ function drawPlayer() {
 		);
 	}
 
-	const dw = player.width; // 16
-	const dh = player.height; // 24
+	const dw = player.width;
+	const dh = player.height;
 
 	if (!frameLayers[0]) return;
 
 	ctx.fillStyle = "#00000013";
-	// Draw shadow under player
 	ctx.beginPath();
 	const center = 0;
 	const bottom = -4;
