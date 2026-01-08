@@ -156,14 +156,86 @@ const jumpablePlatformEdges = [
 jumpablePlatformEdges.forEach(([direction, cells]) => {
 	cells.forEach((cell) => {
 		// setEdgeBlocked(cell[0], cell[1], cell[2], direction);
-		setEdgeTransition(cell[0], cell[1], cell[2], direction, {
-			path: [],
-			animation: "hop",
-			end: {
+		let end: Transition["end"] | undefined;
+		let path: Transition["path"] | undefined;
+
+		if (direction === "left") {
+			path = [
+				{
+					...toPx(cell[0] - 0.85, cell[1] - 0.25),
+					z: cell[2],
+				},
+				{
+					...toPx(cell[0] - 1, cell[1] + 1),
+					z: cell[2] - 1,
+				},
+			];
+			end = {
+				tileX: cell[0] - 1,
+				tileY: cell[1] + 1,
+				z: cell[2] - 1,
+			};
+		}
+		if (direction === "down") {
+			path = [
+				{
+					...toPx(cell[0], cell[1] - 0.25),
+					z: cell[2],
+				},
+				{
+					...toPx(cell[0], cell[1] + 2),
+					z: cell[2],
+				},
+			];
+			end = {
+				tileX: cell[0],
+				tileY: cell[1] + 2,
+				z: cell[2] - 1,
+			};
+		}
+		if (direction === "right") {
+			path = [
+				{
+					...toPx(cell[0] + 0.85, cell[1] - 0.25),
+					z: cell[2],
+				},
+				{
+					...toPx(cell[0] + 1, cell[1] + 1),
+					z: cell[2] - 1,
+				},
+			];
+			end = {
+				tileX: cell[0] + 1,
+				tileY: cell[1] + 1,
+				z: cell[2] - 1,
+			};
+		}
+		if (direction === "up") {
+			path = [
+				{
+					...toPx(cell[0], cell[1] - 0.75),
+					z: cell[2],
+				},
+				{
+					...toPx(cell[0], cell[1]),
+					z: cell[2] - 1,
+				},
+			];
+			end = {
 				tileX: cell[0],
 				tileY: cell[1],
-				z: cell[2],
-			},
+				z: cell[2] - 1,
+			};
+		}
+
+		if (!end || !path) {
+			throw new Error("Invalid jumpable platform edge configuration");
+		}
+
+		setEdgeTransition(cell[0], cell[1], cell[2], direction, {
+			path,
+			animation: "hop",
+			end,
 		});
 	});
 });

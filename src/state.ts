@@ -60,9 +60,9 @@ export type Player = {
 	paused: boolean;
 };
 
-export const startTileX = 12;
-export const startTileY = 37;
-export const startLayerZ = 0;
+export const startTileX = 16;
+export const startTileY = 45;
+export const startLayerZ = 1;
 
 export const player: Player = {
 	tileX: startTileX,
