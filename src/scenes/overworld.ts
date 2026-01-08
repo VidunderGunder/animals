@@ -268,9 +268,22 @@ function updatePlayer(dt: number) {
 	// 2.5) Interaction: activate on current tile (placeholder)
 	// Replace "a" with your actual action name if different.
 	if (!player.disabled && activeActions.has("a") && !player.movingDirection) {
+		const activationCell = {
+			x: player.tileX,
+			y: player.tileY,
+			z: player.z,
+		};
+
+		if (player.facingDirection === "right") activationCell.x += 1;
+		if (player.facingDirection === "down") activationCell.y += 1;
+		if (player.facingDirection === "left") activationCell.x -= 1;
+		if (player.facingDirection === "up") activationCell.y -= 1;
+
 		startWorldRules
-			.getCellRule(player.tileX, player.tileY, player.z)
+			.getCellRule(activationCell.x, activationCell.y, activationCell.z)
 			?.interact?.onActivate();
+
+		activeActions.delete("a");
 	}
 
 	// 3) Movement start

@@ -251,7 +251,10 @@ mushroomCells.forEach((cell) => {
 		blocked: true,
 		interact: {
 			id: "pretty_mushrooms",
-			onActivate: () => console.log("Mushroom activated!"),
+			onActivate: () => {
+				const sentence = "Beatuiful. Let's leave this alone ♥";
+				alert(sentence);
+			},
 		},
 	});
 });
