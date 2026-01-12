@@ -1,15 +1,4 @@
-import type {
-	AnimalAnimationKey,
-	AnimalID,
-	SecretAnimalKey,
-} from "./characters/animals";
-import {
-	type CharacterAnimationID,
-	characters,
-	idleDurationDefault,
-	runDurationDefault,
-	walkDurationDefault,
-} from "./characters/characters";
+import { type CharacterAnimationID, characters } from "./characters/characters";
 import {
 	CHARACTER_SPRITE_HEIGHT,
 	CHARACTER_SPRITE_WIDTH,
@@ -18,11 +7,11 @@ import {
 	TILE_SIZE,
 } from "./config";
 import type { Direction } from "./input/input";
-import type { Transition } from "./scenes/overworld/data/start";
+import type { Transition } from "./scenes/overworld/data";
 
 export type Player = {
-	tileX: number;
-	tileY: number;
+	x: number;
+	y: number;
 	z: number;
 
 	facingDirection: Direction;
@@ -65,8 +54,8 @@ export const startTileY = 37;
 export const startLayerZ = 0;
 
 export const player: Player = {
-	tileX: startTileX,
-	tileY: startTileY,
+	x: startTileX,
+	y: startTileY,
 	z: startLayerZ,
 	facingDirection: "down",
 	height: CHARACTER_SPRITE_HEIGHT,
@@ -103,34 +92,9 @@ export const playerDirectionRow: Record<Direction, number> = {
 	up: 3,
 } as const;
 
-export const animalDirectionRow: Record<Direction, number> = {
-	down: 0,
-	left: 1,
-	right: 1,
-	up: 2,
-} as const;
-
 export type Animation = {
 	frames: readonly number[];
 	frameDuration: number;
 };
 
 export const playerAnimations = characters.player.animations;
-
-const animalFrames = [0, 1, 2, 1, 0, 1, 2, 3] as const;
-
-export const animalAnimations = {
-	idle: { frames: animalFrames, frameDuration: idleDurationDefault },
-	walk: { frames: animalFrames, frameDuration: walkDurationDefault },
-	run: { frames: animalFrames, frameDuration: runDurationDefault },
-} as const satisfies Record<AnimalAnimationKey, Animation>;
-
-export function getAnimalAnimation(
-	animalId: AnimalID | SecretAnimalKey,
-	animation: AnimalAnimationKey,
-): Animation {
-	if (animalId === "missing") {
-		return { frames: [0, 1], frameDuration: 0.5 };
-	}
-	return animalAnimations[animation];
-}

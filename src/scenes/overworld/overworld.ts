@@ -25,7 +25,10 @@ import {
 } from "../../input/input";
 import { player, playerAnimations } from "../../state";
 import { menuState, openMenu } from "../menu/menu";
-import { startWorldRules, type Transition } from "./data/start";
+import { getCell, getEdge, type Transition } from "./data";
+import { initializeArea as initializeStartArea } from "./data/start";
+
+initializeStartArea();
 
 export function returnToOverworld() {
 	allActions
@@ -214,12 +217,7 @@ function snapToSegmentEnd() {
 
 function tryPlanMove(desired: Direction, faster: boolean): Transition | null {
 	// Edge rule first
-	const edge = startWorldRules.getEdgeRule(
-		player.tileX,
-		player.tileY,
-		player.z,
-		desired,
-	);
+	const edge = getEdge(player.x, player.y, player.z, desired);
 	if (edge?.blocked) return null;
 
 	if (edge?.transition) {
@@ -229,13 +227,13 @@ function tryPlanMove(desired: Direction, faster: boolean): Transition | null {
 
 	// Default walk + jump-stub logic
 	const { dx, dy } = dirToDxDy(desired);
-	const nx = player.tileX + dx;
-	const ny = player.tileY + dy;
+	const nx = player.x + dx;
+	const ny = player.y + dy;
 	const nz = player.z;
 
 	if (nx < 0 || ny < 0 || nx >= tilesXCount || ny >= tilesYCount) return null;
 
-	const destination = startWorldRules.getCellRule(nx, ny, nz);
+	const destination = getCell(nx, ny, nz);
 
 	if (destination?.blocked) return null;
 
@@ -269,8 +267,8 @@ function updatePlayer(dt: number) {
 	// Replace "a" with your actual action name if different.
 	if (!player.disabled && activeActions.has("a") && !player.movingDirection) {
 		const activationCell = {
-			x: player.tileX,
-			y: player.tileY,
+			x: player.x,
+			y: player.y,
 			z: player.z,
 		};
 
@@ -279,9 +277,11 @@ function updatePlayer(dt: number) {
 		if (player.facingDirection === "left") activationCell.x -= 1;
 		if (player.facingDirection === "up") activationCell.y -= 1;
 
-		startWorldRules
-			.getCellRule(activationCell.x, activationCell.y, activationCell.z)
-			?.interact?.onActivate();
+		getCell(
+			activationCell.x,
+			activationCell.y,
+			activationCell.z,
+		)?.interact?.onActivate();
 
 		activeActions.delete("a");
 	}
@@ -332,8 +332,8 @@ function updatePlayer(dt: number) {
 					);
 				}
 
-				player.tileX = player.pendingEnd.tileX;
-				player.tileY = player.pendingEnd.tileY;
+				player.x = player.pendingEnd.tileX;
+				player.y = player.pendingEnd.tileY;
 				player.z = player.pendingEnd.z;
 
 				player.movingDirection = null;
@@ -421,7 +421,7 @@ function draw(dt: number) {
 		[
 			`fps: ${Math.round(1000 / dt)}`,
 			`res: ${GAME_WIDTH}x${GAME_HEIGHT} (${SCALE}x, ${ASPECT_RATIO_X}:${ASPECT_RATIO_Y})`,
-			`tile: (${player.tileX}, ${player.tileY}, z=${player.z})`,
+			`tile: (${player.x}, ${player.y}, z=${player.z})`,
 			`facing: ${player.facingDirection}`,
 			`moving: ${player.movingDirection}`,
 			`faster: ${getIsMovingFaster()}`,
