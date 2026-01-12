@@ -1,8 +1,8 @@
+import { getAudio } from "../audio/audio";
+
 /**
  * Utility functions for device detection
  */
-
-import { getAudio } from "../audio/audio";
 
 /**
  * Detects if the current device is running iOS

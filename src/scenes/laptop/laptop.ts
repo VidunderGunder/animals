@@ -4,7 +4,6 @@ import { ctx } from "../../gfx/canvas";
 import { activeActions } from "../../input/input";
 import { player } from "../../state";
 import { returnToOverworld } from "../overworld";
-import { biodex } from "./biodex";
 import { moves } from "./moves";
 
 export function openLaptop() {
@@ -13,7 +12,7 @@ export function openLaptop() {
 	laptopState.show = true;
 }
 
-const laptopModes = ["biodex", "moves"] as const;
+const laptopModes = ["moves"] as const;
 type LaptopMode = (typeof laptopModes)[number];
 
 export type LaptopState = {
@@ -69,6 +68,5 @@ export function laptop(dt: number) {
 		returnToOverworld();
 	}
 
-	if (laptopState.mode === "biodex") biodex(dt);
 	if (laptopState.mode === "moves") moves(dt);
 }
