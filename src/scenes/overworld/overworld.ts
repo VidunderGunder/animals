@@ -24,7 +24,7 @@ import {
 	setMovementIntent,
 } from "../../input/input";
 import { player, playerAnimations } from "../../state";
-import { laptopState, openLaptop } from "../laptop/laptop";
+import { menuState, openMenu } from "../menu/menu";
 import { startWorldRules, type Transition } from "./start/data";
 
 export function returnToOverworld() {
@@ -34,7 +34,7 @@ export function returnToOverworld() {
 			activeActions.delete(e);
 		});
 
-	laptopState.show = false;
+	menuState.show = false;
 
 	player.paused = false;
 	player.disabled = false;
@@ -254,7 +254,7 @@ function updatePlayer(dt: number) {
 
 	setTilesCountsIfNotSet();
 
-	if (!player.disabled && activeActions.has("start")) openLaptop();
+	if (!player.disabled && activeActions.has("start")) openMenu();
 
 	const faster = getIsMovingFaster();
 
@@ -412,9 +412,9 @@ function draw(dt: number) {
 		ctx.save();
 		ctx.fillStyle = "#ffffff";
 		ctx.font = "8px Tiny5";
-		ctx.globalAlpha = laptopState.show ? 0.25 : 1.0;
+		ctx.globalAlpha = menuState.show ? 0.25 : 1.0;
 		ctx.textBaseline = "top";
-		ctx.shadowColor = laptopState.show ? "#00000000" : "#0000000d";
+		ctx.shadowColor = menuState.show ? "#00000000" : "#0000000d";
 		ctx.shadowOffsetX = 0;
 		ctx.shadowOffsetY = 1;
 		ctx.shadowBlur = 0;

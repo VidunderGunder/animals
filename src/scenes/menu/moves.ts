@@ -15,7 +15,7 @@ import {
 } from "../../config";
 import { ctx } from "../../gfx/canvas";
 import { type Direction, directions } from "../../input/input";
-import { laptopHeight, laptopWidth } from "./laptop";
+import { menuHeight, menuWidth } from "./menu";
 
 export type EntitiesState = {
 	personId: CharacterKey;
@@ -109,8 +109,8 @@ export function draw() {
 
 		const directionIndex = directionToRow[entity.direction];
 
-		const laptopOffsetX = (GAME_WIDTH - laptopWidth) / 2 + TILE_SIZE;
-		const laptopOffsetY = (GAME_HEIGHT - laptopHeight) / 2 + TILE_SIZE * 0.5;
+		const menuOffsetX = (GAME_WIDTH - menuWidth) / 2 + TILE_SIZE;
+		const menuOffsetY = (GAME_HEIGHT - menuHeight) / 2 + TILE_SIZE * 0.5;
 
 		const col = Math.floor(i / perCol);
 		const row = Math.floor(i / (cols * perCol));
@@ -127,8 +127,8 @@ export function draw() {
 			moveXOffset +
 			CHARACTER_SPRITE_WIDTH +
 			directionIndex * CHARACTER_SPRITE_WIDTH +
-			laptopOffsetX;
-		const y = moveYOffset + laptopOffsetY + textYOffset * row + marginY * row;
+			menuOffsetX;
+		const y = moveYOffset + menuOffsetY + textYOffset * row + marginY * row;
 
 		ctx.save();
 		ctx.fillStyle = "#deeaeb";

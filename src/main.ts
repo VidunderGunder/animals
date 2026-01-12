@@ -1,4 +1,4 @@
-import "./css/reset.css";
+import "./.css/reset.css";
 
 import { initializeAudio } from "./audio/audio";
 import { initScreen } from "./config";
@@ -18,7 +18,7 @@ document.addEventListener("visibilitychange", () => {
 });
 
 import { FPS_LIMIT } from "./config";
-import { laptop } from "./scenes/laptop/laptop";
+import { menu } from "./scenes/menu/menu";
 import { overworld } from "./scenes/overworld/overworld";
 
 let previousFrameTimestamp = 0;
@@ -50,7 +50,7 @@ function loop(timestamp: number) {
 	previousFrameTimestamp = timestamp;
 
 	overworld(dt);
-	laptop(dt);
+	menu(dt);
 
 	rafId = requestAnimationFrame(loop);
 }

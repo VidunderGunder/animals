@@ -2,7 +2,7 @@ import { createImageElement } from "../assets/image";
 import { CHARACTER_SPRITE_HEIGHT, CHARACTER_SPRITE_WIDTH } from "../config";
 import { ctx } from "../gfx/canvas";
 import type { Direction } from "../input/input";
-import { directionToRow } from "../scenes/laptop/moves";
+import { directionToRow } from "../scenes/menu/moves";
 
 type OnRenderProps = {
 	/** Destination x on the canvas */
@@ -132,10 +132,7 @@ export const rideFastDurationDefault = 700;
 export const jumpDurationDefault = 140;
 export const hopDurationDefault = 60;
 
-// const playerSpriteSheet = createImageElement("/characters/player.png");
-// const playerSpriteSheet = createImageElement("/characters/player-simple.png");
-const playerSpriteSheet = createImageElement("/characters/player-chibi.png");
-// const playerSpriteSheet = createImageElement("/characters/player-anime.png");
+const playerSpriteSheet = createImageElement("/characters/player.png");
 const skateboardSpriteSheet = createImageElement("/characters/skateboard.png");
 
 function layerFactory(sheet: HTMLImageElement) {
