@@ -18,7 +18,7 @@ import {
 	TILE_SIZE,
 } from "./config";
 import type { Direction } from "./input/input";
-import type { Transition } from "./scenes/overworld/start/data";
+import type { Transition } from "./scenes/overworld/data/start";
 
 export type Player = {
 	tileX: number;

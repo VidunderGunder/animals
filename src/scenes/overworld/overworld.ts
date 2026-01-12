@@ -25,7 +25,7 @@ import {
 } from "../../input/input";
 import { player, playerAnimations } from "../../state";
 import { menuState, openMenu } from "../menu/menu";
-import { startWorldRules, type Transition } from "./start/data";
+import { startWorldRules, type Transition } from "./data/start";
 
 export function returnToOverworld() {
 	allActions
