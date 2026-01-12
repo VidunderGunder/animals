@@ -19,7 +19,7 @@ document.addEventListener("visibilitychange", () => {
 
 import { FPS_LIMIT } from "./config";
 import { laptop } from "./scenes/laptop/laptop";
-import { overworld } from "./scenes/overworld";
+import { overworld } from "./scenes/overworld/overworld";
 
 let previousFrameTimestamp = 0;
 let isRenderPaused = false;

@@ -1,8 +1,8 @@
-import { createImageElement } from "../assets/image";
+import { createImageElement } from "../../assets/image";
 import {
 	type CharacterAnimationID,
 	renderFrameLayer,
-} from "../characters/characters";
+} from "../../characters/characters";
 import {
 	ASPECT_RATIO_X,
 	ASPECT_RATIO_Y,
@@ -13,8 +13,8 @@ import {
 	movementSpeeds,
 	SCALE,
 	TILE_SIZE,
-} from "../config";
-import { clear, ctx } from "../gfx/canvas";
+} from "../../config";
+import { clear, ctx } from "../../gfx/canvas";
 import {
 	activeActions,
 	allActions,
@@ -22,10 +22,10 @@ import {
 	directions,
 	movementIntent,
 	setMovementIntent,
-} from "../input/input";
-import { player, playerAnimations } from "../state";
-import { laptopState, openLaptop } from "./laptop/laptop";
-import { startWorldRules, type Transition } from "./world/start/data";
+} from "../../input/input";
+import { player, playerAnimations } from "../../state";
+import { laptopState, openLaptop } from "../laptop/laptop";
+import { startWorldRules, type Transition } from "./start/data";
 
 export function returnToOverworld() {
 	allActions
