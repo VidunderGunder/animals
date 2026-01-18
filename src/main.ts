@@ -55,8 +55,6 @@ function loop(timestamp: number) {
 }
 
 function startGame() {
-	console.log("OH NO");
-
 	if (rafId !== null) return;
 	previousFrameTimestamp = 0;
 	rafId = requestAnimationFrame(loop);
