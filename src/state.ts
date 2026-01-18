@@ -10,8 +10,11 @@ import type { Direction } from "./input/input";
 import type { Transition } from "./scenes/overworld/data";
 
 export type Player = {
+	/* Tile position */
 	x: number;
+	/* Tile position */
 	y: number;
+	/* Tile position */
 	z: number;
 
 	facingDirection: Direction;
@@ -22,24 +25,25 @@ export type Player = {
 
 	speed: number;
 
-	/** Render position: collision tile top-left in world pixels (integer) */
-	worldX: number;
-	worldY: number;
+	/** Render position */
+	xPx: number;
+	/** Render position */
+	yPx: number;
 
 	/** Remaining waypoints (world pixels) */
 	movePath: { x: number; y: number; z: number }[];
 
 	/** Segment interpolation (world pixels) */
-	moveSegFromX: number;
-	moveSegFromY: number;
-	moveSegFromZ: number;
-	moveSegToX: number;
-	moveSegToY: number;
-	moveSegToZ: number;
-	moveSegProgress: number;
+	xPxi: number;
+	yPxi: number;
+	zi: number;
+	xPxf: number;
+	yPxf: number;
+	zf: number;
+	moveSegmentProgress: number;
 
-	pendingEnd: Transition["end"] | null;
-	pendingAnim: Transition["animation"] | null;
+	movingToTile: Transition["end"] | null;
+	movingToAnimation: Transition["animation"] | null;
 
 	animationCurrent: CharacterAnimationID;
 	animationFrameIndex: number;
@@ -63,20 +67,20 @@ export const player: Player = {
 	speed: movementSpeeds[DEFAULT_MOVEMENT],
 	movingDirection: null,
 
-	worldX: startTileX * TILE_SIZE,
-	worldY: startTileY * TILE_SIZE,
+	xPx: startTileX * TILE_SIZE,
+	yPx: startTileY * TILE_SIZE,
 
 	movePath: [],
-	moveSegFromX: startTileX * TILE_SIZE,
-	moveSegFromY: startTileY * TILE_SIZE,
-	moveSegFromZ: startLayerZ,
-	moveSegToX: startTileX * TILE_SIZE,
-	moveSegToY: startTileY * TILE_SIZE,
-	moveSegToZ: startLayerZ,
-	moveSegProgress: 1,
+	xPxi: startTileX * TILE_SIZE,
+	yPxi: startTileY * TILE_SIZE,
+	zi: startLayerZ,
+	xPxf: startTileX * TILE_SIZE,
+	yPxf: startTileY * TILE_SIZE,
+	zf: startLayerZ,
+	moveSegmentProgress: 1,
 
-	pendingEnd: null,
-	pendingAnim: null,
+	movingToTile: null,
+	movingToAnimation: null,
 
 	animationCurrent: "idle",
 	animationFrameIndex: 0,

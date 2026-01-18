@@ -77,8 +77,8 @@ function getIsMovingFaster(): boolean {
 
 function getPlayerAnimation(): CharacterAnimationID {
 	// If a transition is forcing an animation, keep it
-	if (player.pendingAnim === "jump") return "jump";
-	if (player.pendingAnim === "hop") return "hop";
+	if (player.movingToAnimation === "jump") return "jump";
+	if (player.movingToAnimation === "hop") return "hop";
 
 	const isMovingFaster = getIsMovingFaster();
 	if (isMovingFaster) return "run";
@@ -121,7 +121,7 @@ function updatePlayerAnimation(dt: number) {
 }
 
 function getPlayerPosition() {
-	return { x: player.worldX, y: player.worldY };
+	return { x: player.xPx, y: player.yPx };
 }
 
 function getVisibleTileRange(playerX: number, playerY: number) {
@@ -191,15 +191,15 @@ function isWorldImagesReady() {
 
 // --- path mover helpers ---
 function startSegment(toX: number, toY: number, toZ: number) {
-	player.moveSegFromX = player.worldX;
-	player.moveSegFromY = player.worldY;
-	player.moveSegFromZ = player.z;
+	player.xPxi = player.xPx;
+	player.yPxi = player.yPx;
+	player.zi = player.z;
 
-	player.moveSegToX = toX;
-	player.moveSegToY = toY;
-	player.moveSegToZ = toZ;
+	player.xPxf = toX;
+	player.yPxf = toY;
+	player.zf = toZ;
 
-	player.moveSegProgress = 0;
+	player.moveSegmentProgress = 0;
 }
 
 function popNextWaypoint(): boolean {
@@ -210,9 +210,9 @@ function popNextWaypoint(): boolean {
 }
 
 function snapToSegmentEnd() {
-	player.worldX = player.moveSegToX;
-	player.worldY = player.moveSegToY;
-	player.z = player.moveSegToZ;
+	player.xPx = player.xPxf;
+	player.yPx = player.yPxf;
+	player.z = player.zf;
 }
 
 function tryPlanMove(desired: Direction): Transition | null {
@@ -295,8 +295,8 @@ function updatePlayer(dt: number) {
 			if (planned) {
 				player.movingDirection = desired;
 
-				player.pendingEnd = planned.end;
-				player.pendingAnim = planned.animation ?? null;
+				player.movingToTile = planned.end;
+				player.movingToAnimation = planned.animation ?? null;
 
 				player.movePath = planned.path.map((p) => ({
 					x: p.xPx,
@@ -311,39 +311,39 @@ function updatePlayer(dt: number) {
 
 	// 4) Movement tween (pixel-based segments)
 	if (player.movingDirection) {
-		const dx = player.moveSegToX - player.moveSegFromX;
-		const dy = player.moveSegToY - player.moveSegFromY;
+		const dx = player.xPxf - player.xPxi;
+		const dy = player.yPxf - player.yPxi;
 
 		const distancePx = dx === 0 && dy === 0 ? 0 : Math.hypot(dx, dy);
 
 		const moveDuration = distancePx === 0 ? 0 : distancePx / player.speed;
-		player.moveSegProgress += moveDuration === 0 ? 1 : dt / moveDuration;
+		player.moveSegmentProgress += moveDuration === 0 ? 1 : dt / moveDuration;
 
-		if (player.moveSegProgress >= 1) {
-			player.moveSegProgress = 1;
+		if (player.moveSegmentProgress >= 1) {
+			player.moveSegmentProgress = 1;
 			snapToSegmentEnd();
 
 			const hasMore = popNextWaypoint();
 			if (!hasMore) {
 				// Movement fully finished: snap logical state
-				if (!player.pendingEnd) {
+				if (!player.movingToTile) {
 					throw new Error(
 						"Invariant: movement finished but pendingEnd is null",
 					);
 				}
 
-				player.x = player.pendingEnd.x;
-				player.y = player.pendingEnd.y;
-				player.z = player.pendingEnd.z;
+				player.x = player.movingToTile.x;
+				player.y = player.movingToTile.y;
+				player.z = player.movingToTile.z;
 
 				player.movingDirection = null;
-				player.pendingEnd = null;
-				player.pendingAnim = null;
+				player.movingToTile = null;
+				player.movingToAnimation = null;
 			}
 		} else {
-			const t = player.moveSegProgress;
-			player.worldX = Math.round(player.moveSegFromX + dx * t);
-			player.worldY = Math.round(player.moveSegFromY + dy * t);
+			const t = player.moveSegmentProgress;
+			player.xPx = Math.round(player.xPxi + dx * t);
+			player.yPx = Math.round(player.yPxi + dy * t);
 		}
 	}
 
@@ -380,7 +380,7 @@ function draw(dt: number) {
 	const playerRenderZ = getPlayerRenderZ();
 
 	// Row used for depth sorting: approximate “feet row”
-	const playerRow = Math.floor((player.worldY + TILE_SIZE - 1) / TILE_SIZE);
+	const playerRow = Math.floor((player.yPx + TILE_SIZE - 1) / TILE_SIZE);
 
 	for (const layer of worldImageLayers) {
 		for (let ty = startY; ty <= endY; ty++) {
@@ -421,11 +421,12 @@ function draw(dt: number) {
 		[
 			`fps: ${Math.round(1000 / dt)}`,
 			`res: ${GAME_WIDTH}x${GAME_HEIGHT} (${SCALE}x, ${ASPECT_RATIO_X}:${ASPECT_RATIO_Y})`,
-			`tile: (${player.x}, ${player.y}, z=${player.z})`,
+			`current tile: ${player.x}, ${player.y}, ${player.z}`,
+			`move to tile: ${player.movingToTile?.x ?? "x"}, ${player.movingToTile?.y ?? "y"}, ${player.movingToTile?.z ?? "z"}`,
 			`facing: ${player.facingDirection}`,
 			`moving: ${player.movingDirection}`,
 			`faster: ${getIsMovingFaster()}`,
-			`animLock: ${player.pendingAnim ?? "-"}`,
+			`transition animation: ${player.movingToAnimation ?? "-"}`,
 		].forEach((line, index) => {
 			ctx.fillText(line, 4, 2 + index * 8);
 		});
@@ -436,12 +437,11 @@ function draw(dt: number) {
 function getPlayerRenderZ(): number {
 	if (!player.movingDirection) return player.z;
 
-	// If this segment changes z, pick which layer to draw on based on progress.
-	const fromZ = player.moveSegFromZ;
-	const toZ = player.moveSegToZ;
+	const fromZ = player.zi;
+	const toZ = player.zf;
 	if (fromZ === toZ) return player.z;
 
-	return player.moveSegProgress < 0.5 ? fromZ : toZ;
+	return player.moveSegmentProgress < 0.5 ? fromZ : toZ;
 }
 
 function drawPlayer() {

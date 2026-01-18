@@ -12,12 +12,19 @@ export type Cell = {
 		id: string;
 		onActivate: () => void;
 	};
+	/**
+	 * Camera offset when player is in this cell
+	 */
+	camera?: {
+		xPx: number;
+		yPx: number;
+	};
 };
 
 export type Transition = {
 	condition?: () => boolean;
 
-	/* optional: force animation during the transition */
+	/* optional: force animation during the tr ansition */
 	animation?: CharacterAnimationID;
 
 	/* Path in pixel space (tile-top-left in world pixels), INCLUDING destination. */
@@ -247,4 +254,26 @@ export function getJumpTransition({
 		},
 		animation: "jump",
 	} satisfies Transition;
+}
+
+export function range(
+	x: number | [number, number],
+	y: number | [number, number],
+	z: number | [number, number] = 0,
+): [number, number, number][] {
+	const [x0, x1] = Array.isArray(x) ? x : [x, x];
+	const [y0, y1] = Array.isArray(y) ? y : [y, y];
+	const [z0, z1] = Array.isArray(z) ? z : [z, z];
+
+	const out: [number, number, number][] = [];
+
+	for (let xi = x0; xi <= x1; xi++) {
+		for (let yi = y0; yi <= y1; yi++) {
+			for (let zi = z0; zi <= z1; zi++) {
+				out.push([xi, yi, zi]);
+			}
+		}
+	}
+
+	return out;
 }

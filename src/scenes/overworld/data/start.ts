@@ -1,33 +1,41 @@
+import { TILE_SIZE } from "../../../config";
 import { player } from "../../../state";
 import {
 	cellToPx,
 	getCellsOutline,
 	getJumpTransition,
+	range,
 	setCell,
 	setEdge,
 } from "../data";
 
-function range(
-	x: number | [number, number],
-	y: number | [number, number],
-	z: number | [number, number] = 0,
-): [number, number, number][] {
-	const [x0, x1] = Array.isArray(x) ? x : [x, x];
-	const [y0, y1] = Array.isArray(y) ? y : [y, y];
-	const [z0, z1] = Array.isArray(z) ? z : [z, z];
-
-	const out: [number, number, number][] = [];
-	for (let xi = x0; xi <= x1; xi++) {
-		for (let yi = y0; yi <= y1; yi++) {
-			for (let zi = z0; zi <= z1; zi++) {
-				out.push([xi, yi, zi]);
-			}
-		}
-	}
-	return out;
-}
-
 export function initializeArea() {
+	// dock camera position
+	setCell(12, 37, 0, {
+		camera: {
+			xPx: 0,
+			yPx: -4 * TILE_SIZE,
+		},
+	});
+	setCell(12, 38, 0, {
+		camera: {
+			xPx: 0,
+			yPx: -3 * TILE_SIZE,
+		},
+	});
+	setCell(12, 39, 0, {
+		camera: {
+			xPx: 0,
+			yPx: -2 * TILE_SIZE,
+		},
+	});
+	setCell(12, 40, 0, {
+		camera: {
+			xPx: 0,
+			yPx: -1 * TILE_SIZE,
+		},
+	});
+
 	const stubs: [number, number][] = [
 		[10, 44],
 		[9, 44],
