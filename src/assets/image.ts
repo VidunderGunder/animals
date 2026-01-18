@@ -5,21 +5,17 @@ const availableImages = Object.keys(
 	}),
 ).map((path) => path.replace("/public", ""));
 
-const missingPath = "/animals/missing.png";
-if (!availableImages.includes(missingPath)) {
-	console.warn(`Missing image (placeholder) not found: ${missingPath}`);
-}
-const missingImageElement = new Image();
-missingImageElement.src = missingPath;
-
-export function createImageElement(
-	src: string,
-	fallback: HTMLImageElement = missingImageElement,
-): HTMLImageElement {
+export function createImageElement(src: string): HTMLImageElement {
 	const img = new Image();
 	if (!availableImages.includes(src)) {
-		console.warn(`Image not found: ${src} | Using fallback: ${fallback.src}`);
-		return fallback;
+		console.warn(
+			[
+				`Image not found: ${src}`,
+
+				"Available images are:",
+				...availableImages,
+			].join("\n"),
+		);
 	}
 	img.src = src;
 	return img;
