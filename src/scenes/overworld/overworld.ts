@@ -215,13 +215,13 @@ function snapToSegmentEnd() {
 	player.z = player.moveSegToZ;
 }
 
-function tryPlanMove(desired: Direction, faster: boolean): Transition | null {
+function tryPlanMove(desired: Direction): Transition | null {
 	// Edge rule first
 	const edge = getEdge(player.x, player.y, player.z, desired);
 	if (edge?.blocked) return null;
 
 	if (edge?.transition) {
-		if (edge.transition.requireFaster && !faster) return null;
+		if (edge.transition.condition?.() === false) return null;
 		return edge.transition;
 	}
 
@@ -239,7 +239,7 @@ function tryPlanMove(desired: Direction, faster: boolean): Transition | null {
 
 	return {
 		path: [{ xPx: nx * TILE_SIZE, yPx: ny * TILE_SIZE, z: nz }],
-		end: { tileX: nx, tileY: ny, z: nz },
+		end: { x: nx, y: ny, z: nz },
 	};
 }
 
@@ -291,7 +291,7 @@ function updatePlayer(dt: number) {
 		if (desired) {
 			player.facingDirection = desired;
 
-			const planned = tryPlanMove(desired, faster);
+			const planned = tryPlanMove(desired);
 			if (planned) {
 				player.movingDirection = desired;
 
@@ -332,8 +332,8 @@ function updatePlayer(dt: number) {
 					);
 				}
 
-				player.x = player.pendingEnd.tileX;
-				player.y = player.pendingEnd.tileY;
+				player.x = player.pendingEnd.x;
+				player.y = player.pendingEnd.y;
 				player.z = player.pendingEnd.z;
 
 				player.movingDirection = null;

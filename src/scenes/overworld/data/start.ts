@@ -1,11 +1,12 @@
 import type { Direction } from "../../../input/input";
+import { player } from "../../../state";
 import {
-	cellKey,
 	cells,
-	setEdgeBlocked,
-	setEdgeTransition,
+	cellToPx,
+	edges,
+	setCell,
+	setEdge,
 	type Transition,
-	toPx,
 } from "../data";
 
 function range(
@@ -29,20 +30,20 @@ function range(
 }
 
 export function initializeArea() {
-	const stubs = [
+	const stubs: [number, number][] = [
 		[10, 44],
 		[9, 44],
 		[8, 44],
 		[8, 45],
 		[8, 46],
 		[10, 46],
-	] as const satisfies [number, number][];
+	] as const;
 
-	stubs.forEach(([x, y]) => {
-		cells.set(cellKey(x, y, 0), { blocked: true });
-	});
+	for (const xy of stubs) {
+		setCell(...xy, 0, { blocked: true });
+	}
 
-	const blockedCells = [
+	const blockedCells: [number, number, number][] = [
 		// Dock
 		[12, 36, 0],
 		...range(11, [37, 39]),
@@ -63,30 +64,33 @@ export function initializeArea() {
 
 		// Skateboard
 		[14, 58, 0],
-	] as const satisfies [number, number, number][];
+	] as const;
 
-	for (const cell of blockedCells) {
-		cells.set(cellKey(cell[0], cell[1], cell[2]), {
+	for (const xyz of blockedCells) {
+		setCell(...xyz, {
 			blocked: true,
 		});
 	}
 
-	const stoneFenceCells = [
+	const stoneFenceCells: [number, number, number][] = [
 		...range([5, 10], 57),
 		...range([14, 19], 57),
 	] as const;
 
-	stoneFenceCells.forEach((cell) => {
-		setEdgeBlocked(cell[0], cell[1], cell[2], "down");
-		setEdgeBlocked(cell[0], cell[1] + 1, cell[2], "up");
-	});
+	// stoneFenceCells.forEach((cell) => {
+	for (const xyz of stoneFenceCells) {
+		setEdge(...xyz, "down", { blocked: true });
+		setEdge(xyz[0], xyz[1] + 1, xyz[2], "up", { blocked: true });
+	}
 
-	const bridgeCells = [...range([10, 14], 49, 1)] as const;
+	const bridgeCells: [number, number, number][] = [
+		...range([10, 14], 49, 1),
+	] as const;
 
-	bridgeCells.forEach((cell) => {
-		setEdgeBlocked(cell[0], cell[1], cell[2], "up");
-		setEdgeBlocked(cell[0], cell[1], cell[2], "down");
-	});
+	for (const xyz of bridgeCells) {
+		setEdge(...xyz, "up", { blocked: true });
+		setEdge(...xyz, "down", { blocked: true });
+	}
 
 	const jumpablePlatformEdges = [
 		["up", [...range([14, 17], 45, 1)]],
@@ -96,76 +100,76 @@ export function initializeArea() {
 	] as const satisfies [Direction, [number, number, number][]][];
 
 	jumpablePlatformEdges.forEach(([direction, jumpablePlatformCells]) => {
-		jumpablePlatformCells.forEach((cell) => {
+		jumpablePlatformCells.forEach((xyz) => {
 			let end: Transition["end"] | undefined;
 			let path: Transition["path"] | undefined;
 
 			if (direction === "left") {
 				path = [
 					{
-						...toPx(cell[0] - 0.85, cell[1] - 0.25),
-						z: cell[2],
+						...cellToPx(xyz[0] - 0.85, xyz[1] - 0.25),
+						z: xyz[2],
 					},
 					{
-						...toPx(cell[0] - 1, cell[1] + 1),
-						z: cell[2] - 1,
+						...cellToPx(xyz[0] - 1, xyz[1] + 1),
+						z: xyz[2] - 1,
 					},
 				];
 				end = {
-					tileX: cell[0] - 1,
-					tileY: cell[1] + 1,
-					z: cell[2] - 1,
+					x: xyz[0] - 1,
+					y: xyz[1] + 1,
+					z: xyz[2] - 1,
 				};
 			}
 			if (direction === "down") {
 				path = [
 					{
-						...toPx(cell[0], cell[1] - 0.25),
-						z: cell[2],
+						...cellToPx(xyz[0], xyz[1] - 0.25),
+						z: xyz[2],
 					},
 					{
-						...toPx(cell[0], cell[1] + 2),
-						z: cell[2],
+						...cellToPx(xyz[0], xyz[1] + 2),
+						z: xyz[2],
 					},
 				];
 				end = {
-					tileX: cell[0],
-					tileY: cell[1] + 2,
-					z: cell[2] - 1,
+					x: xyz[0],
+					y: xyz[1] + 2,
+					z: xyz[2] - 1,
 				};
 			}
 			if (direction === "right") {
 				path = [
 					{
-						...toPx(cell[0] + 0.85, cell[1] - 0.25),
-						z: cell[2],
+						...cellToPx(xyz[0] + 0.85, xyz[1] - 0.25),
+						z: xyz[2],
 					},
 					{
-						...toPx(cell[0] + 1, cell[1] + 1),
-						z: cell[2] - 1,
+						...cellToPx(xyz[0] + 1, xyz[1] + 1),
+						z: xyz[2] - 1,
 					},
 				];
 				end = {
-					tileX: cell[0] + 1,
-					tileY: cell[1] + 1,
-					z: cell[2] - 1,
+					x: xyz[0] + 1,
+					y: xyz[1] + 1,
+					z: xyz[2] - 1,
 				};
 			}
 			if (direction === "up") {
 				path = [
 					{
-						...toPx(cell[0], cell[1] - 0.75),
-						z: cell[2],
+						...cellToPx(xyz[0], xyz[1] - 0.75),
+						z: xyz[2],
 					},
 					{
-						...toPx(cell[0], cell[1]),
-						z: cell[2] - 1,
+						...cellToPx(xyz[0], xyz[1]),
+						z: xyz[2] - 1,
 					},
 				];
 				end = {
-					tileX: cell[0],
-					tileY: cell[1],
-					z: cell[2] - 1,
+					x: xyz[0],
+					y: xyz[1],
+					z: xyz[2] - 1,
 				};
 			}
 
@@ -173,22 +177,24 @@ export function initializeArea() {
 				throw new Error("Invalid jumpable platform edge configuration");
 			}
 
-			setEdgeTransition(cell[0], cell[1], cell[2], direction, {
-				path,
-				animation: "hop",
-				end,
+			setEdge(xyz[0], xyz[1], xyz[2], direction, {
+				transition: {
+					path,
+					animation: "hop",
+					end,
+				},
 			});
 		});
 	});
 
-	const mushroomCells = [
+	const mushroomCells: [number, number, number][] = [
 		[6, 51, 0],
 		[17, 42, 0],
 	] as const;
 
 	// Mushroom at 17,42,0 blocks and is interactable
 	mushroomCells.forEach((cell) => {
-		cells.set(cellKey(cell[0], cell[1], cell[2]), {
+		setCell(...cell, {
 			blocked: true,
 			interact: {
 				id: "pretty_mushrooms",
@@ -203,74 +209,95 @@ export function initializeArea() {
 	// Ladder:
 	// trigger when moving RIGHT from (13,46,0):
 	// (13,46,0) -> (13,45,1) -> (14,45,1)
-	setEdgeTransition(13, 46, 0, "right", {
-		animation: "walk",
-		path: [
-			{ ...toPx(13, 45), z: 1 },
-			{ ...toPx(14, 45), z: 1 },
-		],
-		end: { tileX: 14, tileY: 45, z: 1 },
+	setEdge(13, 46, 0, "right", {
+		transition: {
+			animation: "walk",
+			path: [
+				{ ...cellToPx(13, 45), z: 1 },
+				{ ...cellToPx(14, 45), z: 1 },
+			],
+			end: { x: 14, y: 45, z: 1 },
+		},
 	});
 
 	// Walk back down: moving LEFT from (14,45,1)
-	setEdgeTransition(14, 45, 1, "left", {
-		animation: "walk",
-		path: [
-			{ ...toPx(13, 45), z: 1 },
-			{ ...toPx(13, 46), z: 0 },
-		],
-		end: { tileX: 13, tileY: 46, z: 0 },
+	setEdge(14, 45, 1, "left", {
+		transition: {
+			animation: "walk",
+			path: [
+				{ ...cellToPx(13, 45), z: 1 },
+				{ ...cellToPx(13, 46), z: 0 },
+			],
+			end: { x: 13, y: 46, z: 0 },
+		},
 	});
 
-	setEdgeBlocked(14, 46, 0, "left");
+	setEdge(14, 46, 0, "left", { blocked: true });
 
 	// Fence roll
-	setEdgeTransition(8, 52, 0, "down", {
-		requireFaster: true,
-		animation: "spin",
-		path: [{ ...toPx(8, 54), z: 0 }],
-		end: { tileX: 8, tileY: 54, z: 0 },
+	setEdge(8, 52, 0, "down", {
+		transition: {
+			condition: () => player.animationCurrent === "run",
+			animation: "spin",
+			path: [{ ...cellToPx(8, 54), z: 0 }],
+			end: { x: 8, y: 54, z: 0 },
+		},
 	});
-	setEdgeTransition(8, 53, 0, "up", {
-		requireFaster: true,
-		animation: "spin",
-		path: [{ ...toPx(8, 51), z: 0 }],
-		end: { tileX: 8, tileY: 51, z: 0 },
+	setEdge(8, 53, 0, "up", {
+		transition: {
+			condition: () => player.animationCurrent === "run",
+			animation: "spin",
+			path: [{ ...cellToPx(8, 51), z: 0 }],
+			end: { x: 8, y: 51, z: 0 },
+		},
 	});
 
 	// Blocking poles
-	setEdgeBlocked(7, 53, 0, "up");
-	setEdgeBlocked(7, 52, 0, "down");
-	setEdgeBlocked(9, 53, 0, "up");
-	setEdgeBlocked(9, 52, 0, "down");
+	setEdge(7, 53, 0, "up", { blocked: true });
+	setEdge(7, 52, 0, "down", { blocked: true });
+	setEdge(9, 53, 0, "up", { blocked: true });
+	setEdge(9, 52, 0, "down", { blocked: true });
 
 	// Stairs
-	setEdgeTransition(15, 50, 0, "left", {
-		animation: "walk",
-		path: [{ ...toPx(14, 49), z: 1 }],
-		end: { tileX: 14, tileY: 49, z: 1 },
+	setEdge(15, 50, 0, "left", {
+		transition: {
+			animation: "walk",
+			path: [{ ...cellToPx(14, 49), z: 1 }],
+			end: { x: 14, y: 49, z: 1 },
+		},
 	});
-	setEdgeTransition(14, 49, 1, "right", {
-		animation: "walk",
-		path: [{ ...toPx(15, 50), z: 0 }],
-		end: { tileX: 15, tileY: 50, z: 0 },
-	});
-
-	setEdgeTransition(9, 50, 0, "right", {
-		animation: "walk",
-		path: [{ ...toPx(10, 49), z: 1 }],
-		end: { tileX: 10, tileY: 49, z: 1 },
-	});
-	setEdgeTransition(10, 49, 1, "left", {
-		animation: "walk",
-		path: [{ ...toPx(9, 50), z: 0 }],
-		end: { tileX: 9, tileY: 50, z: 0 },
+	setEdge(14, 49, 1, "right", {
+		transition: {
+			animation: "walk",
+			path: [{ ...cellToPx(15, 50), z: 0 }],
+			end: { x: 15, y: 50, z: 0 },
+		},
 	});
 
-	cells.set(cellKey(10, 50, 0), {
+	setEdge(9, 50, 0, "right", {
+		transition: {
+			animation: "walk",
+			path: [{ ...cellToPx(10, 49), z: 1 }],
+			end: { x: 10, y: 49, z: 1 },
+		},
+	});
+	setEdge(10, 49, 1, "left", {
+		transition: {
+			animation: "walk",
+			path: [{ ...cellToPx(9, 50), z: 0 }],
+			end: { x: 9, y: 50, z: 0 },
+		},
+	});
+
+	setCell(10, 50, 0, {
 		blocked: true,
 	});
-	cells.set(cellKey(14, 50, 0), {
+	setCell(14, 50, 0, {
 		blocked: true,
+	});
+
+	console.log({
+		cells: cells.keys(),
+		edges: edges.keys(),
 	});
 }
