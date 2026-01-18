@@ -2,7 +2,7 @@ import "./.css/reset.css";
 
 import { initializeAudio } from "./audio/audio";
 import { initScreen } from "./config";
-import { initKeyboard } from "./input/input";
+import { activeActions, initKeyboard } from "./input/input";
 import { initVirtualGamepad } from "./input/touch";
 
 initScreen();
@@ -12,9 +12,8 @@ initKeyboard();
 initVirtualGamepad();
 
 document.addEventListener("visibilitychange", () => {
-	if (!document.hidden) {
-		initializeAudio();
-	}
+	if (!document.hidden) return;
+	initializeAudio();
 });
 
 import { FPS_LIMIT } from "./config";
@@ -28,11 +27,11 @@ let rafId: number | null = null;
 document.addEventListener("visibilitychange", () => {
 	if (document.hidden) {
 		isRenderPaused = true;
+		activeActions.clear();
 	} else {
 		// Reset timing when returning so dt doesn't explode
 		isRenderPaused = false;
 		previousFrameTimestamp = 0;
-		rafId = requestAnimationFrame(loop);
 	}
 });
 
@@ -56,6 +55,8 @@ function loop(timestamp: number) {
 }
 
 function startGame() {
+	console.log("OH NO");
+
 	if (rafId !== null) return;
 	previousFrameTimestamp = 0;
 	rafId = requestAnimationFrame(loop);
