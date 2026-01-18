@@ -1,12 +1,10 @@
-import type { Direction } from "../../../input/input";
 import { player } from "../../../state";
 import {
-	cells,
 	cellToPx,
-	edges,
+	getCellsOutline,
+	getJumpTransition,
 	setCell,
 	setEdge,
-	type Transition,
 } from "../data";
 
 function range(
@@ -92,100 +90,24 @@ export function initializeArea() {
 		setEdge(...xyz, "down", { blocked: true });
 	}
 
-	const jumpablePlatformEdges = [
-		["up", [...range([14, 17], 45, 1)]],
-		["down", [...range([14, 16], 45, 1), [17, 49, 1]]],
-		["right", [...range(17, [45, 49], 1)]],
-		["left", [...range(17, [46, 49], 1)]],
-	] as const satisfies [Direction, [number, number, number][]][];
+	const jumpablePlatformCells: [number, number, number][] = [
+		...range([14, 17], 45, 1),
+		...range(17, [45, 49], 1),
+		...range([14, 16], 45, 1),
+	] as const;
 
-	jumpablePlatformEdges.forEach(([direction, jumpablePlatformCells]) => {
-		jumpablePlatformCells.forEach((xyz) => {
-			let end: Transition["end"] | undefined;
-			let path: Transition["path"] | undefined;
+	const jumpablePlatformEdges = getCellsOutline(jumpablePlatformCells);
 
-			if (direction === "left") {
-				path = [
-					{
-						...cellToPx(xyz[0] - 0.85, xyz[1] - 0.25),
-						z: xyz[2],
-					},
-					{
-						...cellToPx(xyz[0] - 1, xyz[1] + 1),
-						z: xyz[2] - 1,
-					},
-				];
-				end = {
-					x: xyz[0] - 1,
-					y: xyz[1] + 1,
-					z: xyz[2] - 1,
-				};
-			}
-			if (direction === "down") {
-				path = [
-					{
-						...cellToPx(xyz[0], xyz[1] - 0.25),
-						z: xyz[2],
-					},
-					{
-						...cellToPx(xyz[0], xyz[1] + 2),
-						z: xyz[2],
-					},
-				];
-				end = {
-					x: xyz[0],
-					y: xyz[1] + 2,
-					z: xyz[2] - 1,
-				};
-			}
-			if (direction === "right") {
-				path = [
-					{
-						...cellToPx(xyz[0] + 0.85, xyz[1] - 0.25),
-						z: xyz[2],
-					},
-					{
-						...cellToPx(xyz[0] + 1, xyz[1] + 1),
-						z: xyz[2] - 1,
-					},
-				];
-				end = {
-					x: xyz[0] + 1,
-					y: xyz[1] + 1,
-					z: xyz[2] - 1,
-				};
-			}
-			if (direction === "up") {
-				path = [
-					{
-						...cellToPx(xyz[0], xyz[1] - 0.75),
-						z: xyz[2],
-					},
-					{
-						...cellToPx(xyz[0], xyz[1]),
-						z: xyz[2] - 1,
-					},
-				];
-				end = {
-					x: xyz[0],
-					y: xyz[1],
-					z: xyz[2] - 1,
-				};
-			}
-
-			if (!end || !path) {
-				throw new Error("Invalid jumpable platform edge configuration");
-			}
-
-			setEdge(xyz[0], xyz[1], xyz[2], direction, {
-				transition: {
-					path,
-					animation: "hop",
-					end,
-				},
-			});
+	for (const { x, y, z, dir } of jumpablePlatformEdges) {
+		setEdge(x, y, z, dir, {
+			transition: getJumpTransition({
+				x,
+				y,
+				z,
+				dir,
+			}),
 		});
-	});
+	}
 
 	const mushroomCells: [number, number, number][] = [
 		[6, 51, 0],
@@ -294,10 +216,5 @@ export function initializeArea() {
 	});
 	setCell(14, 50, 0, {
 		blocked: true,
-	});
-
-	console.log({
-		cells: cells.keys(),
-		edges: edges.keys(),
 	});
 }

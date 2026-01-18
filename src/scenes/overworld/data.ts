@@ -1,6 +1,7 @@
 import type { CharacterAnimationID } from "../../characters/characters";
 import { TILE_SIZE } from "../../config";
-import { type Direction, directions } from "../../input/input";
+import type { Direction } from "../../input/input";
+import { player } from "../../state";
 
 export const cells = new Map<number, Cell>();
 export const edges = new Map<number, Edge>();
@@ -83,4 +84,167 @@ export function getEdge(
 export function clearCellsAndEdges() {
 	cells.clear();
 	edges.clear();
+}
+
+/** A single outline edge segment */
+export type OutlineEdge = {
+	x: number; // cell x
+	y: number; // cell y
+	z: number; // layer
+	dir: Direction;
+	a: { xPx: number; yPx: number }; // segment start
+	b: { xPx: number; yPx: number }; // segment end
+};
+
+/**
+ * Gets the outline edges of a set of cells
+ */
+export function getCellsOutline(cells: [number, number, number][]): {
+	x: number;
+	y: number;
+	z: number;
+	dir: Direction;
+	edge: Edge | undefined;
+}[] {
+	// Membership lookup
+	const included = new Set<number>();
+	for (const [x, y, z] of cells) included.add(cellKey(x, y, z));
+
+	const out: {
+		x: number;
+		y: number;
+		z: number;
+		dir: Direction;
+
+		edge: Edge | undefined;
+	}[] = [];
+
+	function hasCell(x: number, y: number, z: number): boolean {
+		return included.has(cellKey(x, y, z));
+	}
+
+	for (const [x, y, z] of cells) {
+		if (!hasCell(x, y - 1, z)) {
+			out.push({ x, y, z, dir: "up", edge: getEdge(x, y, z, "up") });
+		}
+		if (!hasCell(x + 1, y, z)) {
+			out.push({ x, y, z, dir: "right", edge: getEdge(x, y, z, "right") });
+		}
+		if (!hasCell(x, y + 1, z)) {
+			out.push({ x, y, z, dir: "down", edge: getEdge(x, y, z, "down") });
+		}
+		if (!hasCell(x - 1, y, z)) {
+			out.push({ x, y, z, dir: "left", edge: getEdge(x, y, z, "left") });
+		}
+	}
+
+	return out;
+}
+
+export function getJumpTransition({
+	x,
+	y,
+	z,
+	dir,
+	drop,
+}: {
+	x: number;
+	y: number;
+	z: number;
+	dir: Direction;
+	/**
+	 * How many z-levels to drop down during the jump and adjust y accordingly
+	 *
+	 * Defaults to 1
+	 */
+	drop?: number;
+}) {
+	drop ??= 1;
+
+	let end: Transition["end"] | undefined;
+	let path: Transition["path"] | undefined;
+
+	if (dir === "left") {
+		path = [
+			{
+				...cellToPx(x - 0.85, y - 0.25),
+				z,
+			},
+			{
+				...cellToPx(x - 1, y + 1),
+				z: z - drop,
+			},
+		];
+		end = {
+			x: x - 1,
+			y: y + 1,
+			z: z - drop,
+		};
+	}
+	if (dir === "down") {
+		path = [
+			{
+				...cellToPx(x, y - 0.25),
+				z,
+			},
+			{
+				...cellToPx(x, y + 2),
+				z,
+			},
+		];
+		end = {
+			x,
+			y: y + 1 + drop,
+			z: z - drop,
+		};
+	}
+	if (dir === "right") {
+		path = [
+			{
+				...cellToPx(x + 0.85, y - 0.25),
+				z,
+			},
+			{
+				...cellToPx(x + 1, y + drop),
+				z: z - drop,
+			},
+		];
+		end = {
+			x: x + 1,
+			y: y + 1,
+			z: z - drop,
+		};
+	}
+	if (dir === "up") {
+		path = [
+			{
+				...cellToPx(x, y - 0.75),
+				z,
+			},
+			{
+				...cellToPx(x, y - 1 + drop),
+				z: z - drop,
+			},
+		];
+		end = {
+			x,
+			y,
+			z: z - drop,
+		};
+	}
+
+	if (!path || !end) {
+		throw new Error(
+			`Could not create jump transition for dir=${dir} at ${x},${y},${z}`,
+		);
+	}
+
+	return {
+		end,
+		path,
+		condition() {
+			return player.animationCurrent === "run";
+		},
+		animation: "jump",
+	} satisfies Transition;
 }
