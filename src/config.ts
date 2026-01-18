@@ -84,8 +84,7 @@ export const movementSpeeds = {
 	run: 0.13,
 } as const satisfies Record<MovementType, number>;
 
-export const DEBUG_TILES = false;
-export const DEBUG_OVERLAY = true;
+export const DEBUG_OVERLAY = false;
 
 function isValidDimensions() {
 	if (Number.isInteger(GAME_WIDTH) && Number.isInteger(GAME_HEIGHT)) {
