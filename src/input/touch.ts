@@ -346,3 +346,39 @@ export function initVirtualGamepad() {
 		if (document.hidden) releaseAll();
 	});
 }
+
+// iOS Magnifying Glass prevention hack
+function makeDoubleTapHandler<E extends Event>(
+	func: ((e: E) => void) | null,
+	timeoutMs: number | null,
+) {
+	let timer: ReturnType<typeof setTimeout> | null = null;
+	let pressed = false;
+
+	function clear() {
+		timeoutMs = null;
+		pressed = false;
+		if (timer) {
+			clearTimeout(timer);
+			timer = null;
+		}
+	}
+
+	return function handler(this: HTMLElement, e: E) {
+		if (timer) clearTimeout(timer);
+
+		if (pressed) {
+			func?.call(this, e);
+			clear();
+		} else {
+			pressed = true;
+			timer = setTimeout(clear, timeoutMs ?? 500);
+		}
+	};
+}
+
+document.body.addEventListener(
+	"touchstart",
+	makeDoubleTapHandler<TouchEvent>((e) => e.preventDefault(), 500),
+	{ passive: false },
+);
