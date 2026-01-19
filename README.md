@@ -4,6 +4,11 @@ Nostalgic GBA inspired game about a skater collecting animals and mythological b
 
 ## TODO
 
+UI
+
+- [ ] Fullscreen toggle (F key as first draft)  
+  See `src/gfx/fullscreen.ts` and `src/main.ts`
+
 Entities
 
 - [ ] Entities (characters, items, animals)

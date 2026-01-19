@@ -1,24 +1,24 @@
 import "./.css/reset.css";
 
 import { initializeAudio } from "./audio/audio";
-import { initScreen } from "./config";
+import { FPS_LIMIT, initScreen } from "./config";
+import { initFullscreenSupport } from "./gfx/fullscreen";
 import { activeActions, initKeyboard } from "./input/input";
 import { initVirtualGamepad } from "./input/touch";
+import { menu } from "./scenes/menu/menu";
+import { overworld } from "./scenes/overworld/overworld";
 
 initScreen();
 document.defaultView?.addEventListener("resize", initScreen);
 
 initKeyboard();
 initVirtualGamepad();
+initFullscreenSupport();
 
 document.addEventListener("visibilitychange", () => {
 	if (!document.hidden) return;
 	initializeAudio();
 });
-
-import { FPS_LIMIT } from "./config";
-import { menu } from "./scenes/menu/menu";
-import { overworld } from "./scenes/overworld/overworld";
 
 let previousFrameTimestamp = 0;
 let isRenderPaused = false;
