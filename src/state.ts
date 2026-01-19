@@ -61,7 +61,7 @@ export const player: Player = {
 	x: startTileX,
 	y: startTileY,
 	z: startLayerZ,
-	facingDirection: "down",
+	facingDirection: "up",
 	height: CHARACTER_SPRITE_HEIGHT_PX,
 	width: CHARACTER_SPRITE_WIDTH_PX,
 	speed: movementSpeeds[DEFAULT_MOVEMENT],

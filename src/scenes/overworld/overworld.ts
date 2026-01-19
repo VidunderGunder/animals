@@ -25,6 +25,7 @@ import {
 } from "../../input/input";
 import { player, playerAnimations } from "../../state";
 import { menuState, openMenu } from "../menu/menu";
+import { camera, updateCamera } from "./camera";
 import { getCell, getEdge, type Transition } from "./data";
 import { initializeArea as initializeStartArea } from "./data/start";
 
@@ -121,15 +122,11 @@ function updatePlayerAnimation(dt: number) {
 }
 
 function getVisibleTileRange() {
-	const cameraXPx = player.xPx - GAME_WIDTH_PX / 2 + TILE_SIZE_PX / 2;
-	const cameraYPx = player.yPx - GAME_HEIGHT_PX / 2 + TILE_SIZE_PX / 2;
+	const minTileX = Math.floor(camera.xPx / TILE_SIZE_PX) - 1;
+	const maxTileX = Math.ceil((camera.xPx + GAME_WIDTH_PX) / TILE_SIZE_PX) + 1;
 
-	const minTileX = Math.floor(cameraXPx / TILE_SIZE_PX) - 1;
-	const maxTileX = Math.ceil((cameraXPx + GAME_WIDTH_PX) / TILE_SIZE_PX) + 1;
-
-	const minTileY = Math.floor(cameraYPx / TILE_SIZE_PX) - 1;
-	const maxTileY = Math.ceil((cameraYPx + GAME_HEIGHT_PX) / TILE_SIZE_PX) + 1;
-
+	const minTileY = Math.floor(camera.yPx / TILE_SIZE_PX) - 1;
+	const maxTileY = Math.ceil((camera.yPx + GAME_HEIGHT_PX) / TILE_SIZE_PX) + 1;
 	return {
 		minTileX,
 		minTileY,
@@ -350,6 +347,7 @@ function updatePlayer(dt: number) {
 
 function update(dt: number) {
 	updatePlayer(dt);
+	updateCamera(dt);
 }
 
 function draw(dt: number) {
@@ -358,9 +356,6 @@ function draw(dt: number) {
 
 	setTilesCountsIfNotSet();
 	clear();
-
-	const cameraX = player.xPx - GAME_WIDTH_PX / 2 + TILE_SIZE_PX / 2;
-	const cameraY = player.yPx - GAME_HEIGHT_PX / 2 + TILE_SIZE_PX / 2;
 
 	const { minTileX, minTileY, maxTileX, maxTileY } = getVisibleTileRange();
 
@@ -377,10 +372,10 @@ function draw(dt: number) {
 	for (const layer of worldImageLayers) {
 		for (let ty = startY; ty <= endY; ty++) {
 			const sy = ty * TILE_SIZE_PX;
-			const dy = Math.round(sy - cameraY);
+			const dy = Math.round(sy - camera.yPx);
 
 			const sx = startX * TILE_SIZE_PX;
-			const dx = Math.round(sx - cameraX);
+			const dx = Math.round(sx - camera.xPx);
 
 			const w = (endX - startX + 1) * TILE_SIZE_PX;
 
@@ -437,11 +432,8 @@ function getPlayerRenderZ(): number {
 }
 
 function drawPlayer() {
-	const cameraX = player.x - GAME_WIDTH_PX / 2 + TILE_SIZE_PX / 2;
-	const cameraY = player.y - GAME_HEIGHT_PX / 2 + TILE_SIZE_PX / 2;
-
-	const playerScreenX = Math.round(player.x - cameraX);
-	const playerScreenY = Math.round(player.y - cameraY);
+	const playerScreenX = Math.round(player.xPx - camera.xPx);
+	const playerScreenY = Math.round(player.yPx - camera.yPx);
 
 	const feetScreenX = playerScreenX + TILE_SIZE_PX / 2;
 	const feetScreenY = playerScreenY + TILE_SIZE_PX - 2;

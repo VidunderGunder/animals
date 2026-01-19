@@ -37,11 +37,7 @@ Character Movement & Animation
 - [ ] Roll & flip animation
   - [ ] Roll on activate (A button) when running
   - [ ] Crash animation on collision or any non-rollable transition
-- [ ] **Smooth camera offset (cutscene > transition > player state > position)** 
-  - [ ] Cutscene
-  - [ ] **Position** ⬅
-  - [ ] Position
-  - [ ] Position
+- [x] Smooth camera offset based on position
 - [ ] Smoke effect for jumps, drops, tricks etc.
 - [ ] Terrain movement  
   Cut off lower part of sprite (dynamic height), add animated overlay (e.g., water, grass, mud)
