@@ -4,11 +4,6 @@ Nostalgic GBA inspired game about a skater collecting animals and mythological b
 
 ## TODO
 
-UI
-
-- [x] Fullscreen toggle (F key as first draft)  
-  See `src/gfx/fullscreen.ts` and `src/main.ts`
-
 Entities
 
 - [ ] Entities (characters, items, animals)
@@ -42,7 +37,6 @@ Character Movement & Animation
 - [ ] Roll & flip animation
   - [ ] Roll on activate (A button) when running
   - [ ] Crash animation on collision or any non-rollable transition
-- [x] Smooth camera offset based on position
 - [ ] Smoke effect for jumps, drops, tricks etc.
 - [ ] Terrain movement  
   Cut off lower part of sprite (dynamic height), add animated overlay (e.g., water, grass, mud)
