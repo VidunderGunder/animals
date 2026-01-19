@@ -4,22 +4,23 @@ Nostalgic GBA inspired game about a skater collecting animals and mythological b
 
 ## TODO
 
+World
+
+- [ ] Expand start area to not show map edges in 16:9 view
+- [ ] Animated world map  
+  `worldImageLayers` in `src/scenes/overworld.ts` is static now, but we want to support simple animated layers
+
+Audio
+
+- [ ] Ambient sounds
+- [ ] Animations sounds
+- [ ] Music
+
 Entities
 
 - [ ] Entities (characters, items, animals)
 - [ ] RSVP dialog system
 - [ ] Movement support for NPCs
-
-Audio
-
-- [ ] Music
-- [ ] Ambient sounds
-- [ ] Animations sounds
-
-World
-
-- [ ] Animated world map  
-  `worldImageLayers` in `src/scenes/overworld.ts` is static now, but we want to support simple animated layers
 
 Character Movement & Animation
 
