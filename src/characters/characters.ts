@@ -1,5 +1,8 @@
 import { createImageElement } from "../assets/image";
-import { CHARACTER_SPRITE_HEIGHT, CHARACTER_SPRITE_WIDTH } from "../config";
+import {
+	CHARACTER_SPRITE_HEIGHT_PX,
+	CHARACTER_SPRITE_WIDTH_PX,
+} from "../config";
 import { ctx } from "../gfx/canvas";
 import type { Direction } from "../input/input";
 import { directionToRow } from "../scenes/menu/moves";
@@ -57,8 +60,8 @@ export function renderFrameLayer({
 	y: number;
 } & FrameLayer) {
 	direction ??= "down";
-	w ??= CHARACTER_SPRITE_WIDTH;
-	h ??= CHARACTER_SPRITE_HEIGHT;
+	w ??= CHARACTER_SPRITE_WIDTH_PX;
+	h ??= CHARACTER_SPRITE_HEIGHT_PX;
 
 	// Force directionOffset to be within 0-3
 	const directionIndex =
@@ -138,8 +141,8 @@ const skateboardSpriteSheet = createImageElement("/characters/skateboard.png");
 function layerFactory(sheet: HTMLImageElement) {
 	return function layer(frameLayer: Partial<FrameLayer>): FrameLayer {
 		return {
-			w: CHARACTER_SPRITE_WIDTH,
-			h: CHARACTER_SPRITE_HEIGHT,
+			w: CHARACTER_SPRITE_WIDTH_PX,
+			h: CHARACTER_SPRITE_HEIGHT_PX,
 			...frameLayer,
 			sheet: frameLayer.sheet ?? sheet,
 			index: frameLayer.index ?? 0,

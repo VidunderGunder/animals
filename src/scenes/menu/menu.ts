@@ -1,5 +1,5 @@
 import { createImageElement } from "../../assets/image";
-import { GAME_HEIGHT, GAME_WIDTH } from "../../config";
+import { GAME_HEIGHT_PX, GAME_WIDTH_PX } from "../../config";
 import { ctx } from "../../gfx/canvas";
 import { activeActions } from "../../input/input";
 import { player } from "../../state";
@@ -51,8 +51,8 @@ export function menu(dt: number) {
 			0,
 			menuWidth,
 			menuHeight,
-			(GAME_WIDTH - menuWidth) / 2,
-			(GAME_HEIGHT - menuHeight) / 2,
+			(GAME_WIDTH_PX - menuWidth) / 2,
+			(GAME_HEIGHT_PX - menuHeight) / 2,
 			menuWidth,
 			menuHeight,
 		);

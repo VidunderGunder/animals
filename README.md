@@ -18,7 +18,8 @@ Audio
 
 World
 
-- [ ] Animated world map
+- [ ] Animated world map  
+  `worldImageLayers` in `src/scenes/overworld.ts` is static now, but we want to support simple animated layers
 
 Character Movement & Animation
 
@@ -26,13 +27,13 @@ Character Movement & Animation
   Enable turning by tapping direction (not in facing direction) when in slow mode (e.g., walk), yet still allow smooth direction changes when moving or in fast mode (e.g., run)
 - [ ] Decouple transition speed from player speed
 - [ ] Curved transition paths  
-  Bezier curves for position and speed?)
+  Bezier curves for position and speed?
 - [ ] Adjust character state in transitions (e.g., climbing down ladders backwards)
 - [ ] Multiple transitions per edge  
   E.g., moving faster or slower for jumping shorter or longer distances. We currently only support one condition and one transition per edge.
 - [ ] Additive position offsets for animation and transition
 - [ ] Stub jumps (tree trunks)  
-  `overworld/data/start.ts`
+  `src/scenes/overworld/data/start.ts`
 - [ ] Roll & flip animation
   - [ ] Roll on activate (A button) when running
   - [ ] Crash animation on collision or any non-rollable transition

@@ -1,10 +1,10 @@
 import { type CharacterAnimationID, characters } from "./characters/characters";
 import {
-	CHARACTER_SPRITE_HEIGHT,
-	CHARACTER_SPRITE_WIDTH,
+	CHARACTER_SPRITE_HEIGHT_PX,
+	CHARACTER_SPRITE_WIDTH_PX,
 	DEFAULT_MOVEMENT,
 	movementSpeeds,
-	TILE_SIZE,
+	TILE_SIZE_PX,
 } from "./config";
 import type { Direction } from "./input/input";
 import type { Transition } from "./scenes/overworld/data";
@@ -62,20 +62,20 @@ export const player: Player = {
 	y: startTileY,
 	z: startLayerZ,
 	facingDirection: "down",
-	height: CHARACTER_SPRITE_HEIGHT,
-	width: CHARACTER_SPRITE_WIDTH,
+	height: CHARACTER_SPRITE_HEIGHT_PX,
+	width: CHARACTER_SPRITE_WIDTH_PX,
 	speed: movementSpeeds[DEFAULT_MOVEMENT],
 	movingDirection: null,
 
-	xPx: startTileX * TILE_SIZE,
-	yPx: startTileY * TILE_SIZE,
+	xPx: startTileX * TILE_SIZE_PX,
+	yPx: startTileY * TILE_SIZE_PX,
 
 	movePath: [],
-	xPxi: startTileX * TILE_SIZE,
-	yPxi: startTileY * TILE_SIZE,
+	xPxi: startTileX * TILE_SIZE_PX,
+	yPxi: startTileY * TILE_SIZE_PX,
 	zi: startLayerZ,
-	xPxf: startTileX * TILE_SIZE,
-	yPxf: startTileY * TILE_SIZE,
+	xPxf: startTileX * TILE_SIZE_PX,
+	yPxf: startTileY * TILE_SIZE_PX,
 	zf: startLayerZ,
 	moveSegmentProgress: 1,
 

@@ -1,4 +1,4 @@
-import { TILE_SIZE } from "../../../config";
+import { TILE_SIZE_PX } from "../../../config";
 import { player } from "../../../state";
 import {
 	cellToPx,
@@ -14,25 +14,25 @@ export function initializeArea() {
 	setCell(12, 37, 0, {
 		camera: {
 			xPx: 0,
-			yPx: -4 * TILE_SIZE,
+			yPx: -4 * TILE_SIZE_PX,
 		},
 	});
 	setCell(12, 38, 0, {
 		camera: {
 			xPx: 0,
-			yPx: -3 * TILE_SIZE,
+			yPx: -3 * TILE_SIZE_PX,
 		},
 	});
 	setCell(12, 39, 0, {
 		camera: {
 			xPx: 0,
-			yPx: -2 * TILE_SIZE,
+			yPx: -2 * TILE_SIZE_PX,
 		},
 	});
 	setCell(12, 40, 0, {
 		camera: {
 			xPx: 0,
-			yPx: -1 * TILE_SIZE,
+			yPx: -1 * TILE_SIZE_PX,
 		},
 	});
 

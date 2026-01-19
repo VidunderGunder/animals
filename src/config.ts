@@ -36,13 +36,13 @@ export let { x: ASPECT_RATIO_X, y: ASPECT_RATIO_Y } = getClosestAspectRatio(
 	screenHeight,
 );
 
-export const BASE_HEIGHT = 216;
+export const BASE_HEIGHT_PX = 216;
 export const SCALE = 1;
 
 export let ASPECT_RATIO = 1;
-export let BASE_WIDTH = BASE_HEIGHT * ASPECT_RATIO;
-export let GAME_WIDTH = BASE_WIDTH * SCALE;
-export let GAME_HEIGHT = BASE_HEIGHT * SCALE;
+export let BASE_WIDTH_PX = BASE_HEIGHT_PX * ASPECT_RATIO;
+export let GAME_WIDTH_PX = BASE_WIDTH_PX * SCALE;
+export let GAME_HEIGHT_PX = BASE_HEIGHT_PX * SCALE;
 
 const canvasCss = document.getElementById("canvas-css") as HTMLStyleElement;
 
@@ -54,10 +54,10 @@ export function initScreen() {
 		screenHeight,
 	));
 	ASPECT_RATIO = ASPECT_RATIO_X / ASPECT_RATIO_Y;
-	BASE_WIDTH = BASE_HEIGHT * ASPECT_RATIO;
+	BASE_WIDTH_PX = BASE_HEIGHT_PX * ASPECT_RATIO;
 
-	GAME_WIDTH = BASE_WIDTH * SCALE;
-	GAME_HEIGHT = BASE_HEIGHT * SCALE;
+	GAME_WIDTH_PX = BASE_WIDTH_PX * SCALE;
+	GAME_HEIGHT_PX = BASE_HEIGHT_PX * SCALE;
 	canvasCss.textContent = `
 	#canvas {
 		width: min(100dvw, 100dvh * (${ASPECT_RATIO_X} / ${ASPECT_RATIO_Y}));
@@ -66,15 +66,15 @@ export function initScreen() {
 	`;
 	isValidDimensions();
 
-	canvas.width = GAME_WIDTH;
-	canvas.height = GAME_HEIGHT;
+	canvas.width = GAME_WIDTH_PX;
+	canvas.height = GAME_HEIGHT_PX;
 }
 
-export const TILE_SIZE = 16;
+export const TILE_SIZE_PX = 16;
 export const FPS_LIMIT = Infinity;
 
-export const CHARACTER_SPRITE_WIDTH = 16;
-export const CHARACTER_SPRITE_HEIGHT = 24;
+export const CHARACTER_SPRITE_WIDTH_PX = 16;
+export const CHARACTER_SPRITE_HEIGHT_PX = 24;
 
 export type MovementType = "walk" | "run";
 export const DEFAULT_MOVEMENT: MovementType = "walk";
@@ -87,11 +87,11 @@ export const movementSpeeds = {
 export const DEBUG_OVERLAY = true;
 
 function isValidDimensions() {
-	if (Number.isInteger(GAME_WIDTH) && Number.isInteger(GAME_HEIGHT)) {
+	if (Number.isInteger(GAME_WIDTH_PX) && Number.isInteger(GAME_HEIGHT_PX)) {
 		return true;
 	} else {
 		throw new Error(
-			`GAME_WIDTH and GAME_HEIGHT must be integers. Current values: GAME_WIDTH=${GAME_WIDTH}, GAME_HEIGHT=${GAME_HEIGHT}`,
+			`GAME_WIDTH and GAME_HEIGHT must be integers. Current values: GAME_WIDTH=${GAME_WIDTH_PX}, GAME_HEIGHT=${GAME_HEIGHT_PX}`,
 		);
 	}
 }

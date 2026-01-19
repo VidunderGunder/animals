@@ -7,11 +7,11 @@ import {
 	renderFrameLayers,
 } from "../../characters/characters";
 import {
-	CHARACTER_SPRITE_HEIGHT,
-	CHARACTER_SPRITE_WIDTH,
-	GAME_HEIGHT,
-	GAME_WIDTH,
-	TILE_SIZE,
+	CHARACTER_SPRITE_HEIGHT_PX,
+	CHARACTER_SPRITE_WIDTH_PX,
+	GAME_HEIGHT_PX,
+	GAME_WIDTH_PX,
+	TILE_SIZE_PX,
 } from "../../config";
 import { ctx } from "../../gfx/canvas";
 import { type Direction, directions } from "../../input/input";
@@ -109,24 +109,24 @@ export function draw() {
 
 		const directionIndex = directionToRow[entity.direction];
 
-		const menuOffsetX = (GAME_WIDTH - menuWidth) / 2 + TILE_SIZE;
-		const menuOffsetY = (GAME_HEIGHT - menuHeight) / 2 + TILE_SIZE * 0.5;
+		const menuOffsetX = (GAME_WIDTH_PX - menuWidth) / 2 + TILE_SIZE_PX;
+		const menuOffsetY = (GAME_HEIGHT_PX - menuHeight) / 2 + TILE_SIZE_PX * 0.5;
 
 		const col = Math.floor(i / perCol);
 		const row = Math.floor(i / (cols * perCol));
 
 		const moveXOffset =
-			((perCol + marginXOfSpriteWidth) * CHARACTER_SPRITE_WIDTH * col) %
-			((perCol + marginXOfSpriteWidth) * cols * CHARACTER_SPRITE_WIDTH);
-		const moveYOffset = 13 + row * CHARACTER_SPRITE_HEIGHT;
+			((perCol + marginXOfSpriteWidth) * CHARACTER_SPRITE_WIDTH_PX * col) %
+			((perCol + marginXOfSpriteWidth) * cols * CHARACTER_SPRITE_WIDTH_PX);
+		const moveYOffset = 13 + row * CHARACTER_SPRITE_HEIGHT_PX;
 
 		const textHeight = 8;
 		const textYOffset = textHeight + row;
 
 		const x =
 			moveXOffset +
-			CHARACTER_SPRITE_WIDTH +
-			directionIndex * CHARACTER_SPRITE_WIDTH +
+			CHARACTER_SPRITE_WIDTH_PX +
+			directionIndex * CHARACTER_SPRITE_WIDTH_PX +
 			menuOffsetX;
 		const y = moveYOffset + menuOffsetY + textYOffset * row + marginY * row;
 

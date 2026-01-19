@@ -1,5 +1,5 @@
 import type { CharacterAnimationID } from "../../characters/characters";
-import { TILE_SIZE } from "../../config";
+import { TILE_SIZE_PX } from "../../config";
 import type { Direction } from "../../input/input";
 import { player } from "../../state";
 
@@ -58,7 +58,7 @@ export function edgeKey(
 	return (cellKey(x, y, z) << 2) | DIR_INDEX[dir];
 }
 export function cellToPx(x: number, y: number): { xPx: number; yPx: number } {
-	return { xPx: x * TILE_SIZE, yPx: y * TILE_SIZE };
+	return { xPx: x * TILE_SIZE_PX, yPx: y * TILE_SIZE_PX };
 }
 
 export function setCell(x: number, y: number, z: number, cell: Cell) {

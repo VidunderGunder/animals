@@ -8,11 +8,11 @@ import {
 	ASPECT_RATIO_Y,
 	DEBUG_OVERLAY,
 	DEFAULT_MOVEMENT,
-	GAME_HEIGHT,
-	GAME_WIDTH,
+	GAME_HEIGHT_PX,
+	GAME_WIDTH_PX,
 	movementSpeeds,
 	SCALE,
-	TILE_SIZE,
+	TILE_SIZE_PX,
 } from "../../config";
 import { clear, ctx } from "../../gfx/canvas";
 import {
@@ -120,18 +120,15 @@ function updatePlayerAnimation(dt: number) {
 	}
 }
 
-function getPlayerPosition() {
-	return { x: player.xPx, y: player.yPx };
-}
+function getVisibleTileRange() {
+	const cameraXPx = player.xPx - GAME_WIDTH_PX / 2 + TILE_SIZE_PX / 2;
+	const cameraYPx = player.yPx - GAME_HEIGHT_PX / 2 + TILE_SIZE_PX / 2;
 
-function getVisibleTileRange(playerX: number, playerY: number) {
-	const cameraX = playerX - GAME_WIDTH / 2 + TILE_SIZE / 2;
-	const cameraY = playerY - GAME_HEIGHT / 2 + TILE_SIZE / 2;
+	const minTileX = Math.floor(cameraXPx / TILE_SIZE_PX) - 1;
+	const maxTileX = Math.ceil((cameraXPx + GAME_WIDTH_PX) / TILE_SIZE_PX) + 1;
 
-	const minTileX = Math.floor(cameraX / TILE_SIZE) - 1;
-	const minTileY = Math.floor(cameraY / TILE_SIZE) - 1;
-	const maxTileX = Math.ceil((cameraX + GAME_WIDTH) / TILE_SIZE) + 1;
-	const maxTileY = Math.ceil((cameraY + GAME_HEIGHT) / TILE_SIZE) + 1;
+	const minTileY = Math.floor(cameraYPx / TILE_SIZE_PX) - 1;
+	const maxTileY = Math.ceil((cameraYPx + GAME_HEIGHT_PX) / TILE_SIZE_PX) + 1;
 
 	return {
 		minTileX,
@@ -172,8 +169,8 @@ function setTilesCountsIfNotSet() {
 		const firstImage = worldImageLayers[0]?.back || worldImageLayers[0]?.front;
 		if (!firstImage || !firstImage.complete || firstImage.naturalWidth === 0)
 			return;
-		tilesXCount = firstImage.naturalWidth / TILE_SIZE;
-		tilesYCount = firstImage.naturalHeight / TILE_SIZE;
+		tilesXCount = firstImage.naturalWidth / TILE_SIZE_PX;
+		tilesYCount = firstImage.naturalHeight / TILE_SIZE_PX;
 	}
 }
 
@@ -238,7 +235,7 @@ function tryPlanMove(desired: Direction): Transition | null {
 	if (destination?.blocked) return null;
 
 	return {
-		path: [{ xPx: nx * TILE_SIZE, yPx: ny * TILE_SIZE, z: nz }],
+		path: [{ xPx: nx * TILE_SIZE_PX, yPx: ny * TILE_SIZE_PX, z: nz }],
 		end: { x: nx, y: ny, z: nz },
 	};
 }
@@ -362,15 +359,10 @@ function draw(dt: number) {
 	setTilesCountsIfNotSet();
 	clear();
 
-	const { x: playerX, y: playerY } = getPlayerPosition();
+	const cameraX = player.xPx - GAME_WIDTH_PX / 2 + TILE_SIZE_PX / 2;
+	const cameraY = player.yPx - GAME_HEIGHT_PX / 2 + TILE_SIZE_PX / 2;
 
-	const cameraX = playerX - GAME_WIDTH / 2 + TILE_SIZE / 2;
-	const cameraY = playerY - GAME_HEIGHT / 2 + TILE_SIZE / 2;
-
-	const { minTileX, minTileY, maxTileX, maxTileY } = getVisibleTileRange(
-		playerX,
-		playerY,
-	);
+	const { minTileX, minTileY, maxTileX, maxTileY } = getVisibleTileRange();
 
 	const startX = Math.max(0, minTileX);
 	const startY = Math.max(0, minTileY);
@@ -380,17 +372,17 @@ function draw(dt: number) {
 	const playerRenderZ = getPlayerRenderZ();
 
 	// Row used for depth sorting: approximate “feet row”
-	const playerRow = Math.floor((player.yPx + TILE_SIZE - 1) / TILE_SIZE);
+	const playerRow = Math.floor((player.yPx + TILE_SIZE_PX - 1) / TILE_SIZE_PX);
 
 	for (const layer of worldImageLayers) {
 		for (let ty = startY; ty <= endY; ty++) {
-			const sy = ty * TILE_SIZE;
+			const sy = ty * TILE_SIZE_PX;
 			const dy = Math.round(sy - cameraY);
 
-			const sx = startX * TILE_SIZE;
+			const sx = startX * TILE_SIZE_PX;
 			const dx = Math.round(sx - cameraX);
 
-			const w = (endX - startX + 1) * TILE_SIZE;
+			const w = (endX - startX + 1) * TILE_SIZE_PX;
 
 			for (const sublayer of sublayers) {
 				const image = layer[sublayer];
@@ -403,7 +395,7 @@ function draw(dt: number) {
 					drawPlayer();
 				}
 
-				ctx.drawImage(image, sx, sy, w, TILE_SIZE, dx, dy, w, TILE_SIZE);
+				ctx.drawImage(image, sx, sy, w, TILE_SIZE_PX, dx, dy, w, TILE_SIZE_PX);
 			}
 		}
 	}
@@ -420,7 +412,7 @@ function draw(dt: number) {
 		ctx.shadowBlur = 0;
 		[
 			`fps: ${Math.round(1000 / dt)}`,
-			`res: ${GAME_WIDTH}x${GAME_HEIGHT} (${SCALE}x, ${ASPECT_RATIO_X}:${ASPECT_RATIO_Y})`,
+			`res: ${GAME_WIDTH_PX}x${GAME_HEIGHT_PX} (${SCALE}x, ${ASPECT_RATIO_X}:${ASPECT_RATIO_Y})`,
 			`current tile: ${player.x}, ${player.y}, ${player.z}`,
 			`move to tile: ${player.movingToTile?.x ?? "x"}, ${player.movingToTile?.y ?? "y"}, ${player.movingToTile?.z ?? "z"}`,
 			`facing: ${player.facingDirection}`,
@@ -445,16 +437,14 @@ function getPlayerRenderZ(): number {
 }
 
 function drawPlayer() {
-	const { x: playerWorldX, y: playerWorldY } = getPlayerPosition();
+	const cameraX = player.x - GAME_WIDTH_PX / 2 + TILE_SIZE_PX / 2;
+	const cameraY = player.y - GAME_HEIGHT_PX / 2 + TILE_SIZE_PX / 2;
 
-	const cameraX = playerWorldX - GAME_WIDTH / 2 + TILE_SIZE / 2;
-	const cameraY = playerWorldY - GAME_HEIGHT / 2 + TILE_SIZE / 2;
+	const playerScreenX = Math.round(player.x - cameraX);
+	const playerScreenY = Math.round(player.y - cameraY);
 
-	const playerScreenX = Math.round(playerWorldX - cameraX);
-	const playerScreenY = Math.round(playerWorldY - cameraY);
-
-	const feetScreenX = playerScreenX + TILE_SIZE / 2;
-	const feetScreenY = playerScreenY + TILE_SIZE - 2;
+	const feetScreenX = playerScreenX + TILE_SIZE_PX / 2;
+	const feetScreenY = playerScreenY + TILE_SIZE_PX - 2;
 
 	ctx.save();
 	ctx.translate(feetScreenX, feetScreenY);
