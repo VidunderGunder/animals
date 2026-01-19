@@ -65,6 +65,10 @@
         background-color: black;
       }
 
+      canvas:focus {
+        outline: none;
+      }
+
       img {
         /* Hide images used as spritesheets */
         display: none;
@@ -131,7 +135,7 @@
       alt="controller"
       class="controller-portrait controller-portrait-extra-borders"
     />
-    <canvas id="canvas"></canvas>
+    <canvas id="canvas" tabindex="0"></canvas>
     <img
       style="
         width: 100dvw;

@@ -13,7 +13,6 @@ document.defaultView?.addEventListener("resize", initScreen);
 
 initKeyboard();
 initVirtualGamepad();
-initFullscreenSupport();
 
 document.addEventListener("visibilitychange", () => {
 	if (!document.hidden) return;
@@ -34,6 +33,8 @@ document.addEventListener("visibilitychange", () => {
 		previousFrameTimestamp = 0;
 	}
 });
+
+initFullscreenSupport();
 
 function loop(timestamp: number) {
 	if (isRenderPaused) return;

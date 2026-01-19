@@ -57,7 +57,7 @@ export const keyMap: Record<Action, string[]> = {
 	b: ["Shift"],
 	x: [],
 	y: [],
-	start: ["Enter", "Escape"],
+	start: ["Enter"],
 	select: ["Tab"],
 	l: [],
 	r: [],
