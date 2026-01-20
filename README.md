@@ -6,7 +6,13 @@ Nostalgic GBA inspired game about a skater collecting animals and mythological b
 
 General
 
-- [ ] Save system (only autosave and autoload as first draft?)
+- [ ] Save system  
+  - IndexedDB for async storage (doesn't block rendering)
+  - Autosave on step/transition end
+  - Autosave on activation end
+  - Autoload on game start
+  - Export/import save files as JSON
+  - Support syncing with local file system, to enable cloud sync solutions (e.g., iCloud, Google Drive, Dropbox)
 
 World
 
