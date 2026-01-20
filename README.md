@@ -4,6 +4,10 @@ Nostalgic GBA inspired game about a skater collecting animals and mythological b
 
 ## TODO
 
+General
+
+- [ ] Save system (only autosave and autoload as first draft?)
+
 World
 
 - [ ] Expand start area to not show map edges in 16:9 view
@@ -42,7 +46,8 @@ Character Movement & Animation
 - [ ] Terrain movement  
   Cut off lower part of sprite (dynamic height), add animated overlay (e.g., water, grass, mud)
 
-Spikes
+Bugs/Spikes
 
+- [ ] Touch input is not working after leaving Safari on iOS and returning to the game
 - [ ] Is it cleaner to only use `currentAnimation`, and not `movingToAnimation`?
 - [ ] Why is `movingToAnimation` only working for jumping off the platform, and not for anything with a default `walk` animation (e.g., moving up and down ladders and stairs)?
