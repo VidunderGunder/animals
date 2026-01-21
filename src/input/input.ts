@@ -1,3 +1,13 @@
+export const inputUIs = [
+	"keyboard",
+	"nintendo", // Nintendo Switch like (our touch controls are based on this)
+	"playstation", // PlayStation like
+	"xbox", // XBox like
+] as const;
+export type InputUI = (typeof inputUIs)[number];
+
+export let inputUI: InputUI = inputUIs[3];
+
 export const directions = ["down", "left", "up", "right"] as const;
 export type Direction = (typeof directions)[number];
 
@@ -128,6 +138,8 @@ export function input() {
 	const gamepad = gamepads[0];
 
 	if (gamepad) {
+		inputUI = getAssumedGamepadInputUI(gamepad.id);
+
 		gamepad.buttons.forEach((button, index) => {
 			const action = gamepadButtonToAction(index);
 
@@ -168,4 +180,53 @@ export function input() {
 	} else {
 		movementIntent = null;
 	}
+}
+
+const playstationIdTags = [
+	"playstation",
+	"ps3",
+	"ps4",
+	"ps5",
+	"dualshock",
+	"dualsense",
+	"sony interactive",
+	"sony computer",
+	"sony",
+	"ds4",
+	"ds5",
+] as const;
+const nintendoIdTags = [
+	"nintendo",
+	"switch",
+	"joy-con",
+	"joycon",
+	"pro controller",
+	"switch pro",
+	"nx",
+	"hac",
+] as const;
+const xboxIdTags = [
+	"xbox",
+	"x-input",
+	"xinput",
+	"xbox 360",
+	"xbox360",
+	"xbox one",
+	"xboxone",
+	"xbox series",
+	"microsoft",
+	"controller (xbox)",
+	"wireless controller (xbox)",
+] as const;
+
+function getAssumedGamepadInputUI(
+	gamepadId: string,
+): (typeof inputUIs)[number] {
+	const id = gamepadId.toLowerCase();
+
+	if (nintendoIdTags.some((tag) => id.includes(tag))) return "nintendo";
+	if (playstationIdTags.some((tag) => id.includes(tag))) return "playstation";
+	if (xboxIdTags.some((tag) => id.includes(tag))) return "xbox";
+
+	return "xbox"; // Default to Xbox style
 }
