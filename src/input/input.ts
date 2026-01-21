@@ -89,11 +89,14 @@ export function initKeyboard() {
 	});
 }
 
+/**
+ * https://www.w3.org/TR/gamepad/standard_gamepad.svg
+ */
 const gamepadButtonActionMap = {
-	0: "a",
-	1: "b",
-	2: "x",
-	3: "y",
+	0: "b",
+	1: "a",
+	2: "y",
+	3: "x",
 	4: "l",
 	5: "r",
 	6: "zl",
