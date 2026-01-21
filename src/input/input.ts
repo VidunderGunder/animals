@@ -11,21 +11,6 @@ export let inputUI: InputUI = inputUIs[3];
 export const directions = ["down", "left", "up", "right"] as const;
 export type Direction = (typeof directions)[number];
 
-export const internalButtons = [
-	...directions,
-	"a",
-	"b",
-	"x",
-	"y",
-	"start",
-	"select",
-	"l",
-	"r",
-	"zl",
-	"zr",
-] as const;
-export type InternalButton = (typeof internalButtons)[number];
-
 export const allActions = [
 	...directions,
 	"a",
@@ -38,7 +23,7 @@ export const allActions = [
 	"r",
 	"zl",
 	"zr",
-] as const satisfies InternalButton[];
+] as const;
 export type Action = (typeof allActions)[number];
 
 export const activeActions = new Set<Action>();
