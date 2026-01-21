@@ -78,17 +78,17 @@ const DEFAULT_OPTS: Required<RSVPOptions> = {
 	baseWordMs: 170,
 	jitterMs: 25,
 
-	pauseShortMs: 120,
-	pauseMedMs: 220,
-	pauseLongMs: 380,
+	pauseShortMs: 150,
+	pauseMedMs: 300,
+	pauseLongMs: 400,
 
 	punctHoldMs: {
-		".": 180,
-		",": 90,
-		"!": 140,
-		"?": 160,
-		":": 120,
-		";": 110,
+		".": 300,
+		",": 150,
+		"!": 300,
+		"?": 300,
+		":": 300,
+		";": 200,
 	},
 
 	emphasisMult: 1.35,

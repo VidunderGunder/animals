@@ -83,8 +83,7 @@ export function initializeArea() {
 		interact: {
 			id: "dock_lookout",
 			onActivate: () => {
-				const sentence =
-					"The water is so clear today. I can see fish swimming at the bottom.";
+				const sentence = "The water looks so peaceful today";
 				rsvp("dock_lookout", sentence);
 			},
 		},
@@ -142,7 +141,7 @@ export function initializeArea() {
 			interact: {
 				id: "pretty_mushrooms",
 				onActivate: () => {
-					const sentence = "Beautiful... ... ... Let's leave this alone ♥";
+					const sentence = "Mushrooms! ... ... Let's leave them alone ♥";
 					rsvp("pretty_mushrooms", sentence);
 				},
 			},
