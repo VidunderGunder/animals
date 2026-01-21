@@ -465,12 +465,7 @@ function compileTokens(
 	return out;
 }
 
-function tokenizeMarkup(
-	text: string,
-	opts: Required<RSVPOptions>,
-):
-	| { kind: "word"; text: string; emphasis: boolean }
-	| { kind: "pause"; ms: number }[] {
+function tokenizeMarkup(text: string, opts: Required<RSVPOptions>) {
 	const chunks = text.replace(/\s+/g, " ").split(" ");
 
 	const out: (
@@ -509,7 +504,7 @@ function tokenizeMarkup(
 		out.push(parseEmphasisWord(c));
 	}
 
-	return out as any;
+	return out;
 }
 
 function parseEmphasisWord(raw: string) {
