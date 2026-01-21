@@ -99,7 +99,8 @@ export function speak(
 		.map((word) => {
 			const letters = word.toLowerCase().replace(/[^a-zA-Z]/g, "");
 			if (isWordOfConsonantsOnly(letters)) return "i";
-			return letters;
+			const vowelLetters = word.toLowerCase().replace(/[^aeiou]/g, "");
+			return vowelLetters[0] ?? "i";
 		})
 		.join(" ");
 
