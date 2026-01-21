@@ -16,8 +16,6 @@ export const internalButtons = [
 ] as const;
 export type InternalButton = (typeof internalButtons)[number];
 
-export const pressedKeys = new Set<string>();
-
 export const allActions = [
 	...directions,
 	"a",
@@ -32,7 +30,12 @@ export const allActions = [
 	"zr",
 ] as const satisfies InternalButton[];
 export type Action = (typeof allActions)[number];
+
 export const activeActions = new Set<Action>();
+
+export const pressedKeys = new Set<string>();
+export const activeGamepadActions = new Set<Action>();
+export const activeTouchActions = new Set<Action>();
 
 export let movementIntent: Direction | null = null;
 
@@ -86,8 +89,6 @@ export function initKeyboard() {
 	});
 }
 
-export const pressedGamepadButtons = new Set<string>();
-
 const gamepadButtonActionMap = {
 	0: "a",
 	1: "b",
@@ -119,8 +120,6 @@ function gamepadButtonToAction(index?: number): Action | null {
 	return gamepadButtonActionMap[index];
 }
 
-const controllerActions = new Set<Action>();
-
 export function input() {
 	const gamepads = navigator.getGamepads();
 	const gamepad = gamepads[0];
@@ -133,9 +132,9 @@ export function input() {
 
 			if (action) {
 				if (button.pressed) {
-					controllerActions.add(action);
+					activeGamepadActions.add(action);
 				} else {
-					controllerActions.delete(action);
+					activeGamepadActions.delete(action);
 				}
 			}
 		});
@@ -150,7 +149,11 @@ export function input() {
 		}
 	}
 
-	for (const action of controllerActions) {
+	for (const action of activeTouchActions) {
+		activeActions.add(action);
+	}
+
+	for (const action of activeGamepadActions) {
 		activeActions.add(action);
 	}
 

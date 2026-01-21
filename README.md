@@ -54,6 +54,8 @@ Character Movement & Animation
 
 Bugs/Spikes
 
-- [ ] Touch input is not working after leaving Safari on iOS and returning to the game
+- [ ] User has to touch to activate gamepad input on iOS Safari
+  Should be automatic after opening, give a prompt if controller is connected or require touch to enable gamepad—which also would help with audio activation
+- [ ] Input is not working after leaving Safari on iOS and returning to the game
 - [ ] Is it cleaner to only use `currentAnimation`, and not `movingToAnimation`?
 - [ ] Why is `movingToAnimation` only working for jumping off the platform, and not for anything with a default `walk` animation (e.g., moving up and down ladders and stairs)?

@@ -1,5 +1,5 @@
 import { hapticAudio, hapticHack } from "./haptic";
-import { type Action, activeActions, type Direction } from "./input";
+import { type Action, activeTouchActions, type Direction } from "./input";
 
 const DEBUG_TOUCH_CONTROLLER: boolean = import.meta.env.DEV && false;
 
@@ -54,7 +54,7 @@ function press(
 	group?: PointerBinding["group"],
 ) {
 	pointers.set(pointerId, { action, group });
-	activeActions.add(action);
+	activeTouchActions.add(action);
 	hapticAudio();
 }
 
@@ -62,7 +62,7 @@ function release(pointerId: number) {
 	const binding = pointers.get(pointerId);
 	if (!binding) return;
 	pointers.delete(pointerId);
-	activeActions.delete(binding.action);
+	activeTouchActions.delete(binding.action);
 }
 
 function releaseAll() {
@@ -74,9 +74,9 @@ function switchAction(pointerId: number, newAction: Action) {
 	if (!binding) return;
 	if (binding.action === newAction) return;
 
-	activeActions.delete(binding.action);
+	activeTouchActions.delete(binding.action);
 	binding.action = newAction;
-	activeActions.add(newAction);
+	activeTouchActions.add(newAction);
 	hapticAudio();
 }
 
