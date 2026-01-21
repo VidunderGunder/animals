@@ -29,7 +29,6 @@ Audio
 Entities
 
 - [ ] Entities (characters, items, animals)
-- [ ] RSVP dialog system
 - [ ] Movement support for NPCs
 
 Character Movement & Animation
