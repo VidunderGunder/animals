@@ -55,6 +55,7 @@ type BubbleState = {
 	// identity + invalidation
 	contentKey: number;
 	tokens: RSVPTok[];
+	getPosition: () => Vec2;
 
 	// timing
 	tMs: number;
@@ -103,26 +104,19 @@ const DEFAULT_OPTS: Required<RSVPOptions> = {
 };
 
 const bubbles = new Map<string, BubbleState>();
-let now = 0;
 
-export function beginDialogFrame(dt: number) {
-	now += dt;
+// Internal clock (no dt passed around)
+let lastNowMs = typeof performance !== "undefined" ? performance.now() : 0;
 
-	// GC: if caller stops invoking, remove after a grace window
-	for (const [id, b] of bubbles) {
-		if (now - b.lastTouchedAtMs > 2000) bubbles.delete(id);
-	}
+function getNowMs() {
+	return typeof performance !== "undefined" ? performance.now() : Date.now();
 }
 
 /**
- * Content guide:
+ * Spawn/update a dialog bubble.
  *
- * - Use *word* to emphasize a word.
- * - Use | for short pause, || for medium, ||| for long.
- * - Use ... for a long pause (like thinking).
- *
- * Example:
- * rsvp("npc-1-welcome", "Hello there! || Welcome to our village... *Enjoy* your stay!", () => ({ xPx: npc.xPx, yPx: npc.yPx - npc.height }));
+ * Call this from anywhere (world build, interact callbacks, cutscenes).
+ * Rendering + advancement is handled by `renderDialogs()` once per frame.
  */
 export function rsvp(
 	id: string,
@@ -133,9 +127,8 @@ export function rsvp(
 	}),
 	options: RSVPOptions = {},
 ) {
-	const pos = getPosition();
+	const now = getNowMs();
 	const opts: Required<RSVPOptions> = { ...DEFAULT_OPTS, ...options };
-
 	const key = computeContentKey(content);
 
 	let bubble = bubbles.get(id);
@@ -143,11 +136,13 @@ export function rsvp(
 	// create or reset if content changed
 	if (!bubble || bubble.contentKey !== key) {
 		const tokens = compileTokens(content, opts);
+		const pos = getPosition();
 
 		bubble = {
 			id,
 			contentKey: key,
 			tokens,
+			getPosition,
 
 			tMs: 0,
 			lastTouchedAtMs: now,
@@ -156,25 +151,80 @@ export function rsvp(
 			tokenIndex: 0,
 			tokenRemainingMs: tokens[0]?.ms ?? 0,
 
+			lastWordText: null,
+			lastWordEmphasis: 1,
+
 			pos,
 			opts,
 		};
+
 		bubbles.set(id, bubble);
-	} else {
-		bubble.lastTouchedAtMs = now;
-		bubble.pos = pos;
-		bubble.opts = opts;
+
+		// Speak first visible word immediately
+		const first = bubble.tokens[0];
+		if (first?.kind === "word") {
+			speak(first.text);
+		}
+
+		// Optional: speak immediately on first word if you want “instant” feel.
+		// Current behavior speaks when the token advances to the next word.
+		return;
 	}
 
-	// render current token
-	renderBubble(bubble);
+	// Update existing bubble “freshness” and presentation
+	bubble.lastTouchedAtMs = now;
+	bubble.getPosition = getPosition;
+	bubble.opts = opts;
+
+	// If you want “calling rsvp again” to restart the bubble, uncomment:
+	// bubble.tMs = 0;
+	// bubble.finishedAtMs = null;
+	// bubble.tokenIndex = 0;
+	// bubble.tokenRemainingMs = bubble.tokens[0]?.ms ?? 0;
+	// bubble.lastWordText = null;
+	// bubble.lastWordEmphasis = 1;
 }
 
-export function endDialogFrame(dtMs: number) {
+/**
+ * Call once per frame (e.g. at the end of `overworld()` draw),
+ * after you’ve rendered the world.
+ *
+ * This advances internal time using `performance.now()` and renders all bubbles.
+ */
+export function renderDialogs() {
+	const now = getNowMs();
+	const dtMs = clamp(now - lastNowMs, 0, 100); // clamp big tab-switch spikes
+	lastNowMs = now;
+
+	// GC: remove bubbles not touched recently OR completed + lingered
+	for (const [id, b] of bubbles) {
+		// if caller never touches again, still keep it alive for a bit
+		// (lets one-shot bubbles live naturally)
+		if (b.finishedAtMs === null) {
+			// keep until it finishes on its own
+			continue;
+		}
+
+		// finished: remove after linger + fade buffer
+		const doneFor = b.tMs - b.finishedAtMs;
+		if (doneFor > b.opts.lingerMs + b.opts.fadeMs + 250) {
+			bubbles.delete(id);
+		}
+	}
+
+	// Advance + render
 	for (const b of bubbles.values()) {
+		// update position live (camera/player moves)
+		b.pos = b.getPosition();
+
 		advanceBubble(b, dtMs);
+		renderBubble(b);
 	}
 }
+
+// ---------------------------
+// Timing / advancement
+// ---------------------------
 
 function advanceBubble(b: BubbleState, dtMs: number) {
 	if (dtMs <= 0) return;
@@ -186,17 +236,12 @@ function advanceBubble(b: BubbleState, dtMs: number) {
 		return;
 	}
 
-	// if already finished, handle linger/expiry
-	if (b.finishedAtMs !== null) {
-		const doneFor = b.tMs - b.finishedAtMs;
-		if (doneFor > b.opts.lingerMs) bubbles.delete(b.id);
-		return;
-	}
+	// if already finished, do nothing (render handles linger/fade)
+	if (b.finishedAtMs !== null) return;
 
 	let remaining = dtMs;
 
 	while (remaining > 0 && b.finishedAtMs === null) {
-		// If current token has no time, advance
 		if (b.tokenRemainingMs <= 0) {
 			if (!advanceToken(b)) break;
 			continue;
@@ -231,6 +276,10 @@ function advanceToken(b: BubbleState): boolean {
 	return true;
 }
 
+// ---------------------------
+// Rendering
+// ---------------------------
+
 function getAlpha(b: BubbleState) {
 	const fade = b.opts.fadeMs;
 	if (fade <= 0) return 1;
@@ -251,8 +300,7 @@ function renderBubble(b: BubbleState) {
 	const alpha = getAlpha(b);
 	if (alpha <= 0) return;
 
-	// If finished: keep showing last word during linger/fade-out
-	// (alpha already handles fading out)
+	// finished: keep showing last word
 	if (b.finishedAtMs !== null) {
 		if (!b.lastWordText) return;
 		const x = Math.round(b.pos.xPx);
@@ -262,7 +310,7 @@ function renderBubble(b: BubbleState) {
 			{ xPx: x, yPx: y },
 			b.opts,
 			alpha,
-			b.lastWordEmphasis,
+			b.lastWordEmphasis ?? 1,
 		);
 		return;
 	}
@@ -270,9 +318,9 @@ function renderBubble(b: BubbleState) {
 	const tok = b.tokens[b.tokenIndex];
 	if (!tok) return;
 
-	// Pause tokens: keep showing the last word instead of disappearing
+	// pause token: keep showing last word
 	if (tok.kind === "pause") {
-		if (!b.lastWordText) return; // nothing shown yet
+		if (!b.lastWordText) return;
 		const x = Math.round(b.pos.xPx);
 		const y = Math.round(b.pos.yPx + b.opts.offsetYPx);
 		drawTextWithBubble(
@@ -280,12 +328,12 @@ function renderBubble(b: BubbleState) {
 			{ xPx: x, yPx: y },
 			b.opts,
 			alpha,
-			b.lastWordEmphasis,
+			b.lastWordEmphasis ?? 1,
 		);
 		return;
 	}
 
-	// Word token: render it and remember it
+	// word token: render + remember
 	b.lastWordText = tok.text;
 	b.lastWordEmphasis = tok.emphasis;
 
@@ -318,7 +366,6 @@ function drawTextWithBubble(
 		if (w > maxW) maxW = w;
 	}
 
-	// Optional: tiny size pop on emphasis by padding, not font (keeps pixel font crisp)
 	const emphPad = Math.round((emphasis - 1) * 2);
 
 	const bubbleW = Math.ceil(maxW + (paddingX + emphPad) * 2);
@@ -329,11 +376,9 @@ function drawTextWithBubble(
 
 	ctx.globalAlpha = alpha;
 
-	// bubble bg
 	ctx.fillStyle = "rgba(0,0,0,0.45)";
 	roundRectFill(bx, by, bubbleW, bubbleH, opts.radiusPx);
 
-	// text
 	ctx.fillStyle = "#ffffff";
 	ctx.textRendering = "geometricPrecision";
 	ctx.shadowColor = "rgba(0,0,0,0.30)";
@@ -347,7 +392,7 @@ function drawTextWithBubble(
 		ctx.fillText(
 			line,
 			bx + paddingX + emphPad,
-			by + paddingY + emphPad + i * lineH,
+			by + paddingY + 1 + emphPad + i * lineH,
 		);
 	}
 
@@ -385,18 +430,11 @@ function compileTokens(
 ): RSVPTok[] {
 	if (typeof content !== "string") return content.slice() as RSVPTok[];
 
-	// Markup rules:
-	// - *word* => emphasis
-	// - | / || / ||| => pauses
-	// - ... => long-ish pause (like thinking)
-	//
-	// We keep punctuation attached to words, then apply hold based on last char.
 	const raw = content.trim();
 	if (!raw) return [];
 
 	const out: RSVPTok[] = [];
-
-	const parts = tokenizeMarkup(raw);
+	const parts = tokenizeMarkup(raw, opts);
 
 	for (const p of parts) {
 		if (p.kind === "pause") {
@@ -404,7 +442,6 @@ function compileTokens(
 			continue;
 		}
 
-		// Word token
 		const base = opts.baseWordMs + randJitter(opts.jitterMs);
 
 		const punct = trailingPunct(p.text);
@@ -421,18 +458,10 @@ function compileTokens(
 
 function tokenizeMarkup(
 	text: string,
+	opts: Required<RSVPOptions>,
 ):
 	| { kind: "word"; text: string; emphasis: boolean }
 	| { kind: "pause"; ms: number }[] {
-	// We want to preserve tokens like:
-	// "Oh... *wow*! | actually"
-	//
-	// Strategy:
-	// - split on whitespace
-	// - each chunk may be:
-	//   - "|" "||" "|||"
-	//   - contains "..." (treated as word WITHOUT the dots + then a pause) OR just "..."
-	//   - "*word*" (emphasis)
 	const chunks = text.replace(/\s+/g, " ").split(" ");
 
 	const out: (
@@ -444,33 +473,30 @@ function tokenizeMarkup(
 		if (!c) continue;
 
 		if (c === "|") {
-			out.push({ kind: "pause", ms: DEFAULT_OPTS.pauseShortMs });
+			out.push({ kind: "pause", ms: opts.pauseShortMs });
 			continue;
 		}
 		if (c === "||") {
-			out.push({ kind: "pause", ms: DEFAULT_OPTS.pauseMedMs });
+			out.push({ kind: "pause", ms: opts.pauseMedMs });
 			continue;
 		}
 		if (c === "|||") {
-			out.push({ kind: "pause", ms: DEFAULT_OPTS.pauseLongMs });
+			out.push({ kind: "pause", ms: opts.pauseLongMs });
 			continue;
 		}
 
-		// Handle "..." as a pure pause
 		if (c === "..." || c === "…") {
-			out.push({ kind: "pause", ms: DEFAULT_OPTS.pauseLongMs });
+			out.push({ kind: "pause", ms: opts.pauseLongMs });
 			continue;
 		}
 
-		// Handle word ending with "..." => word then pause
 		if (c.endsWith("...")) {
 			const w = c.slice(0, -3);
 			if (w) out.push(parseEmphasisWord(w));
-			out.push({ kind: "pause", ms: DEFAULT_OPTS.pauseLongMs });
+			out.push({ kind: "pause", ms: opts.pauseLongMs });
 			continue;
 		}
 
-		// Normal word
 		out.push(parseEmphasisWord(c));
 	}
 
@@ -478,7 +504,6 @@ function tokenizeMarkup(
 }
 
 function parseEmphasisWord(raw: string) {
-	// emphasis if wrapped in *...* (single-token)
 	const isEmph = raw.length >= 2 && raw.startsWith("*") && raw.endsWith("*");
 	const text = isEmph ? raw.slice(1, -1) : raw;
 	return { kind: "word" as const, text, emphasis: isEmph };
@@ -522,7 +547,6 @@ function roundRectFill(x: number, y: number, w: number, h: number, r: number) {
 
 function computeContentKey(content: RSVPContent) {
 	if (typeof content === "string") return hashText(content);
-	// structured tokens: hash stable fields
 	let h = 5381;
 	for (const t of content) {
 		if (t.kind === "pause") {
@@ -542,15 +566,4 @@ function hashText(s: string) {
 	let h = 5381;
 	for (let i = 0; i < s.length; i++) h = (h * 33) ^ s.charCodeAt(i);
 	return h >>> 0;
-}
-
-export function dialogTest(dt: number) {
-	beginDialogFrame(dt);
-
-	rsvp("player-greeting", "Oh... *wow*! || Hello there!", () => ({
-		xPx: player.xPx - camera.xPx + player.width / 2,
-		yPx: player.yPx - camera.yPx,
-	}));
-
-	endDialogFrame(dt);
 }

@@ -79,6 +79,18 @@ export function initializeArea() {
 		});
 	}
 
+	setCell(12, 36, 0, {
+		interact: {
+			id: "dock_lookout",
+			onActivate: () => {
+				const sentence =
+					"The water is so clear today. I can see fish swimming at the bottom.";
+				rsvp("dock_lookout", sentence);
+			},
+		},
+		blocked: true,
+	});
+
 	const stoneFenceCells: [number, number, number][] = [
 		...range([5, 10], 57),
 		...range([14, 19], 57),
@@ -130,7 +142,7 @@ export function initializeArea() {
 			interact: {
 				id: "pretty_mushrooms",
 				onActivate: () => {
-					const sentence = "Beatuiful. Let's leave this alone ♥";
+					const sentence = "Beautiful... ... ... Let's leave this alone ♥";
 					rsvp("pretty_mushrooms", sentence);
 				},
 			},
