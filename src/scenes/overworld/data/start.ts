@@ -83,7 +83,7 @@ export function initializeArea() {
 		interact: {
 			id: "dock_lookout",
 			onActivate: () => {
-				const sentence = "The water looks so peaceful today";
+				const sentence = "The clouds look like cotton candy";
 				rsvp("dock_lookout", sentence);
 			},
 		},
@@ -126,6 +126,13 @@ export function initializeArea() {
 				z,
 				dir,
 			}),
+			interact: {
+				id: `jumpable_platform`,
+				onActivate: () => {
+					const sentence = "I could jump down with some speed!";
+					rsvp("jumpable_platform", sentence);
+				},
+			},
 		});
 	}
 
@@ -159,6 +166,13 @@ export function initializeArea() {
 				{ ...cellToPx(14, 45), z: 1 },
 			],
 			end: { x: 14, y: 45, z: 1 },
+		},
+		interact: {
+			id: "ladder_up",
+			onActivate: () => {
+				const sentence = "I could climb this";
+				rsvp("ladder_up", sentence);
+			},
 		},
 	});
 

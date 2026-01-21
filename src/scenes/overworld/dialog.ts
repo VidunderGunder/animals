@@ -17,6 +17,8 @@ type RSVPOptions = {
 	baseWordMs?: number;
 	/** Random jitter added/subtracted to word ms (human feel) */
 	jitterMs?: number;
+	/** Extra ms per word for the first word in the bubble */
+	firstTokenExtraMs?: number;
 
 	/** Pause ms for inline separators: |, ||, ||| */
 	pauseShortMs?: number;
@@ -77,6 +79,7 @@ type BubbleState = {
 const DEFAULT_OPTS: Required<RSVPOptions> = {
 	baseWordMs: 170,
 	jitterMs: 25,
+	firstTokenExtraMs: 250,
 
 	pauseShortMs: 150,
 	pauseMedMs: 300,
@@ -320,16 +323,17 @@ function renderBubble(b: BubbleState) {
 
 	// pause token: keep showing last word
 	if (tok.kind === "pause") {
-		if (!b.lastWordText) return;
 		const x = Math.round(b.pos.xPx);
 		const y = Math.round(b.pos.yPx + b.opts.offsetYPx);
+
 		drawTextWithBubble(
-			b.lastWordText,
+			b.lastWordText ?? "...", // empty bubble if nothing yet
 			{ xPx: x, yPx: y },
 			b.opts,
 			alpha,
 			b.lastWordEmphasis ?? 1,
 		);
+
 		return;
 	}
 
@@ -434,6 +438,11 @@ function compileTokens(
 	if (!raw) return [];
 
 	const out: RSVPTok[] = [];
+
+	if (opts.firstTokenExtraMs > 0) {
+		out.push({ kind: "pause", ms: opts.firstTokenExtraMs });
+	}
+
 	const parts = tokenizeMarkup(raw, opts);
 
 	for (const p of parts) {

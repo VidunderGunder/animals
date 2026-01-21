@@ -267,6 +267,13 @@ function updatePlayer(dt: number) {
 			activationCell.z,
 		)?.interact?.onActivate();
 
+		getEdge(
+			player.x,
+			player.y,
+			player.z,
+			player.facingDirection,
+		)?.interact?.onActivate();
+
 		activeActions.delete("a");
 	}
 

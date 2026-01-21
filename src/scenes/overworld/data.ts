@@ -37,6 +37,10 @@ export type Transition = {
 export type Edge = {
 	blocked?: boolean;
 	transition?: Transition;
+	interact?: {
+		id: string;
+		onActivate: () => void;
+	};
 };
 
 export const DIR_INDEX = {
