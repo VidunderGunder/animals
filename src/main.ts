@@ -61,12 +61,6 @@ function startGame() {
 	if (rafId !== null) return;
 	previousFrameTimestamp = 0;
 	rafId = requestAnimationFrame(loop);
-
-	// speak("Hey there welcome to the game", {
-	// 	intensity: 1,
-	// 	tempo: 1,
-	// 	pitch: 1,
-	// });
 }
 
 startGame();

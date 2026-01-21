@@ -5,8 +5,11 @@ export const inputUIs = [
 	"xbox", // XBox like
 ] as const;
 export type InputUI = (typeof inputUIs)[number];
+let inputUI: InputUI = "keyboard";
 
-export let inputUI: InputUI = inputUIs[3];
+export function getInputUI(): InputUI {
+	return inputUI;
+}
 
 export const directions = ["down", "left", "up", "right"] as const;
 export type Direction = (typeof directions)[number];
@@ -122,9 +125,9 @@ export function input() {
 	const gamepads = navigator.getGamepads();
 	const gamepad = gamepads[0];
 
-	if (gamepad) {
-		inputUI = getAssumedGamepadInputUI(gamepad.id);
+	activeActions.clear();
 
+	if (gamepad) {
 		gamepad.buttons.forEach((button, index) => {
 			const action = gamepadButtonToAction(index);
 
@@ -138,10 +141,17 @@ export function input() {
 				}
 			}
 		});
+
+		for (const action of activeGamepadActions) {
+			activeActions.add(action);
+		}
+
+		if (activeGamepadActions.size > 0) inputUI = getGamepadUI(gamepad.id);
+	} else if (activeGamepadActions.size > 0) {
+		activeGamepadActions.clear();
 	}
 
-	activeActions.clear();
-
+	if (pressedKeys.size > 0) inputUI = "keyboard";
 	for (const key of pressedKeys) {
 		const action = reverseKeyMap[key];
 		if (action) {
@@ -149,11 +159,8 @@ export function input() {
 		}
 	}
 
+	if (activeTouchActions.size > 0) inputUI = "nintendo";
 	for (const action of activeTouchActions) {
-		activeActions.add(action);
-	}
-
-	for (const action of activeGamepadActions) {
 		activeActions.add(action);
 	}
 
@@ -204,9 +211,7 @@ const xboxIdTags = [
 	"wireless controller (xbox)",
 ] as const;
 
-function getAssumedGamepadInputUI(
-	gamepadId: string,
-): (typeof inputUIs)[number] {
+function getGamepadUI(gamepadId: string): (typeof inputUIs)[number] {
 	const id = gamepadId.toLowerCase();
 
 	if (nintendoIdTags.some((tag) => id.includes(tag))) return "nintendo";

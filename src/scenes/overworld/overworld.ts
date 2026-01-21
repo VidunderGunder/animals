@@ -27,6 +27,7 @@ import { menuState, openMenu } from "../menu/menu";
 import { camera, updateCamera } from "./camera";
 import { getCell, getEdge, type Transition } from "./data";
 import { initializeArea as initializeStartArea } from "./data/start";
+import { dialogTest } from "./dialog";
 
 initializeStartArea();
 
@@ -472,4 +473,5 @@ function drawPlayer() {
 export function overworld(dt: number) {
 	update(dt);
 	draw(dt);
+	dialogTest(dt);
 }
