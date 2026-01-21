@@ -21,7 +21,6 @@ import {
 	type Direction,
 	directions,
 	movementIntent,
-	setMovementIntent,
 } from "../../input/input";
 import { player, playerAnimations } from "../../state";
 import { menuState, openMenu } from "../menu/menu";
@@ -55,14 +54,6 @@ function dirToDxDy(direction: Direction): { dx: number; dy: number } {
 		case "right":
 			return { dx: 1, dy: 0 };
 	}
-}
-
-function getDesiredDirectionFromInput(): Direction | null {
-	if (activeActions.has("up")) return "up";
-	if (activeActions.has("down")) return "down";
-	if (activeActions.has("left")) return "left";
-	if (activeActions.has("right")) return "right";
-	return null;
 }
 
 function getIsMoving(): boolean {
@@ -250,9 +241,7 @@ function updatePlayer(dt: number) {
 
 	const faster = getIsMovingFaster();
 
-	// 1) Input intent for this frame
-	const desired = player.disabled ? null : getDesiredDirectionFromInput();
-	setMovementIntent(desired);
+	const desired = player.disabled ? null : movementIntent;
 
 	// 2) Speed based on run/walk
 	player.speed = movementSpeeds[faster ? "run" : "walk"];

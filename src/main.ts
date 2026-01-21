@@ -3,7 +3,7 @@ import "./.css/reset.css";
 import { initializeAudio } from "./audio/audio";
 import { FPS_LIMIT, initScreen } from "./config";
 import { initFullscreenSupport } from "./gfx/fullscreen";
-import { activeActions, initKeyboard } from "./input/input";
+import { activeActions, initKeyboard, input } from "./input/input";
 import { initVirtualGamepad } from "./input/touch";
 import { menu } from "./scenes/menu/menu";
 import { overworld } from "./scenes/overworld/overworld";
@@ -12,6 +12,7 @@ initScreen();
 document.defaultView?.addEventListener("resize", initScreen);
 
 initKeyboard();
+
 initVirtualGamepad();
 
 document.addEventListener("visibilitychange", () => {
@@ -49,6 +50,7 @@ function loop(timestamp: number) {
 
 	previousFrameTimestamp = timestamp;
 
+	input();
 	overworld(dt);
 	menu(dt);
 
