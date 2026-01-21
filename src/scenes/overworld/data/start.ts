@@ -131,18 +131,7 @@ export function initializeArea() {
 				id: "pretty_mushrooms",
 				onActivate: () => {
 					const sentence = "Beatuiful. Let's leave this alone ♥";
-					rsvp(
-						"pretty_mushrooms",
-						sentence,
-						() => {
-							const px = cell[0] * TILE_SIZE_PX + TILE_SIZE_PX / 2;
-							const py = cell[1] * TILE_SIZE_PX + TILE_SIZE_PX / 2;
-							return { xPx: px, yPx: py };
-						},
-						{
-							offsetYPx: -10,
-						},
-					);
+					rsvp("pretty_mushrooms", sentence);
 				},
 			},
 		});
