@@ -70,10 +70,9 @@ function startGame() {
 initializeStorage(player)
 	.then((partialPlayer) => {
 		setPlayerState(partialPlayer);
-		console.log(player)
 		startGame();
 	})
 	.catch((err: unknown) => {
 		console.error("Failed to initialize storage:", err);
-		startGame(); // Start anyway with defaults if storage fails
+		startGame();
 	})

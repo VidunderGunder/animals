@@ -1,7 +1,6 @@
 import type { PlayerSaveData } from "./state";
 
 const DB_NAME = "animals-game";
-const DB_VERSION = 2;
 const USERS_STORE = "users";
 const SAVES_STORE = "saves";
 
@@ -30,7 +29,7 @@ function openDB(): Promise<IDBDatabase> {
 	if (db) return Promise.resolve(db);
 
 	return new Promise((resolve, reject) => {
-		const request = indexedDB.open(DB_NAME, DB_VERSION);
+		const request = indexedDB.open(DB_NAME);
 
 		request.onerror = () => reject(request.error);
 

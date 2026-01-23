@@ -499,4 +499,3 @@ export function overworld(dt: number) {
 	draw(dt);
 	renderDialogs();
 }
-

@@ -136,7 +136,6 @@ export type PlayerSaveData = {
 	facingDirection: Direction;
 };
 
-
 export type Animation = {
 	frames: readonly number[];
 	frameDuration: number;
