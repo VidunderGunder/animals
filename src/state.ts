@@ -31,7 +31,7 @@ export type Player = {
 	yPx: number;
 
 	/** Remaining waypoints (world pixels) */
-	movePath: { x: number; y: number; z: number }[];
+	path: { x: number; y: number; z: number; duration?: number }[];
 
 	/** Segment interpolation (world pixels) */
 	xPxi: number;
@@ -40,7 +40,9 @@ export type Player = {
 	xPxf: number;
 	yPxf: number;
 	zf: number;
-	moveSegmentProgress: number;
+	pathSegmentProgress: number;
+	/** Fixed duration for current segment (ms), undefined = use player speed */
+	pathSegmentDuration?: number;
 
 	movingToTile: Transition["end"] | null;
 	movingToAnimation: Transition["animation"] | null;
@@ -70,14 +72,14 @@ export const player: Player = {
 	xPx: startTileX * TILE_SIZE_PX,
 	yPx: startTileY * TILE_SIZE_PX,
 
-	movePath: [],
+	path: [],
 	xPxi: startTileX * TILE_SIZE_PX,
 	yPxi: startTileY * TILE_SIZE_PX,
 	zi: startLayerZ,
 	xPxf: startTileX * TILE_SIZE_PX,
 	yPxf: startTileY * TILE_SIZE_PX,
 	zf: startLayerZ,
-	moveSegmentProgress: 1,
+	pathSegmentProgress: 1,
 
 	movingToTile: null,
 	movingToAnimation: null,

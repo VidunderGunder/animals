@@ -176,7 +176,12 @@ function isWorldImagesReady() {
 }
 
 // --- path mover helpers ---
-function startSegment(toX: number, toY: number, toZ: number) {
+function startSegment(
+	toX: number,
+	toY: number,
+	toZ: number,
+	duration?: number,
+) {
 	player.xPxi = player.xPx;
 	player.yPxi = player.yPx;
 	player.zi = player.z;
@@ -185,13 +190,14 @@ function startSegment(toX: number, toY: number, toZ: number) {
 	player.yPxf = toY;
 	player.zf = toZ;
 
-	player.moveSegmentProgress = 0;
+	player.pathSegmentProgress = 0;
+	player.pathSegmentDuration = duration;
 }
 
 function popNextWaypoint(): boolean {
-	const next = player.movePath.shift();
+	const next = player.path.shift();
 	if (!next) return false;
-	startSegment(next.x, next.y, next.z);
+	startSegment(next.x, next.y, next.z, next.duration);
 	return true;
 }
 
@@ -207,8 +213,14 @@ function tryPlanMove(desired: Direction): Transition | null {
 	if (edge?.blocked) return null;
 
 	if (edge?.transition) {
-		if (edge.transition.condition?.() === false) return null;
-		return edge.transition;
+		const transitions = Array.isArray(edge.transition)
+			? edge.transition
+			: [edge.transition];
+		for (const transition of transitions) {
+			if (transition.condition === undefined) return transition;
+			if (transition.condition()) return transition;
+		}
+		return null;
 	}
 
 	// Default walk + jump-stub logic
@@ -289,10 +301,11 @@ function updatePlayer(dt: number) {
 				player.movingToTile = planned.end;
 				player.movingToAnimation = planned.animation ?? null;
 
-				player.movePath = planned.path.map((p) => ({
+				player.path = planned.path.map((p) => ({
 					x: p.xPx,
 					y: p.yPx,
 					z: p.z,
+					ms: p.duration,
 				}));
 
 				popNextWaypoint();
@@ -307,11 +320,13 @@ function updatePlayer(dt: number) {
 
 		const distancePx = dx === 0 && dy === 0 ? 0 : Math.hypot(dx, dy);
 
-		const moveDuration = distancePx === 0 ? 0 : distancePx / player.speed;
-		player.moveSegmentProgress += moveDuration === 0 ? 1 : dt / moveDuration;
+		const moveDuration =
+			player.pathSegmentDuration ?? distancePx / player.speed;
 
-		if (player.moveSegmentProgress >= 1) {
-			player.moveSegmentProgress = 1;
+		player.pathSegmentProgress += moveDuration === 0 ? 1 : dt / moveDuration;
+
+		if (player.pathSegmentProgress >= 1) {
+			player.pathSegmentProgress = 1;
 			snapToSegmentEnd();
 
 			const hasMore = popNextWaypoint();
@@ -332,7 +347,7 @@ function updatePlayer(dt: number) {
 				player.movingToAnimation = null;
 			}
 		} else {
-			const t = player.moveSegmentProgress;
+			const t = player.pathSegmentProgress;
 			player.xPx = Math.round(player.xPxi + dx * t);
 			player.yPx = Math.round(player.yPxi + dy * t);
 		}
@@ -425,7 +440,7 @@ function getPlayerRenderZ(): number {
 	const toZ = player.zf;
 	if (fromZ === toZ) return player.z;
 
-	return player.moveSegmentProgress < 0.5 ? fromZ : toZ;
+	return player.pathSegmentProgress < 0.5 ? fromZ : toZ;
 }
 
 function drawPlayer() {
