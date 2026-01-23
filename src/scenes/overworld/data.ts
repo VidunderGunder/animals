@@ -28,7 +28,13 @@ export type Transition = {
 	animation?: CharacterAnimationID;
 
 	/** Path in pixel space (tile-top-left in world pixels), INCLUDING destination. */
-	path: { xPx: number; yPx: number; z: number; duration?: number }[];
+	path: {
+		xPx: number;
+		yPx: number;
+		z: number;
+		duration?: number;
+		onSegment?: () => void;
+	}[];
 
 	/* Final snapped logical state once path completes */
 	end: { x: number; y: number; z: number };
