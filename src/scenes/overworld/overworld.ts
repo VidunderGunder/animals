@@ -22,7 +22,7 @@ import {
 	directions,
 	movementIntent,
 } from "../../input/input";
-import { getPlayerSaveData, player, playerAnimations } from "../../state";
+import { player, playerAnimations } from "../../state";
 import { savePlayerState } from "../../storage";
 import { menuState, openMenu } from "../menu/menu";
 import { camera, updateCamera } from "./camera";
@@ -341,7 +341,7 @@ function updatePlayer(dt: number) {
 				player.movingToAnimation = null;
 
 				// Autosave on step end
-				savePlayerState(getPlayerSaveData());
+				savePlayerState();
 			}
 		} else {
 			const t = player.pathSegmentProgress;

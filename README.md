@@ -8,13 +8,6 @@ General
 
 - [ ] Clean up state
   Lots of duplications in player state, should be replaced with getters (e.g., path related stuff)
-- [ ] Save system  
-  - IndexedDB for async storage (doesn't block rendering)
-  - Manual save function (META + S for now)
-  - Autosave on step/transition end
-  - Autoload on game start
-  - Export/import save files as JSON (functionality first, we'll have to design UI before implementing the visual part)
-  - Support syncing with local file system, to enable agnostic cloud sync solutions (e.g., iCloud, Google Drive, Dropbox)
 
 World
 
