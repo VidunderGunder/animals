@@ -178,14 +178,26 @@ export function initializeArea() {
 
 	// Walk back down: moving LEFT from (14,45,1)
 	setEdge(14, 45, 1, "left", {
-		transition: {
-			animation: "walk",
-			path: [
-				{ ...cellToPx(13, 45), z: 1 },
-				{ ...cellToPx(13, 46), z: 0 },
-			],
-			end: { x: 13, y: 46, z: 0 },
-		},
+		transition: [
+			{
+				condition: () => player.animationCurrent === "walk",
+				animation: "walk",
+				path: [
+					{ ...cellToPx(13, 45), z: 1 },
+					{ ...cellToPx(13, 46), z: 0 },
+				],
+				end: { x: 13, y: 46, z: 0 },
+			},
+			{
+				...getJumpTransition({
+					x: 14,
+					y: 45,
+					z: 1,
+					dir: "left",
+				}),
+				condition: () => player.animationCurrent === "run",
+			},
+		],
 	});
 
 	setEdge(14, 46, 0, "left", { blocked: true });

@@ -27,8 +27,8 @@ export type Transition = {
 	/* optional: force animation during the tr ansition */
 	animation?: CharacterAnimationID;
 
-	/* Path in pixel space (tile-top-left in world pixels), INCLUDING destination. */
-	path: { xPx: number; yPx: number; z: number }[];
+	/** Path in pixel space (tile-top-left in world pixels), INCLUDING destination. */
+	path: { xPx: number; yPx: number; z: number; duration?: number }[];
 
 	/* Final snapped logical state once path completes */
 	end: { x: number; y: number; z: number };
@@ -36,7 +36,7 @@ export type Transition = {
 
 export type Edge = {
 	blocked?: boolean;
-	transition?: Transition;
+	transition?: Transition | Transition[];
 	interact?: {
 		id: string;
 		onActivate: () => void;
@@ -175,15 +175,20 @@ export function getJumpTransition({
 	let end: Transition["end"] | undefined;
 	let path: Transition["path"] | undefined;
 
+	const durUp = 100;
+	const durDown = 220;
+
 	if (dir === "left") {
 		path = [
 			{
 				...cellToPx(x - 0.85, y - 0.25),
 				z,
+				duration: durUp,
 			},
 			{
 				...cellToPx(x - 1, y + 1),
 				z: z - drop,
+				duration: durDown,
 			},
 		];
 		end = {
@@ -197,10 +202,12 @@ export function getJumpTransition({
 			{
 				...cellToPx(x, y - 0.25),
 				z,
+				duration: durUp,
 			},
 			{
 				...cellToPx(x, y + 2),
 				z,
+				duration: durDown,
 			},
 		];
 		end = {
@@ -214,10 +221,12 @@ export function getJumpTransition({
 			{
 				...cellToPx(x + 0.85, y - 0.25),
 				z,
+				duration: durUp,
 			},
 			{
 				...cellToPx(x + 1, y + drop),
 				z: z - drop,
+				duration: durDown,
 			},
 		];
 		end = {
@@ -231,10 +240,12 @@ export function getJumpTransition({
 			{
 				...cellToPx(x, y - 0.75),
 				z,
+				duration: durUp,
 			},
 			{
 				...cellToPx(x, y - 1 + drop),
 				z: z - drop,
+				duration: durDown,
 			},
 		];
 		end = {
