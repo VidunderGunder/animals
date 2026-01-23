@@ -92,17 +92,6 @@ async function getUsers(): Promise<User[]> {
 	});
 }
 
-async function getUser(id: number): Promise<User | null> {
-	const database = await openDB();
-	return new Promise((resolve, reject) => {
-		const tx = database.transaction(USERS_STORE, "readonly");
-		const store = tx.objectStore(USERS_STORE);
-		const request = store.get(id);
-		request.onsuccess = () => resolve(request.result ?? null);
-		request.onerror = () => reject(request.error);
-	});
-}
-
 // ============ Save functions ============
 
 async function createSave(
@@ -178,17 +167,6 @@ async function updateSave(
 	});
 }
 
-async function deleteSave(id: number): Promise<void> {
-	const database = await openDB();
-	return new Promise((resolve, reject) => {
-		const tx = database.transaction(SAVES_STORE, "readwrite");
-		const store = tx.objectStore(SAVES_STORE);
-		const request = store.delete(id);
-		request.onsuccess = () => resolve();
-		request.onerror = () => reject(request.error);
-	});
-}
-
 // ============ Convenience functions (used by game) ============
 
 /**
@@ -212,9 +190,9 @@ export async function initializeStorage(
 	currentUserId = user.id;
 
 	// Get or create first save for this user
-	let saves = await getSavesForUser(user.id);
+	let saves = await getSavesForUser(currentUserId);
 	if (saves.length === 0) {
-		const newSave = await createSave(user.id, "Save 1", defaultPlayerData);
+		const newSave = await createSave(currentUserId, "Save 1", defaultPlayerData);
 		saves = [newSave];
 	}
 	const save = saves[0];
