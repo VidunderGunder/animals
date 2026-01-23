@@ -40,7 +40,8 @@ Character Movement & Animation
   Bezier curves for position and speed?
 - [ ] Adjust character state in transitions (e.g., climbing down ladders backwards)
 - [ ] Multiple transitions per edge  
-  E.g., moving faster or slower for jumping shorter or longer distances. We currently only support one condition and one transition per edge.
+  E.g., moving faster or slower for jumping shorter or longer distances. We currently only support one condition and one transition per edge.  
+  The player should be able to jump down ladders if running, but climb down normally if walking.
 - [ ] Additive position offsets for animation and transition
 - [ ] Stub jumps (tree trunks)  
   `src/scenes/overworld/data/start.ts`
