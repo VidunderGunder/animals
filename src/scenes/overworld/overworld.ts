@@ -22,7 +22,7 @@ import {
 	directions,
 	movementIntent,
 } from "../../input/input";
-import { getPlayerSaveData, player, playerAnimations } from "../../state";
+import {  getPlayerSaveData, player, playerAnimations } from "../../state";
 import { savePlayerState } from "../../storage";
 import { menuState, openMenu } from "../menu/menu";
 import { camera, updateCamera } from "./camera";
@@ -501,3 +501,4 @@ export function overworld(dt: number) {
 	draw(dt);
 	renderDialogs();
 }
+

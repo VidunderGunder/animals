@@ -71,6 +71,7 @@ function startGame() {
 initializeStorage(player)
 	.then((partialPlayer) => {
 		setPlayerState(partialPlayer);
+		console.log(player)
 		startGame();
 	})
 	.catch((err: unknown) => {

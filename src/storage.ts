@@ -65,8 +65,7 @@ function openDB(): Promise<IDBDatabase> {
 }
 
 // ============ User functions ============
-
-export async function createUser(name: string): Promise<User> {
+async function createUser(name: string): Promise<User> {
 	const database = await openDB();
 	return new Promise((resolve, reject) => {
 		const tx = database.transaction(USERS_STORE, "readwrite");
@@ -83,7 +82,7 @@ export async function createUser(name: string): Promise<User> {
 	});
 }
 
-export async function getUsers(): Promise<User[]> {
+async function getUsers(): Promise<User[]> {
 	const database = await openDB();
 	return new Promise((resolve, reject) => {
 		const tx = database.transaction(USERS_STORE, "readonly");
@@ -94,7 +93,7 @@ export async function getUsers(): Promise<User[]> {
 	});
 }
 
-export async function getUser(id: number): Promise<User | null> {
+async function getUser(id: number): Promise<User | null> {
 	const database = await openDB();
 	return new Promise((resolve, reject) => {
 		const tx = database.transaction(USERS_STORE, "readonly");
@@ -107,7 +106,7 @@ export async function getUser(id: number): Promise<User | null> {
 
 // ============ Save functions ============
 
-export async function createSave(
+async function createSave(
 	userId: number,
 	name: string,
 	playerData: PlayerSaveData,
@@ -132,7 +131,7 @@ export async function createSave(
 	});
 }
 
-export async function getSavesForUser(userId: number): Promise<Save[]> {
+async function getSavesForUser(userId: number): Promise<Save[]> {
 	const database = await openDB();
 	return new Promise((resolve, reject) => {
 		const tx = database.transaction(SAVES_STORE, "readonly");
@@ -144,7 +143,7 @@ export async function getSavesForUser(userId: number): Promise<Save[]> {
 	});
 }
 
-export async function getSave(id: number): Promise<Save | null> {
+async function getSave(id: number): Promise<Save | null> {
 	const database = await openDB();
 	return new Promise((resolve, reject) => {
 		const tx = database.transaction(SAVES_STORE, "readonly");
@@ -155,7 +154,7 @@ export async function getSave(id: number): Promise<Save | null> {
 	});
 }
 
-export async function updateSave(
+async function updateSave(
 	id: number,
 	playerData: PlayerSaveData,
 ): Promise<void> {
@@ -180,7 +179,7 @@ export async function updateSave(
 	});
 }
 
-export async function deleteSave(id: number): Promise<void> {
+async function deleteSave(id: number): Promise<void> {
 	const database = await openDB();
 	return new Promise((resolve, reject) => {
 		const tx = database.transaction(SAVES_STORE, "readwrite");
@@ -231,7 +230,7 @@ export async function initializeStorage(
  * Does nothing if no save is selected.
  */
 export async function savePlayerState(data: PlayerSaveData): Promise<void> {
-	if (currentSaveId === null) return;
+    if (currentSaveId === null) return;
 	await updateSave(currentSaveId, data);
 }
 
