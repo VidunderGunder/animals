@@ -59,7 +59,7 @@ export const startTileX = 12;
 export const startTileY = 37;
 export const startLayerZ = 0;
 
-export const player: Player = {
+const playerDefault = {
 	x: startTileX,
 	y: startTileY,
 	z: startLayerZ,
@@ -89,6 +89,10 @@ export const player: Player = {
 	animationTimer: 0,
 	disabled: false,
 	paused: false,
+} as const satisfies Player;
+
+export const player: Player = {
+	...playerDefault,
 };
 
 export const playerDirectionRow: Record<Direction, number> = {
@@ -129,3 +133,7 @@ export type Animation = {
 };
 
 export const playerAnimations = characters.player.animations;
+
+export function resetPlayer(): void {
+	Object.assign(player, playerDefault);
+}
