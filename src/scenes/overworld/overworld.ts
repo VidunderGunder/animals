@@ -208,7 +208,6 @@ function snapToSegmentEnd() {
 }
 
 function tryPlanMove(desired: Direction): Transition | null {
-	// Edge rule first
 	const edge = getEdge(player.x, player.y, player.z, desired);
 	if (edge?.blocked) return null;
 
@@ -223,7 +222,6 @@ function tryPlanMove(desired: Direction): Transition | null {
 		return null;
 	}
 
-	// Default walk + jump-stub logic
 	const { dx, dy } = dirToDxDy(desired);
 	const nx = player.x + dx;
 	const ny = player.y + dy;
@@ -244,11 +242,6 @@ function tryPlanMove(desired: Direction): Transition | null {
 /** Update player and world state */
 function updatePlayer(dt: number) {
 	if (player.paused) return;
-
-	const isReady = isWorldImagesReady();
-	if (!isReady) return;
-
-	setTilesCountsIfNotSet();
 
 	if (!player.disabled && activeActions.has("start")) openMenu();
 
@@ -358,6 +351,11 @@ function updatePlayer(dt: number) {
 }
 
 function update(dt: number) {
+	const isReady = isWorldImagesReady();
+	if (!isReady) return;
+
+	setTilesCountsIfNotSet();
+
 	updatePlayer(dt);
 	updateCamera(dt);
 }

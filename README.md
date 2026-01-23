@@ -6,6 +6,8 @@ Nostalgic GBA inspired game about a skater collecting animals and mythological b
 
 General
 
+- [ ] Clean up state
+  Lots of duplications in player state, should be replaced with getters (e.g., path related stuff)
 - [ ] Save system  
   - IndexedDB for async storage (doesn't block rendering)
   - Manual save function (META + S for now)
@@ -35,9 +37,6 @@ Character Movement & Animation
 
 - [ ] Tap to turn  
   Enable turning by tapping direction (not in facing direction) when in slow mode (e.g., walk), yet still allow smooth direction changes when moving or in fast mode (e.g., run)
-- [ ] Decouple transition speed from player speed
-- [ ] Curved transition paths  
-  Bezier curves for position and speed?
 - [ ] Adjust character state in transitions (e.g., climbing down ladders backwards)
 - [ ] Multiple transitions per edge  
   E.g., moving faster or slower for jumping shorter or longer distances. We currently only support one condition and one transition per edge.  

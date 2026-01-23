@@ -1,3 +1,10 @@
+import { gamepadButtonToAction, getGamepadUI } from "./gamepad";
+import { initKeyboard, reverseKeyMap } from "./keyboard";
+
+export function initInput() {
+	initKeyboard();
+}
+
 export const inputUIs = [
 	"keyboard",
 	"nintendo", // Nintendo Switch like (our touch controls are based on this)
@@ -42,90 +49,10 @@ export function isMove(action: Action | undefined): action is Direction {
 	return directions.some((a) => a === action);
 }
 
-export const keyMap: Record<Action, string[]> = {
-	up: ["ArrowUp"],
-	down: ["ArrowDown"],
-	left: ["ArrowLeft"],
-	right: ["ArrowRight"],
-	// Space
-	a: [" "],
-	b: ["Shift"],
-	x: [],
-	y: [],
-	start: ["Enter"],
-	select: ["Tab"],
-	l: [],
-	r: [],
-	zl: [],
-	zr: [],
-};
-
-export const reverseKeyMap: Record<string, Action> = {};
-for (const [action, keys] of Object.entries(keyMap)) {
-	for (const key of keys) {
-		reverseKeyMap[key] = action as Action;
-	}
-}
-
-export const allKeyBindings = Object.values(keyMap).flat();
-
-export function initKeyboard() {
-	window.addEventListener("keydown", (e) => {
-		const key = e.key;
-
-		if (!allKeyBindings.includes(key)) return;
-		e.preventDefault();
-
-		pressedKeys.add(key);
-	});
-
-	window.addEventListener("keyup", (e) => {
-		const key = e.key;
-
-		if (!allKeyBindings.includes(key)) return;
-		pressedKeys.delete(key);
-	});
-}
-
-/**
- * https://www.w3.org/TR/gamepad/standard_gamepad.svg
- */
-const gamepadButtonActionMap = {
-	0: "b",
-	1: "a",
-	2: "y",
-	3: "x",
-	4: "l",
-	5: "r",
-	6: "zl",
-	7: "zr",
-	8: "select",
-	9: "start",
-	10: null, // Left Stick Press
-	11: null, // Right Stick Press
-	12: "up",
-	13: "down",
-	14: "left",
-	15: "right",
-} as const satisfies Record<number, Action | null>;
-
-function isGamepadButtonIndex(
-	index: unknown,
-): index is keyof typeof gamepadButtonActionMap {
-	if (typeof index !== "number") return false;
-	return index in gamepadButtonActionMap;
-}
-
-function gamepadButtonToAction(index?: number): Action | null {
-	if (!isGamepadButtonIndex(index)) return null;
-	return gamepadButtonActionMap[index];
-}
-
 export function input() {
-	const gamepads = navigator.getGamepads();
-	const gamepad = gamepads[0];
-
 	activeActions.clear();
+
+	const gamepad = navigator.getGamepads()[0];
 
 	if (gamepad) {
 		gamepad.buttons.forEach((button, index) => {
@@ -133,12 +60,10 @@ export function input() {
 
 			if (!action) return;
 
-			if (action) {
-				if (button.pressed) {
-					activeGamepadActions.add(action);
-				} else {
-					activeGamepadActions.delete(action);
-				}
+			if (button.pressed) {
+				activeGamepadActions.add(action);
+			} else {
+				activeGamepadActions.delete(action);
 			}
 		});
 
@@ -172,51 +97,4 @@ export function input() {
 	} else {
 		movementIntent = null;
 	}
-}
-
-const playstationIdTags = [
-	"playstation",
-	"ps3",
-	"ps4",
-	"ps5",
-	"dualshock",
-	"dualsense",
-	"sony interactive",
-	"sony computer",
-	"sony",
-	"ds4",
-	"ds5",
-] as const;
-const nintendoIdTags = [
-	"nintendo",
-	"switch",
-	"joy-con",
-	"joycon",
-	"pro controller",
-	"switch pro",
-	"nx",
-	"hac",
-] as const;
-const xboxIdTags = [
-	"xbox",
-	"x-input",
-	"xinput",
-	"xbox 360",
-	"xbox360",
-	"xbox one",
-	"xboxone",
-	"xbox series",
-	"microsoft",
-	"controller (xbox)",
-	"wireless controller (xbox)",
-] as const;
-
-function getGamepadUI(gamepadId: string): (typeof inputUIs)[number] {
-	const id = gamepadId.toLowerCase();
-
-	if (nintendoIdTags.some((tag) => id.includes(tag))) return "nintendo";
-	if (playstationIdTags.some((tag) => id.includes(tag))) return "playstation";
-	if (xboxIdTags.some((tag) => id.includes(tag))) return "xbox";
-
-	return "xbox"; // Default to Xbox style
 }

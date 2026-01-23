@@ -184,7 +184,13 @@ export function initializeArea() {
 				animation: "walk",
 				path: [
 					{ ...cellToPx(13, 45), z: 1 },
-					{ ...cellToPx(13, 46), z: 0 },
+					{
+						...cellToPx(13, 46),
+						z: 0,
+						onSegment: () => {
+							player.facingDirection = "right";
+						},
+					},
 				],
 				end: { x: 13, y: 46, z: 0 },
 			},

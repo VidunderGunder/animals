@@ -46,7 +46,7 @@ export let GAME_HEIGHT_PX = BASE_HEIGHT_PX * SCALE;
 
 const canvasCss = document.getElementById("canvas-css") as HTMLStyleElement;
 
-export function initScreen() {
+export function initScreenDimensions() {
 	screenWidth = window.innerWidth;
 	screenHeight = window.innerHeight;
 	({ x: ASPECT_RATIO_X, y: ASPECT_RATIO_Y } = getClosestAspectRatio(
@@ -68,6 +68,11 @@ export function initScreen() {
 
 	canvas.width = GAME_WIDTH_PX;
 	canvas.height = GAME_HEIGHT_PX;
+}
+
+export function initScreen() {
+	initScreenDimensions();
+	document.defaultView?.addEventListener("resize", initScreenDimensions);
 }
 
 export const TILE_SIZE_PX = 16;
