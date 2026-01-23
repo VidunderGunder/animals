@@ -14,15 +14,7 @@ import {
 import { initializeStorage } from "./storage";
 
 
-// Initialize storage and autoload saved state on game start
-initializeStorage(player)
-	.then((partialPlayer) => {
-		setPlayerState(partialPlayer);
-		console.log(player)
-	})
-	.catch((err: unknown) => {
-		console.error("Failed to initialize storage:", err);
-	})
+
 
 initScreen();
 initInput();
@@ -74,4 +66,14 @@ function startGame() {
 	previousFrameTimestamp = 0;
 	rafId = requestAnimationFrame(loop);
 }
-
+// Initialize storage and autoload saved state on game start
+initializeStorage(player)
+	.then((partialPlayer) => {
+		setPlayerState(partialPlayer);
+		console.log(player)
+		startGame();
+	})
+	.catch((err: unknown) => {
+		console.error("Failed to initialize storage:", err);
+		startGame(); // Start anyway with defaults if storage fails
+	})
