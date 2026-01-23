@@ -102,6 +102,40 @@ export const playerDirectionRow: Record<Direction, number> = {
 	up: 3,
 } as const;
 
+export function setPlayerState(playerData: PlayerSaveData | null): void {
+	if (!playerData) return;
+	player.x = playerData.x;
+	player.y = playerData.y;
+	player.z = playerData.z;
+	player.facingDirection = playerData.facingDirection;
+
+	// Update pixel positions to match tile positions
+	player.xPx = playerData.x * TILE_SIZE_PX;
+	player.yPx = playerData.y * TILE_SIZE_PX;
+	player.xPxi = player.xPx;
+	player.yPxi = player.yPx;
+	player.xPxf = player.xPx;
+	player.yPxf = player.yPx;
+	player.zi = playerData.z;
+	player.zf = playerData.z;
+}
+
+export function getPlayerSaveData(): PlayerSaveData {
+	return {
+		x: player.x,
+		y: player.y,
+		z: player.z,
+		facingDirection: player.facingDirection,
+	};
+}
+
+export type PlayerSaveData = {
+	x: number;
+	y: number;
+	z: number;
+	facingDirection: Direction;
+};
+
 export type Animation = {
 	frames: readonly number[];
 	frameDuration: number;
