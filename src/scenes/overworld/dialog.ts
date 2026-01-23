@@ -557,18 +557,6 @@ function randJitter(jitterMs: number) {
 	return Math.round((Math.random() * 2 - 1) * jitterMs);
 }
 
-function roundRectFill(x: number, y: number, w: number, h: number, r: number) {
-	const rr = Math.max(0, Math.min(r, Math.floor(Math.min(w, h) / 2)));
-	ctx.beginPath();
-	ctx.moveTo(x + rr, y);
-	ctx.arcTo(x + w, y, x + w, y + h, rr);
-	ctx.arcTo(x + w, y + h, x, y + h, rr);
-	ctx.arcTo(x, y + h, x, y, rr);
-	ctx.arcTo(x, y, x + w, y, rr);
-	ctx.closePath();
-	ctx.fill();
-}
-
 function computeContentKey(content: RSVPContent) {
 	if (typeof content === "string") return hashText(content);
 	let h = 5381;
