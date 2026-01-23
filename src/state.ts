@@ -127,7 +127,7 @@ export function getPlayerSaveData(): PlayerSaveData {
 		z: player.z,
 		facingDirection: player.facingDirection,
 	};
-}	
+}
 
 export type PlayerSaveData = {
 	x: number;

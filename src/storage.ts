@@ -186,17 +186,21 @@ export async function initializeStorage(
 		users = [newUser];
 	}
 	const user = users[0];
-    if (!user) throw new Error("No user found after creation.");
+	if (!user) throw new Error("No user found after creation.");
 	currentUserId = user.id;
 
 	// Get or create first save for this user
 	let saves = await getSavesForUser(currentUserId);
 	if (saves.length === 0) {
-		const newSave = await createSave(currentUserId, "Save 1", defaultPlayerData);
+		const newSave = await createSave(
+			currentUserId,
+			"Save 1",
+			defaultPlayerData,
+		);
 		saves = [newSave];
 	}
 	const save = saves[0];
-    if (!save) throw new Error("No save found after creation.");
+	if (!save) throw new Error("No save found after creation.");
 	currentSaveId = save.id;
 
 	return save.playerData;
@@ -207,7 +211,7 @@ export async function initializeStorage(
  * Does nothing if no save is selected.
  */
 export async function savePlayerState(data: PlayerSaveData): Promise<void> {
-    if (currentSaveId === null) return;
+	if (currentSaveId === null) return;
 	await updateSave(currentSaveId, data);
 }
 
@@ -220,4 +224,3 @@ export async function loadPlayerState(): Promise<PlayerSaveData | null> {
 	const save = await getSave(currentSaveId);
 	return save?.playerData ?? null;
 }
-

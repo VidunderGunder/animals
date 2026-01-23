@@ -1,96 +1,96 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.3.8/schema.json",
-  "vcs": {
-    "enabled": false,
-    "clientKind": "git",
-    "useIgnoreFile": false
-  },
-  "files": {
-    "ignoreUnknown": true,
-    "includes": [
-      "**",
-      "!**/.wrangler",
-      "!**/src-tauri/src",
-      "!**/src-tauri/icons",
-      "!**/src-tauri/gen",
-      "!**/src-tauri/**/*.rs",
-      "!**/tamagui.css",
-      "!**/workbox*.js",
-      "!**/sw*.js",
-      "!**/service-worker.js",
-      "!**/fallback*.js",
-      "!**/node_modules",
-      "!**/public",
-      "!**/dist",
-      "!**/build",
-      "!**/ios",
-      "!**/.git",
-      "!**/.vscode",
-      "!**/.android",
-      "!**/.DS_Store",
-      "!**/Thumbs.db",
-      "!**/.tamagui*",
-      "!**/.next*",
-      "!**/tsconfig.tsbuildinfo"
-    ]
-  },
-  "formatter": {
-    "enabled": true,
-    "indentStyle": "tab"
-  },
-  "assist": {
-    "actions": { "source": { "organizeImports": "on" } }
-  },
-  "linter": {
-    "enabled": true,
-    "rules": {
-      "recommended": true,
-      "nursery": {
-        "useSortedClasses": {
-          "level": "error",
-          "fix": "safe",
-          "options": {
-            "attributes": ["className"],
-            "functions": ["cn"]
-          }
-        }
-      },
-      "style": {
-        "noUnusedTemplateLiteral": {
-          "level": "off"
-        }
-      },
-      "correctness": {
-        "noUnusedVariables": {
-          "level": "warn"
-        },
-        "noUnusedFunctionParameters": {
-          "level": "warn"
-        },
-        "noUnusedImports": {
-          "level": "warn",
-          "fix": "none"
-        }
-      },
-      "a11y": {
-        "noLabelWithoutControl": {
-          "level": "off",
-          "options": {}
-        }
-      }
-    }
-  },
-  "javascript": {
-    "formatter": {
-      "quoteStyle": "double"
-    }
-  },
-  "json": {
-    "parser": {
-      "allowTrailingCommas": true
-    },
-    "formatter": {
-      "trailingCommas": "none"
-    }
-  }
+	"$schema": "https://biomejs.dev/schemas/2.3.11/schema.json",
+	"vcs": {
+		"enabled": false,
+		"clientKind": "git",
+		"useIgnoreFile": false
+	},
+	"files": {
+		"ignoreUnknown": true,
+		"includes": [
+			"**",
+			"!**/.wrangler",
+			"!**/src-tauri/src",
+			"!**/src-tauri/icons",
+			"!**/src-tauri/gen",
+			"!**/src-tauri/**/*.rs",
+			"!**/tamagui.css",
+			"!**/workbox*.js",
+			"!**/sw*.js",
+			"!**/service-worker.js",
+			"!**/fallback*.js",
+			"!**/node_modules",
+			"!**/public",
+			"!**/dist",
+			"!**/build",
+			"!**/ios",
+			"!**/.git",
+			"!**/.vscode",
+			"!**/.android",
+			"!**/.DS_Store",
+			"!**/Thumbs.db",
+			"!**/.tamagui*",
+			"!**/.next*",
+			"!**/tsconfig.tsbuildinfo"
+		]
+	},
+	"formatter": {
+		"enabled": true,
+		"indentStyle": "tab"
+	},
+	"assist": {
+		"actions": { "source": { "organizeImports": "on" } }
+	},
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"recommended": true,
+			"nursery": {
+				"useSortedClasses": {
+					"level": "error",
+					"fix": "safe",
+					"options": {
+						"attributes": ["className"],
+						"functions": ["cn"]
+					}
+				}
+			},
+			"style": {
+				"noUnusedTemplateLiteral": {
+					"level": "off"
+				}
+			},
+			"correctness": {
+				"noUnusedVariables": {
+					"level": "warn"
+				},
+				"noUnusedFunctionParameters": {
+					"level": "warn"
+				},
+				"noUnusedImports": {
+					"level": "warn",
+					"fix": "none"
+				}
+			},
+			"a11y": {
+				"noLabelWithoutControl": {
+					"level": "off",
+					"options": {}
+				}
+			}
+		}
+	},
+	"javascript": {
+		"formatter": {
+			"quoteStyle": "double"
+		}
+	},
+	"json": {
+		"parser": {
+			"allowTrailingCommas": true
+		},
+		"formatter": {
+			"trailingCommas": "none"
+		}
+	}
 }
