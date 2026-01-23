@@ -383,7 +383,7 @@ function drawTextWithBubble(
 	ctx.globalAlpha = alpha;
 
 	// ---- Bubble (pixel-friendly "rounded" rect using fillRect only) ----
-	ctx.fillStyle = "#fff";
+	ctx.fillStyle = "#1f1f1fbb";
 
 	// Outer shape with 1px chamfered corners (no AA)
 	// Top & bottom (inset by 1)
@@ -395,19 +395,6 @@ function drawTextWithBubble(
 	// Body
 	ctx.fillRect(bx + 1, by + 1, bubbleW - 2, bubbleH - 2);
 
-	// ---- Text ----
-	ctx.fillStyle = "#3a3a3a";
-	const tx = bx + paddingX + emphPad;
-	const ty = by + paddingY + 1 + emphPad;
-
-	for (let i = 0; i < lines.length; i++) {
-		const line = lines[i];
-		if (!line) continue;
-		ctx.fillText(line, tx, ty + i * lineH);
-	}
-
-	// ---- Caret (raster triangle, no path AA) ----
-	ctx.fillStyle = "#fff";
 	const caretHalfW = 1;
 	const caretH = 2;
 
@@ -417,6 +404,20 @@ function drawTextWithBubble(
 		const rowHalf = caretHalfW - i; // 3,2,1
 		const rowW = rowHalf * 2 + 1;
 		ctx.fillRect(px - rowHalf, py + i, rowW, 1);
+	}
+
+	// ---- Text ----
+	ctx.fillStyle = "#fff";
+	ctx.shadowColor = "#10131fb9";
+	ctx.shadowOffsetY = 1;
+
+	const tx = bx + paddingX + emphPad;
+	const ty = by + paddingY + 1 + emphPad;
+
+	for (let i = 0; i < lines.length; i++) {
+		const line = lines[i];
+		if (!line) continue;
+		ctx.fillText(line, tx, ty + i * lineH);
 	}
 
 	ctx.restore();
