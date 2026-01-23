@@ -73,12 +73,12 @@ const playerDefault = {
 	yPx: startTileY * TILE_SIZE_PX,
 
 	path: [],
-	xPxi: startTileX * TILE_SIZE_PX,
-	yPxi: startTileY * TILE_SIZE_PX,
-	zi: startLayerZ,
-	xPxf: startTileX * TILE_SIZE_PX,
-	yPxf: startTileY * TILE_SIZE_PX,
-	zf: startLayerZ,
+	xPxi: 0,
+	yPxi: 0,
+	zi: 0,
+	xPxf: 0,
+	yPxf: 0,
+	zf: 0,
 	pathSegmentProgress: 1,
 
 	movingToTile: null,
