@@ -22,7 +22,8 @@ import {
 	directions,
 	movementIntent,
 } from "../../input/input";
-import { player, playerAnimations } from "../../state";
+import { getPlayerSaveData, player, playerAnimations } from "../../state";
+import { savePlayerState } from "../../storage";
 import { menuState, openMenu } from "../menu/menu";
 import { camera, updateCamera } from "./camera";
 import { getCell, getEdge, type Transition } from "./data";
@@ -330,6 +331,9 @@ function updatePlayer(dt: number) {
 				player.movingDirection = null;
 				player.movingToTile = null;
 				player.movingToAnimation = null;
+
+				// Autosave on step end
+				savePlayerState(getPlayerSaveData());
 			}
 		} else {
 			const t = player.moveSegmentProgress;

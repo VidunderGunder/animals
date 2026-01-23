@@ -96,6 +96,25 @@ export const playerDirectionRow: Record<Direction, number> = {
 	up: 3,
 } as const;
 
+
+
+
+export function setPlayerState(playerData: PlayerSaveData | null): void {
+	if (!playerData) return;
+	player.x = playerData.x;
+	player.y = playerData.y;
+	player.z = playerData.z;
+	player.facingDirection = playerData.facingDirection;
+}
+
+export type PlayerSaveData = {
+	x: number;
+	y: number;
+	z: number;
+	facingDirection: Direction;
+};
+
+
 export type Animation = {
 	frames: readonly number[];
 	frameDuration: number;

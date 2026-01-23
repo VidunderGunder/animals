@@ -7,6 +7,11 @@ import { activeActions, initKeyboard, input } from "./input/input";
 import { initVirtualGamepad } from "./input/touch";
 import { menu } from "./scenes/menu/menu";
 import { overworld } from "./scenes/overworld/overworld";
+import {
+	player,
+	setPlayerState,
+} from "./state";
+import { initializeStorage } from "./storage";
 
 initScreen();
 document.defaultView?.addEventListener("resize", initScreen);
@@ -62,5 +67,13 @@ function startGame() {
 	previousFrameTimestamp = 0;
 	rafId = requestAnimationFrame(loop);
 }
-
-startGame();
+// Initialize storage and autoload saved state on game start
+initializeStorage(player)
+	.then((partialPlayer) => {
+		setPlayerState(partialPlayer);
+		startGame();
+	})
+	.catch((err: unknown) => {
+		console.error("Failed to initialize storage:", err);
+		startGame();
+	})
