@@ -107,13 +107,13 @@ export function speak(
 	if (audioCtx.state === "suspended") void audioCtx.resume();
 
 	const tempoUser = options.tempo ?? defaultOptions.tempo;
-	const tempo = tempoUser * 0.7;
+	const tempo = tempoUser * 0.65;
 
 	const intensityUser = options.intensity ?? defaultOptions.intensity;
-	const intensity = intensityUser * 0.2;
+	const intensity = intensityUser * 0.3;
 
 	const pitchUser = options.pitch ?? defaultOptions.pitch;
-	const pitch = pitchUser * 0.8;
+	const pitch = pitchUser * 0.75;
 
 	const now = audioCtx.currentTime;
 	let t = now + 0.01;

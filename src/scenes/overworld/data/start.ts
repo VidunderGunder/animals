@@ -148,7 +148,7 @@ export function initializeArea() {
 			interact: {
 				id: "pretty_mushrooms",
 				onActivate: () => {
-					const sentence = "Mushrooms! ... ... Let's leave them alone ♥";
+					const sentence = "Mushrooms! ... ... Let's leave them alone ❤";
 					rsvp("pretty_mushrooms", sentence);
 				},
 			},

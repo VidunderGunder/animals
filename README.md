@@ -8,11 +8,11 @@ General
 
 - [ ] Save system  
   - IndexedDB for async storage (doesn't block rendering)
+  - Manual save function (META + S for now)
   - Autosave on step/transition end
-  - Autosave on activation end
   - Autoload on game start
-  - Export/import save files as JSON
-  - Support syncing with local file system, to enable cloud sync solutions (e.g., iCloud, Google Drive, Dropbox)
+  - Export/import save files as JSON (functionality first, we'll have to design UI before implementing the visual part)
+  - Support syncing with local file system, to enable agnostic cloud sync solutions (e.g., iCloud, Google Drive, Dropbox)
 
 World
 
@@ -50,6 +50,9 @@ Character Movement & Animation
 - [ ] Smoke effect for jumps, drops, tricks etc.
 - [ ] Terrain movement  
   Cut off lower part of sprite (dynamic height), add animated overlay (e.g., water, grass, mud)
+
+Controls
+- [ ] Fix start/select behavior (inconsistent toggling after gamepad refactor)
 
 Bugs/Spikes
 

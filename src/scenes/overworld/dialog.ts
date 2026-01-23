@@ -46,9 +46,6 @@ type RSVPOptions = {
 	/** bubble padding */
 	paddingX?: number;
 	paddingY?: number;
-
-	/** bubble corner radius */
-	radiusPx?: number;
 };
 
 type BubbleState = {
@@ -98,12 +95,11 @@ const DEFAULT_OPTS: Required<RSVPOptions> = {
 
 	lingerMs: 500,
 	maxWidthPx: 150,
-	offsetYPx: -10,
+	offsetYPx: -11,
 	fadeMs: 90,
 
-	paddingX: 4,
-	paddingY: 2,
-	radiusPx: 4,
+	paddingX: 5,
+	paddingY: 3,
 };
 
 const bubbles = new Map<string, BubbleState>();
@@ -354,15 +350,20 @@ function drawTextWithBubble(
 	alpha: number,
 	emphasis: number = 1,
 ) {
+	// Pixel snap the anchor first (everything derives from this)
+	const px = Math.round(xPx);
+	const py = Math.round(yPx);
+
 	ctx.save();
 	ctx.font = "8px Tiny5";
 	ctx.textBaseline = "top";
+	ctx.textRendering = "geometricPrecision";
 
 	const lines = opts.maxWidthPx ? wrapText(text, opts.maxWidthPx) : [text];
-	const lineH = 9;
+	const lineH = 8;
 
-	const paddingX = opts.paddingX;
-	const paddingY = opts.paddingY;
+	const paddingX = opts.paddingX | 0;
+	const paddingY = opts.paddingY | 0;
 
 	let maxW = 0;
 	for (const line of lines) {
@@ -370,34 +371,52 @@ function drawTextWithBubble(
 		if (w > maxW) maxW = w;
 	}
 
-	const emphPad = Math.round((emphasis - 1) * 2);
+	const emphPad = Math.max(0, Math.round((emphasis - 1) * 2));
 
-	const bubbleW = Math.ceil(maxW + (paddingX + emphPad) * 2);
+	const bubbleW = Math.ceil(maxW + (paddingX + emphPad) * 2) - 1;
 	const bubbleH = Math.ceil(lines.length * lineH + (paddingY + emphPad) * 2);
 
-	const bx = Math.round(xPx - bubbleW / 2);
-	const by = Math.round(yPx - bubbleH);
+	// Bubble top-left snapped to pixels
+	const bx = Math.round(px - bubbleW / 2);
+	const by = Math.round(py - bubbleH);
 
 	ctx.globalAlpha = alpha;
 
-	ctx.fillStyle = "rgba(0,0,0,0.45)";
-	roundRectFill(bx, by, bubbleW, bubbleH, opts.radiusPx);
+	// ---- Bubble (pixel-friendly "rounded" rect using fillRect only) ----
+	ctx.fillStyle = "#fff";
 
-	ctx.fillStyle = "#ffffff";
-	ctx.textRendering = "geometricPrecision";
-	ctx.shadowColor = "rgba(0,0,0,0.30)";
-	ctx.shadowOffsetX = 0;
-	ctx.shadowOffsetY = 1;
-	ctx.shadowBlur = 0;
+	// Outer shape with 1px chamfered corners (no AA)
+	// Top & bottom (inset by 1)
+	ctx.fillRect(bx + 1, by, bubbleW - 2, 1);
+	ctx.fillRect(bx + 1, by + bubbleH - 1, bubbleW - 2, 1);
+	// Left & right (inset by 1)
+	ctx.fillRect(bx, by + 1, 1, bubbleH - 2);
+	ctx.fillRect(bx + bubbleW - 1, by + 1, 1, bubbleH - 2);
+	// Body
+	ctx.fillRect(bx + 1, by + 1, bubbleW - 2, bubbleH - 2);
+
+	// ---- Text ----
+	ctx.fillStyle = "#3a3a3a";
+	const tx = bx + paddingX + emphPad;
+	const ty = by + paddingY + 1 + emphPad;
 
 	for (let i = 0; i < lines.length; i++) {
 		const line = lines[i];
 		if (!line) continue;
-		ctx.fillText(
-			line,
-			bx + paddingX + emphPad,
-			by + paddingY + 1 + emphPad + i * lineH,
-		);
+		ctx.fillText(line, tx, ty + i * lineH);
+	}
+
+	// ---- Caret (raster triangle, no path AA) ----
+	ctx.fillStyle = "#fff";
+	const caretHalfW = 1;
+	const caretH = 2;
+
+	// A simple pixel triangle pointing down:
+	// y+0: width 6+1, y+1: width 4+1, y+2: width 2+1
+	for (let i = 0; i < caretH; i++) {
+		const rowHalf = caretHalfW - i; // 3,2,1
+		const rowW = rowHalf * 2 + 1;
+		ctx.fillRect(px - rowHalf, py + i, rowW, 1);
 	}
 
 	ctx.restore();
