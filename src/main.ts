@@ -60,13 +60,13 @@ function startGame() {
 	previousFrameTimestamp = 0;
 	rafId = requestAnimationFrame(loop);
 }
-// Initialize storage and autoload saved state on game start
-initializeStorage(player)
-	.then((partialPlayer) => {
-		setPlayerState(partialPlayer);
-		startGame();
-	})
-	.catch((err: unknown) => {
-		console.error("Failed to initialize storage:", err);
-		startGame();
-	});
+
+try {
+	// Initialize storage and autoload saved state on game start
+	const partialPlayer = await initializeStorage(player);
+	setPlayerState(partialPlayer);
+	startGame();
+} catch (error) {
+	console.error("Failed to initialize storage:", error);
+	startGame();
+}
