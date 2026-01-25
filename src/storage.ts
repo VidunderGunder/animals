@@ -1,4 +1,5 @@
-import type { PlayerSaveData } from "./state";
+import { TILE_SIZE_PX } from "./config";
+import { player, resetPlayer } from "./state";
 
 const DB_NAME = "animals-game";
 const USERS_STORE = "users";
@@ -210,8 +211,9 @@ export async function initializeStorage(
  * Save player state to the current save slot.
  * Does nothing if no save is selected.
  */
-export async function savePlayerState(data: PlayerSaveData): Promise<void> {
+export async function savePlayerState(): Promise<void> {
 	if (currentSaveId === null) return;
+	const data = getPlayerSaveData();
 	await updateSave(currentSaveId, data);
 }
 
@@ -219,8 +221,40 @@ export async function savePlayerState(data: PlayerSaveData): Promise<void> {
  * Load player state from the current save slot.
  * Returns null if no save is selected.
  */
-export async function loadPlayerState(): Promise<PlayerSaveData | null> {
+export async function getSavedPlayerState(): Promise<PlayerSaveData | null> {
 	if (currentSaveId === null) return null;
 	const save = await getSave(currentSaveId);
 	return save?.playerData ?? null;
 }
+
+export async function loadPlayerState() {
+	resetPlayer();
+	try {
+		const playerData = await initializeStorage(player);
+
+		if (!playerData) return;
+		player.x = playerData.x;
+		player.y = playerData.y;
+		player.z = playerData.z;
+		player.facingDirection = playerData.facingDirection;
+
+		player.xPx = playerData.x * TILE_SIZE_PX;
+		player.yPx = playerData.y * TILE_SIZE_PX;
+	} catch {
+		// Ignore errors, start with default state
+	}
+}
+
+export function getPlayerSaveData(): PlayerSaveData {
+	return {
+		x: player.x,
+		y: player.y,
+		z: player.z,
+		facingDirection: player.facingDirection,
+	};
+}
+
+export type PlayerSaveData = Pick<
+	typeof player,
+	"x" | "y" | "z" | "facingDirection"
+>;

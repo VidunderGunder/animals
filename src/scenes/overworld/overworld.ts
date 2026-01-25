@@ -22,7 +22,7 @@ import {
 	directions,
 	movementIntent,
 } from "../../input/input";
-import { entities, player, playerAnimations } from "../../state";
+import { player, playerAnimations } from "../../state";
 import { savePlayerState } from "../../storage";
 import { menuState, openMenu } from "../menu/menu";
 import { camera, updateCamera } from "./camera";
@@ -200,7 +200,7 @@ function startSegment(
 function popNextWaypoint(): boolean {
 	const next = player.path.shift();
 	if (!next) return false;
-	startSegment(next.x, next.y, next.z, next.duration);
+	startSegment(next.xPx, next.yPx, next.z, next.duration);
 	return true;
 }
 
@@ -300,7 +300,7 @@ function updateEntity(dt: number, entityKey: string) {
 				entity.movingToTile = planned.end;
 				entity.movingToAnimation = planned.animation ?? null;
 
-				entity.path = planned.path.map((p) => ({
+				player.path = planned.path.map((p) => ({
 					...p,
 				}));
 

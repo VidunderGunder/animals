@@ -31,7 +31,7 @@ export type Player = {
 	yPx: number;
 
 	/** Remaining waypoints (world pixels) */
-	path: { x: number; y: number; z: number; duration?: number }[];
+	path: Transition["path"];
 
 	/** Segment interpolation (world pixels) */
 	xPxi: number;
@@ -75,12 +75,12 @@ const playerDefault = {
 	yPx: startTileY * TILE_SIZE_PX,
 
 	path: [],
-	xPxi: startTileX * TILE_SIZE_PX,
-	yPxi: startTileY * TILE_SIZE_PX,
-	zi: startLayerZ,
-	xPxf: startTileX * TILE_SIZE_PX,
-	yPxf: startTileY * TILE_SIZE_PX,
-	zf: startLayerZ,
+	xPxi: 0,
+	yPxi: 0,
+	zi: 0,
+	xPxf: 0,
+	yPxf: 0,
+	zf: 0,
 	pathSegmentProgress: 1,
 
 	movingToTile: null,
@@ -99,21 +99,9 @@ export const player: Player = {
 
 entities.set("player", player);
 
-export function getPlayerSaveData(): PlayerSaveData {
-	return {
-		x: player.x,
-		y: player.y,
-		z: player.z,
-		facingDirection: player.facingDirection,
-	};
+export function resetPlayer(): void {
+	Object.assign(player, playerDefault);
 }
-
-export type PlayerSaveData = {
-	x: number;
-	y: number;
-	z: number;
-	facingDirection: Direction;
-};
 
 export type Animation = {
 	frames: readonly number[];
@@ -121,7 +109,3 @@ export type Animation = {
 };
 
 export const playerAnimations = characters.player.animations;
-
-export function resetPlayer(): void {
-	Object.assign(player, playerDefault);
-}
