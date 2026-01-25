@@ -245,21 +245,18 @@ export async function getSavedEntitiesState(): Promise<Entities | null> {
 
 export async function loadEntitiesState() {
 	resetPlayer();
-	try {
-		const entitiesNew = await initializeStorage(entities);
-		if (!entitiesNew) return;
-		const p = entitiesNew.get("player");
-		if (p) {
-			Object.assign(player, p);
-			entitiesNew.set("player", player);
+
+	const entitiesNew = await initializeStorage(entities);
+	if (!entitiesNew) return;
+	const p = entitiesNew.get("player");
+	if (p) {
+		Object.assign(player, p);
+		entitiesNew.set("player", player);
+	}
+	if (entitiesNew) {
+		entities.clear();
+		for (const [id, entity] of entitiesNew.entries()) {
+			entities.set(id, entity);
 		}
-		if (entitiesNew) {
-			entities.clear();
-			for (const [id, entity] of entitiesNew.entries()) {
-				entities.set(id, entity);
-			}
-		}
-	} catch {
-		// Ignore errors, start with default state
 	}
 }
