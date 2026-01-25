@@ -23,14 +23,13 @@ import {
 	directions,
 	movementIntent,
 } from "../../input/input";
-import { type Entity, player } from "../../state";
+import { entities, type Entity, player } from "../../state";
 import { saveEntitiesState } from "../../storage";
 import { menuState, openMenu } from "../menu/menu";
 import { camera, updateCamera } from "./camera";
 import { getCell, getEdge, type Transition } from "./data";
 import { initializeArea as initializeStartArea } from "./data/start";
 import { renderDialogs } from "./dialog";
-import { entities } from "./entities";
 
 initializeStartArea();
 

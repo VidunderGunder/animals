@@ -8,7 +8,6 @@ import {
 } from "./config";
 import type { Direction } from "./input/input";
 import type { Transition } from "./scenes/overworld/data";
-import { entities } from "./scenes/overworld/entities";
 
 export type Player = {
 	renderVariant: AnimationVariant;
@@ -62,6 +61,7 @@ export type Player = {
 // TODO: Move to overworld/entities.ts
 export type Entity = Player;
 export type Entities = Map<string, Entity>;
+export const entities = new Map<string, Entity>();
 
 export const startTileX = 30;
 export const startTileY = 37;
