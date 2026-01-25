@@ -29,7 +29,7 @@ import { menuState, openMenu } from "../menu/menu";
 import { camera, updateCamera } from "./camera";
 import { getCell, getEdge, setCell, type Transition } from "./data";
 import { initializeArea as initializeStartArea } from "./data/start";
-import { renderDialogs } from "./dialog";
+import { renderDialogs, rsvp } from "./dialog";
 import { type Entity, entities } from "./entities";
 
 initializeStartArea();
@@ -495,6 +495,14 @@ function updateEntity(dt: number, entity: Entity) {
 		setCell(entity.x, entity.y, entity.z, {
 			...cell,
 			blocked: true,
+			interact: {
+				id: "npc_interact",
+				onActivate: () =>
+					rsvp("npc_interact", "Hello!", () => ({
+						xPx: entity.xPx - camera.xPx + entity.width / 2,
+						yPx: entity.yPx - camera.yPx,
+					})),
+			},
 		});
 	}
 }

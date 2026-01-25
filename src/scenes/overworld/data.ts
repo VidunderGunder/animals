@@ -11,7 +11,7 @@ export type Cell = {
 	blocked?: boolean;
 	interact?: {
 		id: string;
-		onActivate: (entity: Entity) => void;
+		onActivate: (activator: Entity) => void;
 	};
 	/**
 	 * Camera offset when player is in this cell
