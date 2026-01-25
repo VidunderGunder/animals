@@ -61,7 +61,7 @@ function dirToDxDy(direction: Direction): { dx: number; dy: number } {
 }
 
 function getIsMoving(entity: Entity): boolean {
-	return !!entity.isMoving || !!movementIntent;
+	return !!entity.movingDirection || !!movementIntent;
 }
 
 function getIsMovingFaster(entity: Entity): boolean {
@@ -263,7 +263,11 @@ function updateEntity(dt: number, entity: Entity) {
 
 	// 2.5) Interaction: activate on current tile (placeholder)
 	// Replace "a" with your actual action name if different.
-	if (!gameState.disabled && activeActions.has("a") && !entity.isMoving) {
+	if (
+		!gameState.disabled &&
+		activeActions.has("a") &&
+		!entity.movingDirection
+	) {
 		const activationCell = {
 			x: entity.x,
 			y: entity.y,
@@ -292,19 +296,20 @@ function updateEntity(dt: number, entity: Entity) {
 	}
 
 	// 3) Movement start
-	if (!entity.isMoving) {
+	if (!entity.movingDirection) {
 		if (desired) {
 			entity.direction = desired;
 
 			const planned = tryPlanMove(desired, entity);
-
 			if (planned) {
-				entity.isMoving = true;
+				entity.movingDirection = desired;
 
 				entity.movingToTile = planned.end;
 				entity.movingToAnimation = planned.animation ?? null;
 
-				entity.path = planned.path;
+				entity.path = planned.path.map((p) => ({
+					...p,
+				}));
 
 				setCurrentSegment(entity);
 			}
@@ -312,7 +317,7 @@ function updateEntity(dt: number, entity: Entity) {
 	}
 
 	// 4) Movement tween (pixel-based segments)
-	if (entity.isMoving) {
+	if (entity.movingDirection) {
 		const dx = entity.xPxf - entity.xPxi;
 		const dy = entity.yPxf - entity.yPxi;
 
@@ -362,8 +367,7 @@ function updateEntity(dt: number, entity: Entity) {
 				entity.y = entity.movingToTile.y;
 				entity.z = entity.movingToTile.z;
 
-				entity.isMoving = false;
-
+				entity.movingDirection = null;
 				entity.movingToTile = null;
 				entity.movingToAnimation = null;
 
@@ -390,7 +394,6 @@ function update(dt: number) {
 	for (const entity of entities.values()) {
 		updateEntity(dt, entity);
 	}
-
 	updateCamera(dt);
 }
 
@@ -462,8 +465,7 @@ function draw(dt: number) {
 			`current tile: ${player.x}, ${player.y}, ${player.z}`,
 			`move to tile: ${player.movingToTile?.x ?? "x"}, ${player.movingToTile?.y ?? "y"}, ${player.movingToTile?.z ?? "z"}`,
 			`facing: ${player.direction}`,
-
-			`moving: ${player.isMoving}`,
+			`moving: ${player.movingDirection}`,
 			`faster: ${getIsMovingFaster(player)}`,
 			`transition animation: ${player.movingToAnimation ?? "-"}`,
 		].forEach((line, index) => {
@@ -474,7 +476,7 @@ function draw(dt: number) {
 }
 
 function getEntitiesRenderZ(entity: Entity): number {
-	if (!entity.isMoving) return entity.z;
+	if (!entity.movingDirection) return entity.z;
 
 	const fromZ = entity.zi;
 	const toZ = entity.zf;

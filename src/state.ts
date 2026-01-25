@@ -17,8 +17,6 @@ export const gameState: GameState = {
 	paused: false,
 };
 
-export type Player = Entity;
-
 export const startTileX = 30;
 export const startTileY = 37;
 export const startLayerZ = 0;
@@ -32,7 +30,7 @@ const playerDefault = {
 	height: CHARACTER_SPRITE_HEIGHT_PX,
 	width: CHARACTER_SPRITE_WIDTH_PX,
 	speed: movementSpeeds[DEFAULT_MOVEMENT],
-	isMoving: false,
+	movingDirection: null,
 
 	xPx: startTileX * TILE_SIZE_PX,
 	yPx: startTileY * TILE_SIZE_PX,
@@ -52,9 +50,9 @@ const playerDefault = {
 	animationCurrent: "idle",
 	animationFrameIndex: 0,
 	animationTimer: 0,
-} as const satisfies Player;
+} as const satisfies Entity;
 
-export const player: Player = {
+export const player: Entity = {
 	...playerDefault,
 };
 

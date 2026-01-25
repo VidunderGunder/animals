@@ -32,7 +32,7 @@ export type Entity = {
 	/** Remaining transition path segments (world pixels) */
 	path: Transition["path"];
 
-	isMoving: boolean;
+	movingDirection: Direction | null;
 
 	/** Segment interpolation (world pixels) */
 	xPxi: number;
