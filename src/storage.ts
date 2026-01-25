@@ -18,7 +18,7 @@ export type Save = {
 	id: number;
 	userId: number;
 	name: string;
-	playerData: SerializedEntities;
+	entitiesData: SerializedEntities;
 	createdAt: number;
 	updatedAt: number;
 };
@@ -110,7 +110,7 @@ function deserializeEntities(arr: SerializedEntities): Entities {
 async function createSave(
 	userId: number,
 	name: string,
-	playerData: Entities,
+	entitiesData: Entities,
 ): Promise<Save> {
 	const database = await openDB();
 	return new Promise((resolve, reject) => {
@@ -120,7 +120,7 @@ async function createSave(
 		const save: Omit<Save, "id"> = {
 			userId,
 			name,
-			playerData: serializeEntities(playerData),
+			entitiesData: serializeEntities(entitiesData),
 			createdAt: now,
 			updatedAt: now,
 		};
@@ -155,7 +155,7 @@ async function getSave(id: number): Promise<Save | null> {
 	});
 }
 
-async function updateSave(id: number, playerData: Entities): Promise<void> {
+async function updateSave(id: number, entitiesData: Entities): Promise<void> {
 	const database = await openDB();
 	return new Promise((resolve, reject) => {
 		const tx = database.transaction(SAVES_STORE, "readwrite");
@@ -167,7 +167,7 @@ async function updateSave(id: number, playerData: Entities): Promise<void> {
 				reject(new Error(`Save with id ${id} not found`));
 				return;
 			}
-			save.playerData = serializeEntities(playerData);
+			save.entitiesData = serializeEntities(entitiesData);
 			save.updatedAt = Date.now();
 			const putRequest = store.put(save);
 			putRequest.onsuccess = () => resolve();
@@ -185,7 +185,7 @@ async function updateSave(id: number, playerData: Entities): Promise<void> {
  * Returns the player data from the selected save, or null if new.
  */
 export async function initializeStorage(
-	defaultPlayerData: Entities,
+	defaultEntitiesData: Entities,
 ): Promise<Entities | null> {
 	await openDB();
 
@@ -205,7 +205,7 @@ export async function initializeStorage(
 		const newSave = await createSave(
 			currentUserId,
 			"Save 1",
-			defaultPlayerData,
+			defaultEntitiesData,
 		);
 		saves = [newSave];
 	}
@@ -213,14 +213,14 @@ export async function initializeStorage(
 	if (!save) throw new Error("No save found after creation.");
 	currentSaveId = save.id;
 
-	return deserializeEntities(save.playerData);
+	return deserializeEntities(save.entitiesData);
 }
 
 /**
- * Save player state to the current save slot.
+ * Save entities state to the current save slot.
  * Does nothing if no save is selected.
  */
-export async function savePlayerState(): Promise<void> {
+export async function saveEntitiesState(): Promise<void> {
 	if (currentSaveId === null) return;
 	await updateSave(currentSaveId, entities);
 }
@@ -229,13 +229,13 @@ export async function savePlayerState(): Promise<void> {
  * Load player state from the current save slot.
  * Returns null if no save is selected.
  */
-export async function getSavedPlayerState(): Promise<Entities | null> {
+export async function getSavedEntitiesState(): Promise<Entities | null> {
 	if (currentSaveId === null) return null;
 	const save = await getSave(currentSaveId);
-	return save ? deserializeEntities(save.playerData) : null;
+	return save ? deserializeEntities(save.entitiesData) : null;
 }
 
-export async function loadPlayerState() {
+export async function loadEntitiesState() {
 	resetPlayer();
 	try {
 		const entitiesNew = await initializeStorage(entities);
@@ -243,6 +243,7 @@ export async function loadPlayerState() {
 		const p = entitiesNew.get("player");
 		if (p) {
 			Object.assign(player, p);
+			entitiesNew.set("player", player);
 		}
 		if (entitiesNew) {
 			entities.clear();
@@ -255,7 +256,3 @@ export async function loadPlayerState() {
 	}
 }
 
-export type PlayerSaveData = Pick<
-	typeof player,
-	"x" | "y" | "z" | "facingDirection"
->;

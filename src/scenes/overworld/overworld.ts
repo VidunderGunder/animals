@@ -24,7 +24,7 @@ import {
 	renderFrameLayer,
 } from "../../render/entities";
 import { type Entity, entities, player } from "../../state";
-import { savePlayerState } from "../../storage";
+import { saveEntitiesState } from "../../storage";
 import { menuState, openMenu } from "../menu/menu";
 import { camera, updateCamera } from "./camera";
 import { getCell, getEdge, type Transition } from "./data";
@@ -388,7 +388,7 @@ function update(dt: number) {
 	}
 
 	// Autosave on step end
-	savePlayerState();
+	saveEntitiesState();
 	updateCamera(dt);
 }
 

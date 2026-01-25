@@ -7,7 +7,7 @@ import { activeActions, initInput, input } from "./input/input";
 import { initVirtualGamepad } from "./input/touch";
 import { menu } from "./scenes/menu/menu";
 import { overworld } from "./scenes/overworld/overworld";
-import { loadPlayerState } from "./storage";
+import { loadEntitiesState } from "./storage";
 
 initScreen();
 initInput();
@@ -62,7 +62,7 @@ function startGame() {
 
 try {
 	// Initialize storage and autoload saved state on game start
-	await loadPlayerState();
+	await loadEntitiesState();
 } catch (error) {
 	console.error("Failed to initialize storage:", error);
 }
