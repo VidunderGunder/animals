@@ -6,7 +6,7 @@ Nostalgic GBA inspired game about a skater collecting animals and mythological b
 
 General
 
-- [ ] Fix transition speed again
+- [ ] 💛 Fix transition speed again
 - [ ] Clean up state  
   Lots of duplications in player state, should be replaced with getters (e.g., path related stuff)
 
