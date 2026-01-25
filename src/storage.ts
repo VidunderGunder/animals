@@ -102,8 +102,8 @@ async function getUsers(): Promise<User[]> {
 // Strips out transient movement state (path, currentPathSegment) that contains functions
 function serializeEntities(map: Entities): SerializedEntities {
 	return Array.from(map.entries()).map(([key, entity]) => {
-		const { path, currentPathSegment, ...rest } = entity;
-		return [key, { ...rest, path: [], currentPathSegment: undefined }];
+		const { path, ...rest } = entity;
+		return [key, { ...rest, path: [] }];
 	});
 }
 
