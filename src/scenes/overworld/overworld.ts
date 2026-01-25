@@ -24,7 +24,7 @@ import {
 	movementIntent,
 } from "../../input/input";
 import { gameState, player } from "../../state";
-import { savePlayerState } from "../../storage";
+import { saveEntitiesState } from "../../storage";
 import { menuState, openMenu } from "../menu/menu";
 import { camera, updateCamera } from "./camera";
 import { getCell, getEdge, setCell, type Transition } from "./data";
@@ -206,11 +206,7 @@ function startSegment(
 
 function setCurrentSegment(entity: Entity): boolean {
 	const next = entity.path.shift();
-	if (!next) {
-		entity.currentPathSegment = undefined;
-		return false;
-	}
-	entity.currentPathSegment = next;
+	if (!next) return false;
 	startSegment(entity, next.xPx, next.yPx, next.z, next.duration);
 	return true;
 }
@@ -326,38 +322,39 @@ function updatePlayer(dt: number) {
 		const dx = entity.xPxf - entity.xPxi;
 		const dy = entity.yPxf - entity.yPxi;
 
-		if (!entity.pathSegmentDuration) {
-		}
-
 		const distancePx = dx === 0 && dy === 0 ? 0 : Math.hypot(dx, dy);
+		
+		
+		const currentPathSegment = entity.path[0];
+		// On segment start
+		if (!entity.pathSegmentProgress && currentPathSegment) {
+			currentPathSegment.onSegmentStart?.(entity);
+		}
 
 		const moveDuration =
 			entity.pathSegmentDuration ?? distancePx / entity.speed;
 
 		entity.pathSegmentProgress += moveDuration === 0 ? 1 : dt / moveDuration;
 
-		// On segment start
-		if (entity.pathSegmentProgress && entity.currentPathSegment) {
-			entity.currentPathSegment.onSegmentStart?.(entity);
-		}
+	
 		// On segment update
-		if (entity.currentPathSegment?.onSegment) {
-			entity.currentPathSegment.onSegment(entity);
-		}
+		currentPathSegment?.onSegment?.(entity);
+
 		// On segment end. The penultimate segment
 		const nextPathSegmentProgress =
-			entity.pathSegmentProgress + dt / moveDuration;
+			entity.pathSegmentProgress + (dt / moveDuration);
 		if (
-			entity.pathSegmentProgress < 1 &&
 			nextPathSegmentProgress >= 1 &&
-			entity.currentPathSegment
+			entity.pathSegmentProgress < 1 &&
+			currentPathSegment
 		) {
 			setCell(entity.x, entity.y, entity.z, {
 				...getCell(entity.x, entity.y, entity.z),
 				blocked: false,
 			});
-			entity.currentPathSegment.onSegmentEnd?.(entity);
+			currentPathSegment.onSegmentEnd?.(entity);
 		}
+
 
 		if (entity.pathSegmentProgress >= 1) {
 			entity.pathSegmentProgress = 1;
@@ -379,9 +376,6 @@ function updatePlayer(dt: number) {
 				entity.isMoving = false;
 				entity.movingToTile = null;
 				entity.movingToAnimation = null;
-
-				// Autosave on step end
-				savePlayerState();
 			}
 		} else {
 			const t = entity.pathSegmentProgress;
@@ -434,37 +428,35 @@ function updateEntity(dt: number, entity: Entity) {
 		const dx = entity.xPxf - entity.xPxi;
 		const dy = entity.yPxf - entity.yPxi;
 
-		if (!entity.pathSegmentDuration) {
-		}
-
 		const distancePx = dx === 0 && dy === 0 ? 0 : Math.hypot(dx, dy);
+
+		const currentPathSegment = entity.path[0];
+		// On segment start
+		if (!entity.pathSegmentProgress && currentPathSegment) {
+			currentPathSegment.onSegmentStart?.(entity);
+		}
 
 		const moveDuration =
 			entity.pathSegmentDuration ?? distancePx / entity.speed;
 
 		entity.pathSegmentProgress += moveDuration === 0 ? 1 : dt / moveDuration;
 
-		// On segment start
-		if (entity.pathSegmentProgress && entity.currentPathSegment) {
-			entity.currentPathSegment.onSegmentStart?.(entity);
-		}
 		// On segment update
-		if (entity.currentPathSegment?.onSegment) {
-			entity.currentPathSegment.onSegment(entity);
-		}
+		currentPathSegment?.onSegment?.(entity);
+
 		// On segment end. The penultimate segment
 		const nextPathSegmentProgress =
 			entity.pathSegmentProgress + dt / moveDuration;
 		if (
 			entity.pathSegmentProgress < 1 &&
 			nextPathSegmentProgress >= 1 &&
-			entity.currentPathSegment
+			currentPathSegment
 		) {
 			setCell(entity.x, entity.y, entity.z, {
 				...getCell(entity.x, entity.y, entity.z),
 				blocked: false,
 			});
-			entity.currentPathSegment.onSegmentEnd?.(entity);
+			currentPathSegment.onSegmentEnd?.(entity);
 		}
 
 		if (entity.pathSegmentProgress >= 1) {
@@ -670,4 +662,7 @@ export function overworld(dt: number) {
 	update(dt);
 	draw(dt);
 	renderDialogs();
+
+	// Autosave on step end
+	saveEntitiesState();
 }

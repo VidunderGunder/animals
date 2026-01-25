@@ -10,7 +10,8 @@ import {
 import type { Direction } from "../../input/input";
 import type { Transition } from "./data";
 
-export const entities = new Map<string, Entity>();
+export type Entities = Map<string, Entity>;
+export const entities: Entities = new Map<string, Entity>();
 
 export type Entity = {
 	renderVariant: AnimationVariant;
@@ -47,7 +48,6 @@ export type Entity = {
 	yPxf: number;
 	zf: number;
 
-	currentPathSegment?: Transition["path"][number];
 	pathSegmentProgress: number;
 	/** Fixed duration for current segment (ms), undefined -> use entity speed */
 	pathSegmentDuration?: number;
