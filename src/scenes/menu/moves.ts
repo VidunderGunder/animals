@@ -1,12 +1,4 @@
 import {
-	animationIds,
-	type CharacterAnimationID,
-	type CharacterKey,
-	characterKeys,
-	characters,
-	renderFrameLayers,
-} from "../../characters/characters";
-import {
 	CHARACTER_SPRITE_HEIGHT_PX,
 	CHARACTER_SPRITE_WIDTH_PX,
 	GAME_HEIGHT_PX,
@@ -15,10 +7,18 @@ import {
 } from "../../config";
 import { ctx } from "../../gfx/canvas";
 import { type Direction, directions } from "../../input/input";
+import {
+	animationIds,
+	type CharacterAnimationID,
+	entityRenders,
+	type RenderVariant,
+	renderFrameLayers,
+	renderVariantKeys,
+} from "../../render/entities";
 import { menuHeight, menuWidth } from "./menu";
 
 export type EntitiesState = {
-	personId: CharacterKey;
+	personId: RenderVariant;
 
 	/** Facing direction */
 	direction: Direction;
@@ -47,7 +47,7 @@ export const movesState: MovesState = {
 };
 
 export function initializeMovesState() {
-	characterKeys.forEach((key) => {
+	renderVariantKeys.forEach((key) => {
 		animationIds.forEach((animationId) => {
 			directions.forEach((direction) => {
 				movesState.entities.push({
@@ -64,14 +64,14 @@ export function initializeMovesState() {
 
 function update(dt: number) {
 	movesState.entities.forEach((entity) => {
-		const character = characters[entity.personId];
-		let animation = character.animations[entity.animationCurrent];
+		const entityRender = entityRenders[entity.personId];
+		let animation = entityRender.animations[entity.animationCurrent];
 
 		if (!animation) {
 			console.warn(
 				`Character ${entity.personId} is missing animation ${entity.animationCurrent}, defaulting to walk`,
 			);
-			animation = character.animations.walk;
+			animation = entityRender.animations.walk;
 		}
 
 		entity.animationTimer += dt;
@@ -94,10 +94,10 @@ const marginY = 4;
 
 export function draw() {
 	movesState.entities.forEach((entity, i) => {
-		const character = characters[entity.personId];
+		const entityRender = entityRenders[entity.personId];
 		const animation =
-			character.animations[
-				entity.animationCurrent as keyof typeof character.animations
+			entityRender.animations[
+				entity.animationCurrent as keyof typeof entityRender.animations
 			];
 
 		const frameLayers = animation.frames[entity.animationFrameIndex];

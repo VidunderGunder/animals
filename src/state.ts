@@ -1,4 +1,3 @@
-import type { CharacterAnimationID } from "./characters/characters";
 import {
 	CHARACTER_SPRITE_HEIGHT_PX,
 	CHARACTER_SPRITE_WIDTH_PX,
@@ -7,12 +6,11 @@ import {
 	TILE_SIZE_PX,
 } from "./config";
 import type { Direction } from "./input/input";
+import type { CharacterAnimationID, RenderVariant } from "./render/entities";
 import type { Transition } from "./scenes/overworld/data";
 
-export type EntityTypes = "player";
-
 export type Player = {
-	type: EntityTypes;
+	renderVariant: RenderVariant;
 	/* Tile position */
 	x: number;
 	/* Tile position */
@@ -60,6 +58,7 @@ export type Player = {
 	paused: boolean;
 };
 
+// TODO: Move to overworld/entities.ts
 export type Entity = Player;
 
 export const startTileX = 12;
@@ -69,7 +68,7 @@ export const startLayerZ = 0;
 export const entities = new Map<string, Entity>();
 
 const playerDefault = {
-	type: "player",
+	renderVariant: "player",
 	x: startTileX,
 	y: startTileY,
 	z: startLayerZ,

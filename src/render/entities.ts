@@ -6,7 +6,6 @@ import {
 import { ctx } from "../gfx/canvas";
 import type { Direction } from "../input/input";
 import { directionToRow } from "../scenes/menu/moves";
-import type { EntityTypes } from "../state";
 
 type OnRenderProps = {
 	/** Destination x on the canvas */
@@ -397,7 +396,7 @@ function getDefaultAnimations({
 	};
 }
 
-export const characters = {
+export const entityRenders = {
 	player: {
 		animations: {
 			...getDefaultAnimations({
@@ -405,13 +404,13 @@ export const characters = {
 			}),
 		},
 	},
-} as const satisfies Record<EntityTypes, Character>;
+} as const satisfies Record<string, Character>;
 
-export type CharacterKey = keyof typeof characters;
-export const characterKeys = Object.keys(characters) as CharacterKey[];
+export type RenderVariant = keyof typeof entityRenders;
+export const renderVariantKeys = Object.keys(entityRenders) as RenderVariant[];
 
 // Crash early if dangerous empty frames are detected
-Object.entries(characters).forEach(([key, character]) => {
+Object.entries(entityRenders).forEach(([key, character]) => {
 	Object.entries(character.animations).forEach(([animationId, animation]) => {
 		if (animation.frames.length === 0) {
 			throw new Error(

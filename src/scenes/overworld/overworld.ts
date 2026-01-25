@@ -1,10 +1,5 @@
 import { createImageElement } from "../../assets/image";
 import {
-	type CharacterAnimationID,
-	characters,
-	renderFrameLayer,
-} from "../../characters/characters";
-import {
 	ASPECT_RATIO_X,
 	ASPECT_RATIO_Y,
 	DEBUG_OVERLAY,
@@ -23,6 +18,11 @@ import {
 	directions,
 	movementIntent,
 } from "../../input/input";
+import {
+	type CharacterAnimationID,
+	entityRenders,
+	renderFrameLayer,
+} from "../../render/entities";
 import { type Entity, entities, player } from "../../state";
 import { savePlayerState } from "../../storage";
 import { menuState, openMenu } from "../menu/menu";
@@ -94,11 +94,11 @@ function updatePlayerAnimation(dt: number, entity: Entity) {
 		return;
 	}
 
-	const entityAnimations = characters[entity.type].animations;
+	const entityAnimations = entityRenders[entity.renderVariant].animations;
 	const anim = entityAnimations[desiredAnimation];
 	if (!anim) {
 		throw new Error(
-			`Character ${entity.type} is missing animation ${desiredAnimation}`,
+			`Character ${entity.renderVariant} is missing animation ${desiredAnimation}`,
 		);
 	}
 
@@ -490,12 +490,12 @@ function drawEntity(entity: Entity) {
 	ctx.translate(feetScreenX, feetScreenY);
 
 	const animName = entity.animationCurrent;
-	const entityAnimations = characters[entity.type].animations;
+	const entityAnimations = entityRenders[entity.renderVariant].animations;
 	const anim = entityAnimations[animName];
 
 	if (!anim) {
 		throw new Error(
-			`Character ${entity.type} is missing animation ${animName}`,
+			`Character ${entity.renderVariant} is missing animation ${animName}`,
 		);
 	}
 

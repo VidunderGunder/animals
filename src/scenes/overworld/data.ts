@@ -1,6 +1,6 @@
-import type { CharacterAnimationID } from "../../characters/characters";
 import { TILE_SIZE_PX } from "../../config";
 import type { Direction } from "../../input/input";
+import type { CharacterAnimationID } from "../../render/entities";
 import { type Entity, player } from "../../state";
 
 export const cells = new Map<number, Cell>();
