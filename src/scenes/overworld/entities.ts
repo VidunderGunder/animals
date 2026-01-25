@@ -5,8 +5,7 @@ import type {
 import type { Direction } from "../../input/input";
 import type { Transition } from "./data";
 
-export type Entities = Map<string, Entity>;
-export const entities: Entities = new Map<string, Entity>();
+export const entities = new Map<string, Entity>();
 
 export type Entity = {
 	renderVariant: AnimationVariant;
