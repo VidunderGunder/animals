@@ -236,7 +236,7 @@ export async function loadPlayerState() {
 		player.x = playerData.x;
 		player.y = playerData.y;
 		player.z = playerData.z;
-		player.facingDirection = playerData.facingDirection;
+		player.direction = playerData.direction;
 
 		player.xPx = playerData.x * TILE_SIZE_PX;
 		player.yPx = playerData.y * TILE_SIZE_PX;
@@ -250,11 +250,8 @@ export function getPlayerSaveData(): PlayerSaveData {
 		x: player.x,
 		y: player.y,
 		z: player.z,
-		facingDirection: player.facingDirection,
+		direction: player.direction,
 	};
 }
 
-export type PlayerSaveData = Pick<
-	typeof player,
-	"x" | "y" | "z" | "facingDirection"
->;
+export type PlayerSaveData = Pick<typeof player, "x" | "y" | "z" | "direction">;

@@ -32,6 +32,8 @@ export type Entity = {
 	/** Remaining transition path segments (world pixels) */
 	path: Transition["path"];
 
+	isMoving: boolean;
+
 	/** Segment interpolation (world pixels) */
 	xPxi: number;
 	yPxi: number;
@@ -51,7 +53,4 @@ export type Entity = {
 	animationCurrent: AnimationID;
 	animationFrameIndex: number;
 	animationTimer: number;
-
-	disabled: boolean;
-	paused: boolean;
 };

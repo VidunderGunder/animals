@@ -23,13 +23,14 @@ import {
 	directions,
 	movementIntent,
 } from "../../input/input";
-import { type Entity, entities, player } from "../../state";
+import { gameState, player } from "../../state";
 import { savePlayerState } from "../../storage";
 import { menuState, openMenu } from "../menu/menu";
 import { camera, updateCamera } from "./camera";
 import { getCell, getEdge, type Transition } from "./data";
 import { initializeArea as initializeStartArea } from "./data/start";
 import { renderDialogs } from "./dialog";
+import { type Entity, entities } from "./entities";
 
 initializeStartArea();
 
@@ -42,8 +43,8 @@ export function returnToOverworld() {
 
 	menuState.show = false;
 
-	player.paused = false;
-	player.disabled = false;
+	gameState.paused = false;
+	gameState.disabled = false;
 }
 
 function dirToDxDy(direction: Direction): { dx: number; dy: number } {
@@ -60,7 +61,7 @@ function dirToDxDy(direction: Direction): { dx: number; dy: number } {
 }
 
 function getIsMoving(entity: Entity): boolean {
-	return !!entity.movingDirection || !!movementIntent;
+	return !!entity.isMoving || !!movementIntent;
 }
 
 function getIsMovingFaster(entity: Entity): boolean {
@@ -249,30 +250,30 @@ function tryPlanMove(desired: Direction, entity: Entity): Transition | null {
 
 /** Update player and world state */
 function updateEntity(dt: number, entity: Entity) {
-	if (entity.paused) return;
+	if (gameState.paused) return;
 
-	if (!entity.disabled && activeActions.has("start")) openMenu();
+	if (!gameState.disabled && activeActions.has("start")) openMenu();
 
 	const faster = getIsMovingFaster(entity);
 
-	const desired = entity.disabled ? null : movementIntent;
+	const desired = gameState.disabled ? null : movementIntent;
 
 	// 2) Speed based on run/walk
 	entity.speed = movementSpeeds[faster ? "run" : "walk"];
 
 	// 2.5) Interaction: activate on current tile (placeholder)
 	// Replace "a" with your actual action name if different.
-	if (!entity.disabled && activeActions.has("a") && !entity.movingDirection) {
+	if (!gameState.disabled && activeActions.has("a") && !entity.isMoving) {
 		const activationCell = {
 			x: entity.x,
 			y: entity.y,
 			z: entity.z,
 		};
 
-		if (entity.facingDirection === "right") activationCell.x += 1;
-		if (entity.facingDirection === "down") activationCell.y += 1;
-		if (entity.facingDirection === "left") activationCell.x -= 1;
-		if (entity.facingDirection === "up") activationCell.y -= 1;
+		if (entity.direction === "right") activationCell.x += 1;
+		if (entity.direction === "down") activationCell.y += 1;
+		if (entity.direction === "left") activationCell.x -= 1;
+		if (entity.direction === "up") activationCell.y -= 1;
 
 		getCell(
 			activationCell.x,
@@ -284,27 +285,26 @@ function updateEntity(dt: number, entity: Entity) {
 			entity.x,
 			entity.y,
 			entity.z,
-			entity.facingDirection,
+			entity.direction,
 		)?.interact?.onActivate(entity);
 
 		activeActions.delete("a");
 	}
 
 	// 3) Movement start
-	if (!entity.movingDirection) {
+	if (!entity.isMoving) {
 		if (desired) {
-			entity.facingDirection = desired;
+			entity.direction = desired;
 
 			const planned = tryPlanMove(desired, entity);
+
 			if (planned) {
-				entity.movingDirection = desired;
+				entity.isMoving = true;
 
 				entity.movingToTile = planned.end;
 				entity.movingToAnimation = planned.animation ?? null;
 
-				entity.path = planned.path.map((p) => ({
-					...p,
-				}));
+				entity.path = planned.path;
 
 				setCurrentSegment(entity);
 			}
@@ -312,7 +312,7 @@ function updateEntity(dt: number, entity: Entity) {
 	}
 
 	// 4) Movement tween (pixel-based segments)
-	if (entity.movingDirection) {
+	if (entity.isMoving) {
 		const dx = entity.xPxf - entity.xPxi;
 		const dy = entity.yPxf - entity.yPxi;
 
@@ -362,7 +362,8 @@ function updateEntity(dt: number, entity: Entity) {
 				entity.y = entity.movingToTile.y;
 				entity.z = entity.movingToTile.z;
 
-				entity.movingDirection = null;
+				entity.isMoving = false;
+
 				entity.movingToTile = null;
 				entity.movingToAnimation = null;
 
@@ -389,6 +390,7 @@ function update(dt: number) {
 	for (const entity of entities.values()) {
 		updateEntity(dt, entity);
 	}
+
 	updateCamera(dt);
 }
 
@@ -459,8 +461,9 @@ function draw(dt: number) {
 			`res: ${GAME_WIDTH_PX}x${GAME_HEIGHT_PX} (${SCALE}x, ${ASPECT_RATIO_X}:${ASPECT_RATIO_Y})`,
 			`current tile: ${player.x}, ${player.y}, ${player.z}`,
 			`move to tile: ${player.movingToTile?.x ?? "x"}, ${player.movingToTile?.y ?? "y"}, ${player.movingToTile?.z ?? "z"}`,
-			`facing: ${player.facingDirection}`,
-			`moving: ${player.movingDirection}`,
+			`facing: ${player.direction}`,
+
+			`moving: ${player.isMoving}`,
 			`faster: ${getIsMovingFaster(player)}`,
 			`transition animation: ${player.movingToAnimation ?? "-"}`,
 		].forEach((line, index) => {
@@ -471,7 +474,7 @@ function draw(dt: number) {
 }
 
 function getEntitiesRenderZ(entity: Entity): number {
-	if (!entity.movingDirection) return entity.z;
+	if (!entity.isMoving) return entity.z;
 
 	const fromZ = entity.zi;
 	const toZ = entity.zf;
@@ -523,7 +526,7 @@ function drawEntity(entity: Entity) {
 	renderFrameLayer({
 		sheet: frameLayers[0].sheet,
 		index: frameLayers[0].index,
-		direction: entity.facingDirection,
+		direction: entity.direction,
 		x: -dw / 2,
 		y: -dh,
 	});

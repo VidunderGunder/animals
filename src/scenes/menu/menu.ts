@@ -2,13 +2,13 @@ import { createImageElement } from "../../assets/image";
 import { GAME_HEIGHT_PX, GAME_WIDTH_PX } from "../../config";
 import { ctx } from "../../gfx/canvas";
 import { activeActions } from "../../input/input";
-import { player } from "../../state";
+import { gameState } from "../../state";
 import { returnToOverworld } from "../overworld/overworld";
 import { moves } from "./moves";
 
 export function openMenu() {
 	activeActions.delete("start");
-	player.disabled = true;
+	gameState.disabled = true;
 	menuState.show = true;
 }
 

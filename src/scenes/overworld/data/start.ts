@@ -1,5 +1,4 @@
 import { TILE_SIZE_PX } from "../../../config";
-import type { Entity } from "../../../state";
 import {
 	cellToPx,
 	getCellsOutline,
@@ -9,6 +8,7 @@ import {
 	setEdge,
 } from "../data";
 import { rsvp } from "../dialog";
+import type { Entity } from "../entities";
 
 export function initializeArea() {
 	// dock camera position
@@ -180,7 +180,7 @@ export function initializeArea() {
 						...cellToPx(31, 46),
 						z: 0,
 						onSegment: (entity: Entity) => {
-							entity.facingDirection = "right";
+							entity.direction = "right";
 						},
 					},
 				],
