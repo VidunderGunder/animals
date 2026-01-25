@@ -29,7 +29,7 @@ import { menuState, openMenu } from "../menu/menu";
 import { camera, updateCamera } from "./camera";
 import { getCell, getEdge, setCell, type Transition } from "./data";
 import { initializeArea as initializeStartArea } from "./data/start";
-import { renderDialogs, rsvp } from "./dialog";
+import { renderDialogs } from "./dialog";
 import { type Entity, entities } from "./entities";
 
 initializeStartArea();
@@ -282,18 +282,20 @@ function updatePlayer(dt: number) {
 		if (entity.direction === "left") activationCell.x -= 1;
 		if (entity.direction === "up") activationCell.y -= 1;
 
-		getCell(
-			activationCell.x,
-			activationCell.y,
-			activationCell.z,
-		)?.interact?.onActivate(entity);
+		getCell(activationCell.x, activationCell.y, activationCell.z)?.onActivate?.(
+			{
+				activator: entity,
+			},
+		);
 
 		getEdge(
 			entity.x,
 			entity.y,
 			entity.z,
 			entity.direction,
-		)?.interact?.onActivate(entity);
+		)?.interact?.onActivate({
+			activator: entity,
+		});
 
 		activeActions.delete("a");
 	}
@@ -350,6 +352,10 @@ function updatePlayer(dt: number) {
 			nextPathSegmentProgress >= 1 &&
 			entity.currentPathSegment
 		) {
+			setCell(entity.x, entity.y, entity.z, {
+				...getCell(entity.x, entity.y, entity.z),
+				blocked: false,
+			});
 			entity.currentPathSegment.onSegmentEnd?.(entity);
 		}
 
@@ -454,6 +460,10 @@ function updateEntity(dt: number, entity: Entity) {
 			nextPathSegmentProgress >= 1 &&
 			entity.currentPathSegment
 		) {
+			setCell(entity.x, entity.y, entity.z, {
+				...getCell(entity.x, entity.y, entity.z),
+				blocked: false,
+			});
 			entity.currentPathSegment.onSegmentEnd?.(entity);
 		}
 
@@ -491,17 +501,12 @@ function updateEntity(dt: number, entity: Entity) {
 	updateEntityAnimation(dt, entity, desiredAnimation);
 
 	const cell = getCell(entity.x, entity.y, entity.z);
-	if (!cell?.blocked) {
+	if (!entity.isMoving && !cell?.blocked) {
 		setCell(entity.x, entity.y, entity.z, {
 			...cell,
 			blocked: true,
-			interact: {
-				id: "npc_interact",
-				onActivate: () =>
-					rsvp("npc_interact", "Hello!", () => ({
-						xPx: entity.xPx - camera.xPx + entity.width / 2,
-						yPx: entity.yPx - camera.yPx,
-					})),
+			onActivate({ activator }) {
+				return entity.onActivate?.({ activator, activated: entity });
 			},
 		});
 	}

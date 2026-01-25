@@ -3,6 +3,7 @@ import { clamp } from "../../functions/general";
 import { ctx } from "../../gfx/canvas";
 import { player } from "../../state";
 import { camera } from "./camera";
+import type { Entity } from "./entities";
 
 type Vec2Px = { xPx: number; yPx: number };
 
@@ -118,6 +119,18 @@ function getNowMs() {
 	return typeof performance !== "undefined" ? performance.now() : Date.now();
 }
 
+type Vec2PxWidth = Pick<Entity, "xPx" | "yPx" | "width">;
+
+function isVec2PxWidth(obj: unknown): obj is Vec2PxWidth {
+	return (
+		typeof obj === "object" &&
+		obj !== null &&
+		"xPx" in obj &&
+		"yPx" in obj &&
+		"width" in obj
+	);
+}
+
 /**
  * Spawn/update a dialog bubble.
  *
@@ -127,12 +140,23 @@ function getNowMs() {
 export function rsvp(
 	id: string,
 	content: RSVPContent,
-	getPosition?: () => Vec2Px,
+	position?: Vec2PxWidth | (() => Vec2Px),
 	options: RSVPOptions = {},
 ) {
 	const now = getNowMs();
 	const opts: Required<RSVPOptions> = { ...DEFAULT_OPTS, ...options };
 	const key = computeContentKey(content);
+
+	let getPosition = position instanceof Function ? position : undefined;
+
+	const vec2PxWidth = isVec2PxWidth(position) ? position : null;
+	if (vec2PxWidth) {
+		const { xPx, yPx, width } = vec2PxWidth;
+		getPosition = () => ({
+			xPx: xPx - camera.xPx + width / 2,
+			yPx: yPx - camera.yPx,
+		});
+	}
 
 	let bubble = bubbles.get(id);
 

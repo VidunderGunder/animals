@@ -53,4 +53,6 @@ export type Entity = {
 	animationCurrent: AnimationID;
 	animationFrameIndex: number;
 	animationTimer: number;
+
+	onActivate?: (props: { activator: Entity; activated: Entity }) => void;
 };

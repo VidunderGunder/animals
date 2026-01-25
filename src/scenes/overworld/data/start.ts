@@ -81,12 +81,9 @@ export function initializeArea() {
 	}
 
 	setCell(30, 36, 0, {
-		interact: {
-			id: "dock_lookout",
-			onActivate: () => {
-				const sentence = "The clouds look like cotton candy";
-				rsvp("dock_lookout", sentence);
-			},
+		onActivate: () => {
+			const sentence = "The clouds look like cotton candy";
+			rsvp("dock_lookout", sentence);
 		},
 		blocked: true,
 	});
@@ -144,12 +141,9 @@ export function initializeArea() {
 	mushroomCells.forEach((cell) => {
 		setCell(...cell, {
 			blocked: true,
-			interact: {
-				id: "pretty_mushrooms",
-				onActivate: () => {
-					const sentence = "Mushrooms! ... ... Let's leave them alone ❤";
-					rsvp("pretty_mushrooms", sentence);
-				},
+			onActivate: () => {
+				const sentence = "Mushrooms! ... ... Let's leave them alone ❤";
+				rsvp("pretty_mushrooms", sentence);
 			},
 		});
 	});
@@ -295,5 +289,9 @@ function populateArea() {
 		pathSegmentProgress: 1,
 		movingToTile: null,
 		movingToAnimation: null,
+
+		onActivate: () => {
+			rsvp("npc_interact", "Hello!");
+		},
 	});
 }

@@ -9,10 +9,7 @@ export const edges = new Map<number, Edge>();
 
 export type Cell = {
 	blocked?: boolean;
-	interact?: {
-		id: string;
-		onActivate: (activator: Entity) => void;
-	};
+	onActivate?: (props: { activator: Entity; activated?: Entity }) => void;
 	/**
 	 * Camera offset when player is in this cell
 	 */
@@ -48,7 +45,7 @@ export type Edge = {
 	transition?: Transition | Transition[];
 	interact?: {
 		id: string;
-		onActivate: (entity: Entity) => void;
+		onActivate: (props: { activator: Entity; activated?: Entity }) => void;
 	};
 };
 
