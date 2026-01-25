@@ -27,7 +27,7 @@ import { gameState, player } from "../../state";
 import { savePlayerState } from "../../storage";
 import { menuState, openMenu } from "../menu/menu";
 import { camera, updateCamera } from "./camera";
-import { getCell, getEdge, type Transition } from "./data";
+import { getCell, getEdge, setCell, type Transition } from "./data";
 import { initializeArea as initializeStartArea } from "./data/start";
 import { renderDialogs } from "./dialog";
 import { type Entity, entities } from "./entities";
@@ -60,46 +60,51 @@ function dirToDxDy(direction: Direction): { dx: number; dy: number } {
 	}
 }
 
-function getIsMoving(entity: Entity): boolean {
+function getPlayerIsMoving(): boolean {
+	const entity = player;
 	return !!entity.isMoving || !!movementIntent;
 }
 
-function getIsMovingFaster(entity: Entity): boolean {
-	const isMoving = getIsMoving(entity);
+function getIsPlayerMovingFaster(): boolean {
+	const isMoving = getPlayerIsMoving();
 	if (!isMoving) return false;
 	const bPressed = activeActions.has("b");
 	return DEFAULT_MOVEMENT === "run" ? !bPressed : bPressed;
 }
 
-function getPlayerAnimation(entity: Entity): AnimationID {
+function getPlayerAnimation(): AnimationID {
+	const entity = player;
+
 	// If a transition is forcing an animation, keep it
 	if (entity.movingToAnimation === "jump") return "jump";
 	if (entity.movingToAnimation === "hop") return "hop";
 
-	const isMovingFaster = getIsMovingFaster(entity);
+	const isMovingFaster = getIsPlayerMovingFaster();
 	if (isMovingFaster) return "run";
 
-	const isMoving = getIsMoving(entity);
+	const isMoving = getPlayerIsMoving();
 	if (isMoving) return "walk";
 
 	return "idle";
 }
 
-function updatePlayerAnimation(dt: number, entity: Entity) {
-	const desiredAnimation = getPlayerAnimation(entity);
-
-	if (entity.animationCurrent !== desiredAnimation) {
-		entity.animationCurrent = desiredAnimation;
+function updateEntityAnimation(
+	dt: number,
+	entity: Entity,
+	animation: AnimationID,
+) {
+	if (entity.animationCurrent !== animation) {
+		entity.animationCurrent = animation;
 		entity.animationFrameIndex = 0;
 		entity.animationTimer = 0;
 		return;
 	}
 
 	const entityAnimations = animations[entity.renderVariant];
-	const anim = entityAnimations[desiredAnimation];
+	const anim = entityAnimations[animation];
 	if (!anim) {
 		throw new Error(
-			`Character ${entity.renderVariant} is missing animation ${desiredAnimation}`,
+			`Character ${entity.renderVariant} is missing animation ${animation}`,
 		);
 	}
 
@@ -249,12 +254,14 @@ function tryPlanMove(desired: Direction, entity: Entity): Transition | null {
 }
 
 /** Update player and world state */
-function updateEntity(dt: number, entity: Entity) {
+function updatePlayer(dt: number) {
+	const entity = player;
+
 	if (gameState.paused) return;
 
 	if (!gameState.disabled && activeActions.has("start")) openMenu();
 
-	const faster = getIsMovingFaster(entity);
+	const faster = getIsPlayerMovingFaster();
 
 	const desired = gameState.disabled ? null : movementIntent;
 
@@ -377,8 +384,119 @@ function updateEntity(dt: number, entity: Entity) {
 		}
 	}
 
+	const desiredAnimation = getPlayerAnimation();
+
 	// 5) Anim AFTER we've updated movement
-	updatePlayerAnimation(dt, entity);
+	updateEntityAnimation(dt, entity, desiredAnimation);
+}
+/** Update player and world state */
+function updateEntity(dt: number, entity: Entity) {
+	if (gameState.paused) return;
+
+	// TODO
+	const faster = false;
+
+	// TODO
+	const desired = undefined;
+
+	// 2) Speed based on run/walk
+	entity.speed = movementSpeeds[faster ? "run" : "walk"];
+
+	// 3) Movement start
+	if (!entity.isMoving) {
+		if (desired) {
+			entity.direction = desired;
+
+			const planned = tryPlanMove(desired, entity);
+			if (planned) {
+				entity.isMoving = true;
+
+				entity.movingToTile = planned.end;
+				entity.movingToAnimation = planned.animation ?? null;
+
+				entity.path = planned.path.map((p) => ({
+					...p,
+				}));
+
+				setCurrentSegment(entity);
+			}
+		}
+	}
+
+	// 4) Movement tween (pixel-based segments)
+	if (entity.isMoving) {
+		const dx = entity.xPxf - entity.xPxi;
+		const dy = entity.yPxf - entity.yPxi;
+
+		if (!entity.pathSegmentDuration) {
+		}
+
+		const distancePx = dx === 0 && dy === 0 ? 0 : Math.hypot(dx, dy);
+
+		const moveDuration =
+			entity.pathSegmentDuration ?? distancePx / entity.speed;
+
+		entity.pathSegmentProgress += moveDuration === 0 ? 1 : dt / moveDuration;
+
+		// On segment start
+		if (entity.pathSegmentProgress && entity.currentPathSegment) {
+			entity.currentPathSegment.onSegmentStart?.(entity);
+		}
+		// On segment update
+		if (entity.currentPathSegment?.onSegment) {
+			entity.currentPathSegment.onSegment(entity);
+		}
+		// On segment end. The penultimate segment
+		const nextPathSegmentProgress =
+			entity.pathSegmentProgress + dt / moveDuration;
+		if (
+			entity.pathSegmentProgress < 1 &&
+			nextPathSegmentProgress >= 1 &&
+			entity.currentPathSegment
+		) {
+			entity.currentPathSegment.onSegmentEnd?.(entity);
+		}
+
+		if (entity.pathSegmentProgress >= 1) {
+			entity.pathSegmentProgress = 1;
+			snapToSegmentEnd(entity);
+
+			const hasMore = setCurrentSegment(entity);
+			if (!hasMore) {
+				// Movement fully finished: snap logical state
+				if (!entity.movingToTile) {
+					throw new Error(
+						"Invariant: movement finished but pendingEnd is null",
+					);
+				}
+
+				entity.x = entity.movingToTile.x;
+				entity.y = entity.movingToTile.y;
+				entity.z = entity.movingToTile.z;
+
+				entity.isMoving = false;
+				entity.movingToTile = null;
+				entity.movingToAnimation = null;
+			}
+		} else {
+			const t = entity.pathSegmentProgress;
+			entity.xPx = Math.round(entity.xPxi + dx * t);
+			entity.yPx = Math.round(entity.yPxi + dy * t);
+		}
+	}
+
+	const desiredAnimation = entity.animationCurrent;
+
+	// 5) Anim AFTER we've updated movement
+	updateEntityAnimation(dt, entity, desiredAnimation);
+
+	const cell = getCell(entity.x, entity.y, entity.z);
+	if (!cell?.blocked) {
+		setCell(entity.x, entity.y, entity.z, {
+			...cell,
+			blocked: true,
+		});
+	}
 }
 
 function update(dt: number) {
@@ -387,9 +505,12 @@ function update(dt: number) {
 
 	setTilesCountsIfNotSet();
 
-	for (const entity of entities.values()) {
+	for (const [id, entity] of entities.entries()) {
+		if (id === "player") continue;
 		updateEntity(dt, entity);
 	}
+
+	updatePlayer(dt);
 	updateCamera(dt);
 }
 
@@ -462,7 +583,7 @@ function draw(dt: number) {
 			`move to tile: ${player.movingToTile?.x ?? "x"}, ${player.movingToTile?.y ?? "y"}, ${player.movingToTile?.z ?? "z"}`,
 			`facing: ${player.direction}`,
 			`moving: ${player.isMoving}`,
-			`faster: ${getIsMovingFaster(player)}`,
+			`faster: ${getIsPlayerMovingFaster()}`,
 			`transition animation: ${player.movingToAnimation ?? "-"}`,
 		].forEach((line, index) => {
 			ctx.fillText(line, 4, 2 + index * 8);
