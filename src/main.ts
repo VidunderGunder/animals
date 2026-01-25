@@ -7,6 +7,7 @@ import { activeActions, initInput, input } from "./input/input";
 import { initVirtualGamepad } from "./input/touch";
 import { menu } from "./scenes/menu/menu";
 import { initializeArea as initializeStartArea } from "./scenes/overworld/data/start";
+import { entities } from "./scenes/overworld/entities";
 import { overworld } from "./scenes/overworld/overworld";
 import { loadEntitiesState } from "./storage";
 
@@ -54,6 +55,8 @@ function loop(timestamp: number) {
 	menu(dt);
 
 	rafId = requestAnimationFrame(loop);
+
+	console.log(entities.entries());
 }
 
 function startGame() {

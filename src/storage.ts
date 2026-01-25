@@ -106,7 +106,7 @@ async function getUsers(): Promise<User[]> {
 // Strips out transient movement state (path, currentPathSegment) that contains functions
 function serializeEntities(map: Entities): SerializedEntities {
 	return Array.from(map.entries()).map(([key, entity]) => {
-		const { path, ...rest } = entity;
+		const { path, onActivate, ...rest } = entity;
 		return [key, { ...rest, path: [] }];
 	});
 }
@@ -246,17 +246,28 @@ export async function getSavedEntitiesState(): Promise<Entities | null> {
 export async function loadEntitiesState() {
 	resetPlayer();
 
-	const entitiesNew = await initializeStorage(entities);
-	if (!entitiesNew) return;
-	const p = entitiesNew.get("player");
+	const savedEntities = await initializeStorage(entities);
+	if (!savedEntities) return;
+
+	const p = savedEntities.get("player");
+
 	if (p) {
 		Object.assign(player, p);
-		entitiesNew.set("player", player);
+		savedEntities.set("player", player);
 	}
-	if (entitiesNew) {
-		entities.clear();
-		for (const [id, entity] of entitiesNew.entries()) {
-			entities.set(id, entity);
+
+	if (!savedEntities) return;
+
+	for (const [id, entity] of savedEntities.entries()) {
+		if (id === "player") continue;
+
+		const oldEntity = entities.get(id);
+
+		if (oldEntity) {
+			entities.set(id, { ...oldEntity, ...entity });
+			continue;
 		}
+
+		entities.set(id, entity);
 	}
 }
