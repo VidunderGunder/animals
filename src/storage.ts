@@ -98,8 +98,12 @@ async function getUsers(): Promise<User[]> {
 // ============ Save functions ============
 
 // Helper functions to serialize/deserialize Map for IndexedDB
+// Strips out transient movement state (path, currentPathSegment) that contains functions
 function serializeEntities(map: Entities): SerializedEntities {
-	return Array.from(map.entries());
+	return Array.from(map.entries()).map(([key, entity]) => {
+		const { path, currentPathSegment, ...rest } = entity;
+		return [key, { ...rest, path: [], currentPathSegment: undefined }];
+	});
 }
 
 function deserializeEntities(arr: SerializedEntities): Entities {
