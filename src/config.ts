@@ -85,8 +85,8 @@ export type MovementType = "walk" | "run";
 export const DEFAULT_MOVEMENT: MovementType = "walk";
 
 export const movementSpeeds = {
-	walk: 0.07,
-	run: 0.13,
+	walk: 0.06,
+	run: 0.12,
 } as const satisfies Record<MovementType, number>;
 
 export const DEBUG_OVERLAY = import.meta.env.DEV;
