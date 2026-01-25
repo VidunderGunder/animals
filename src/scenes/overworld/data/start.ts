@@ -1,5 +1,5 @@
 import { TILE_SIZE_PX } from "../../../config";
-import { player } from "../../../state";
+import type { Entity } from "../../../state";
 import {
 	cellToPx,
 	getCellsOutline,
@@ -180,15 +180,15 @@ export function initializeArea() {
 	setEdge(14, 45, 1, "left", {
 		transition: [
 			{
-				condition: () => player.animationCurrent === "walk",
+				condition: (entity) => entity.animationCurrent === "walk",
 				animation: "walk",
 				path: [
 					{ ...cellToPx(13, 45), z: 1 },
 					{
 						...cellToPx(13, 46),
 						z: 0,
-						onSegment: () => {
-							player.facingDirection = "right";
+						onSegment: (entity: Entity) => {
+							entity.facingDirection = "right";
 						},
 					},
 				],
@@ -201,7 +201,7 @@ export function initializeArea() {
 					z: 1,
 					dir: "left",
 				}),
-				condition: () => player.animationCurrent === "run",
+				condition: (entity) => entity.animationCurrent === "run",
 			},
 		],
 	});
@@ -211,7 +211,7 @@ export function initializeArea() {
 	// Fence roll
 	setEdge(8, 52, 0, "down", {
 		transition: {
-			condition: () => player.animationCurrent === "run",
+			condition: (entity) => entity.animationCurrent === "run",
 			animation: "spin",
 			path: [{ ...cellToPx(8, 54), z: 0 }],
 			end: { x: 8, y: 54, z: 0 },
@@ -219,7 +219,7 @@ export function initializeArea() {
 	});
 	setEdge(8, 53, 0, "up", {
 		transition: {
-			condition: () => player.animationCurrent === "run",
+			condition: (entity) => entity.animationCurrent === "run",
 			animation: "spin",
 			path: [{ ...cellToPx(8, 51), z: 0 }],
 			end: { x: 8, y: 51, z: 0 },

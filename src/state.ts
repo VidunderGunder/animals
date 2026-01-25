@@ -1,4 +1,4 @@
-import { type CharacterAnimationID, characters } from "./characters/characters";
+import type { CharacterAnimationID } from "./characters/characters";
 import {
 	CHARACTER_SPRITE_HEIGHT_PX,
 	CHARACTER_SPRITE_WIDTH_PX,
@@ -9,7 +9,10 @@ import {
 import type { Direction } from "./input/input";
 import type { Transition } from "./scenes/overworld/data";
 
+export type EntityTypes = "player";
+
 export type Player = {
+	type: EntityTypes;
 	/* Tile position */
 	x: number;
 	/* Tile position */
@@ -18,6 +21,7 @@ export type Player = {
 	z: number;
 
 	facingDirection: Direction;
+	// Is set when a transition happens. Null when it is done
 	movingDirection: Direction | null;
 
 	width: number;
@@ -40,6 +44,7 @@ export type Player = {
 	xPxf: number;
 	yPxf: number;
 	zf: number;
+	currentPathSegment?: Transition["path"][number];
 	pathSegmentProgress: number;
 	/** Fixed duration for current segment (ms), undefined = use player speed */
 	pathSegmentDuration?: number;
@@ -55,13 +60,16 @@ export type Player = {
 	paused: boolean;
 };
 
+export type Entity = Player;
+
 export const startTileX = 12;
 export const startTileY = 37;
 export const startLayerZ = 0;
 
-export const entities = new Map<string, Player>();
+export const entities = new Map<string, Entity>();
 
 const playerDefault = {
+	type: "player",
 	x: startTileX,
 	y: startTileY,
 	z: startLayerZ,
@@ -107,5 +115,3 @@ export type Animation = {
 	frames: readonly number[];
 	frameDuration: number;
 };
-
-export const playerAnimations = characters.player.animations;

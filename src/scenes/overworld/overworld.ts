@@ -1,6 +1,7 @@
 import { createImageElement } from "../../assets/image";
 import {
 	type CharacterAnimationID,
+	characters,
 	renderFrameLayer,
 } from "../../characters/characters";
 import {
@@ -22,7 +23,7 @@ import {
 	directions,
 	movementIntent,
 } from "../../input/input";
-import { player, playerAnimations } from "../../state";
+import { type Entity, entities, player } from "../../state";
 import { savePlayerState } from "../../storage";
 import { menuState, openMenu } from "../menu/menu";
 import { camera, updateCamera } from "./camera";
@@ -58,60 +59,59 @@ function dirToDxDy(direction: Direction): { dx: number; dy: number } {
 	}
 }
 
-function getIsMoving(entityKey: string): boolean {
-	const entity = entities.get(entityKey);
-	if (!entity) return false;
+function getIsMoving(entity: Entity): boolean {
 	return !!entity.movingDirection || !!movementIntent;
 }
 
-function getIsMovingFaster(entityKey: string): boolean {
-	const isMoving = getIsMoving(entityKey);
+function getIsMovingFaster(entity: Entity): boolean {
+	const isMoving = getIsMoving(entity);
 	if (!isMoving) return false;
 	const bPressed = activeActions.has("b");
 	return DEFAULT_MOVEMENT === "run" ? !bPressed : bPressed;
 }
 
-function getPlayerAnimation(entityKey: string): CharacterAnimationID {
+function getPlayerAnimation(entity: Entity): CharacterAnimationID {
 	// If a transition is forcing an animation, keep it
-	if (player.movingToAnimation === "jump") return "jump";
-	if (player.movingToAnimation === "hop") return "hop";
+	if (entity.movingToAnimation === "jump") return "jump";
+	if (entity.movingToAnimation === "hop") return "hop";
 
-	const isMovingFaster = getIsMovingFaster(entityKey);
+	const isMovingFaster = getIsMovingFaster(entity);
 	if (isMovingFaster) return "run";
 
-	const isMoving = getIsMoving(entityKey);
+	const isMoving = getIsMoving(entity);
 	if (isMoving) return "walk";
 
 	return "idle";
 }
 
-function updatePlayerAnimation(dt: number, entityKey: string) {
-	const desiredAnimation = getPlayerAnimation(entityKey);
+function updatePlayerAnimation(dt: number, entity: Entity) {
+	const desiredAnimation = getPlayerAnimation(entity);
 
-	if (player.animationCurrent !== desiredAnimation) {
-		player.animationCurrent = desiredAnimation;
-		player.animationFrameIndex = 0;
-		player.animationTimer = 0;
+	if (entity.animationCurrent !== desiredAnimation) {
+		entity.animationCurrent = desiredAnimation;
+		entity.animationFrameIndex = 0;
+		entity.animationTimer = 0;
 		return;
 	}
 
-	const anim = playerAnimations[desiredAnimation];
+	const entityAnimations = characters[entity.type].animations;
+	const anim = entityAnimations[desiredAnimation];
 	if (!anim) {
 		throw new Error(
-			`Character player is missing animation ${desiredAnimation}`,
+			`Character ${entity.type} is missing animation ${desiredAnimation}`,
 		);
 	}
 
-	player.animationTimer += dt;
+	entity.animationTimer += dt;
 
-	if (player.animationTimer >= anim.frameDuration) {
-		player.animationTimer -= anim.frameDuration;
+	if (entity.animationTimer >= anim.frameDuration) {
+		entity.animationTimer -= anim.frameDuration;
 
-		const nextIndex = player.animationFrameIndex + 1;
+		const nextIndex = entity.animationFrameIndex + 1;
 		if (nextIndex >= anim.frames.length) {
-			player.animationFrameIndex = 0;
+			entity.animationFrameIndex = 0;
 		} else {
-			player.animationFrameIndex = nextIndex;
+			entity.animationFrameIndex = nextIndex;
 		}
 	}
 }
@@ -180,38 +180,43 @@ function isWorldImagesReady() {
 
 // --- path mover helpers ---
 function startSegment(
+	entity: Entity,
 	toX: number,
 	toY: number,
 	toZ: number,
 	duration?: number,
 ) {
-	player.xPxi = player.xPx;
-	player.yPxi = player.yPx;
-	player.zi = player.z;
+	entity.xPxi = entity.xPx;
+	entity.yPxi = entity.yPx;
+	entity.zi = entity.z;
 
-	player.xPxf = toX;
-	player.yPxf = toY;
-	player.zf = toZ;
+	entity.xPxf = toX;
+	entity.yPxf = toY;
+	entity.zf = toZ;
 
-	player.pathSegmentProgress = 0;
-	player.pathSegmentDuration = duration;
+	entity.pathSegmentProgress = 0;
+	entity.pathSegmentDuration = duration;
 }
 
-function popNextWaypoint(): boolean {
-	const next = player.path.shift();
-	if (!next) return false;
-	startSegment(next.xPx, next.yPx, next.z, next.duration);
+function setCurrentSegment(entity: Entity): boolean {
+	const next = entity.path.shift();
+	if (!next) {
+		entity.currentPathSegment = undefined;
+		return false;
+	}
+	entity.currentPathSegment = next;
+	startSegment(entity, next.xPx, next.yPx, next.z, next.duration);
 	return true;
 }
 
-function snapToSegmentEnd() {
-	player.xPx = player.xPxf;
-	player.yPx = player.yPxf;
-	player.z = player.zf;
+function snapToSegmentEnd(entity: Entity) {
+	entity.xPx = entity.xPxf;
+	entity.yPx = entity.yPxf;
+	entity.z = entity.zf;
 }
 
-function tryPlanMove(desired: Direction): Transition | null {
-	const edge = getEdge(player.x, player.y, player.z, desired);
+function tryPlanMove(desired: Direction, entity: Entity): Transition | null {
+	const edge = getEdge(entity.x, entity.y, entity.z, desired);
 	if (edge?.blocked) return null;
 
 	if (edge?.transition) {
@@ -220,15 +225,15 @@ function tryPlanMove(desired: Direction): Transition | null {
 			: [edge.transition];
 		for (const transition of transitions) {
 			if (transition.condition === undefined) return transition;
-			if (transition.condition()) return transition;
+			if (transition.condition(entity)) return transition;
 		}
 		return null;
 	}
 
 	const { dx, dy } = dirToDxDy(desired);
-	const nx = player.x + dx;
-	const ny = player.y + dy;
-	const nz = player.z;
+	const nx = entity.x + dx;
+	const ny = entity.y + dy;
+	const nz = entity.z;
 
 	if (nx < 0 || ny < 0 || nx >= tilesXCount || ny >= tilesYCount) return null;
 
@@ -243,15 +248,12 @@ function tryPlanMove(desired: Direction): Transition | null {
 }
 
 /** Update player and world state */
-function updateEntity(dt: number, entityKey: string) {
-	const entity = entities.get(entityKey);
-	if (!entity) return;
-
+function updateEntity(dt: number, entity: Entity) {
 	if (entity.paused) return;
 
 	if (!entity.disabled && activeActions.has("start")) openMenu();
 
-	const faster = getIsMovingFaster(entityKey);
+	const faster = getIsMovingFaster(entity);
 
 	const desired = entity.disabled ? null : movementIntent;
 
@@ -276,14 +278,14 @@ function updateEntity(dt: number, entityKey: string) {
 			activationCell.x,
 			activationCell.y,
 			activationCell.z,
-		)?.interact?.onActivate();
+		)?.interact?.onActivate(entity);
 
 		getEdge(
 			entity.x,
 			entity.y,
 			entity.z,
 			entity.facingDirection,
-		)?.interact?.onActivate();
+		)?.interact?.onActivate(entity);
 
 		activeActions.delete("a");
 	}
@@ -293,18 +295,18 @@ function updateEntity(dt: number, entityKey: string) {
 		if (desired) {
 			entity.facingDirection = desired;
 
-			const planned = tryPlanMove(desired);
+			const planned = tryPlanMove(desired, entity);
 			if (planned) {
 				entity.movingDirection = desired;
 
 				entity.movingToTile = planned.end;
 				entity.movingToAnimation = planned.animation ?? null;
 
-				player.path = planned.path.map((p) => ({
+				entity.path = planned.path.map((p) => ({
 					...p,
 				}));
 
-				popNextWaypoint();
+				setCurrentSegment(entity);
 			}
 		}
 	}
@@ -314,6 +316,9 @@ function updateEntity(dt: number, entityKey: string) {
 		const dx = entity.xPxf - entity.xPxi;
 		const dy = entity.yPxf - entity.yPxi;
 
+		if (!entity.pathSegmentDuration) {
+		}
+
 		const distancePx = dx === 0 && dy === 0 ? 0 : Math.hypot(dx, dy);
 
 		const moveDuration =
@@ -321,11 +326,30 @@ function updateEntity(dt: number, entityKey: string) {
 
 		entity.pathSegmentProgress += moveDuration === 0 ? 1 : dt / moveDuration;
 
+		// On segment start
+		if (entity.pathSegmentProgress && entity.currentPathSegment) {
+			entity.currentPathSegment.onSegmentStart?.(entity);
+		}
+		// On segment update
+		if (entity.currentPathSegment?.onSegment) {
+			entity.currentPathSegment.onSegment(entity);
+		}
+		// On segment end. The penultimate segment
+		const nextPathSegmentProgress =
+			entity.pathSegmentProgress + dt / moveDuration;
+		if (
+			entity.pathSegmentProgress < 1 &&
+			nextPathSegmentProgress >= 1 &&
+			entity.currentPathSegment
+		) {
+			entity.currentPathSegment.onSegmentEnd?.(entity);
+		}
+
 		if (entity.pathSegmentProgress >= 1) {
 			entity.pathSegmentProgress = 1;
-			snapToSegmentEnd();
+			snapToSegmentEnd(entity);
 
-			const hasMore = popNextWaypoint();
+			const hasMore = setCurrentSegment(entity);
 			if (!hasMore) {
 				// Movement fully finished: snap logical state
 				if (!entity.movingToTile) {
@@ -353,7 +377,7 @@ function updateEntity(dt: number, entityKey: string) {
 	}
 
 	// 5) Anim AFTER we've updated movement
-	updatePlayerAnimation(dt, entityKey);
+	updatePlayerAnimation(dt, entity);
 }
 
 function update(dt: number) {
@@ -362,8 +386,8 @@ function update(dt: number) {
 
 	setTilesCountsIfNotSet();
 
-	for (const key of entities.keys()) {
-		updateEntity(dt, key);
+	for (const entity of entities.values()) {
+		updateEntity(dt, entity);
 	}
 	updateCamera(dt);
 }
@@ -382,10 +406,12 @@ function draw(dt: number) {
 	const endX = Math.min(tilesXCount - 1, maxTileX);
 	const endY = Math.min(tilesYCount - 1, maxTileY);
 
-	const playerRenderZ = getPlayerRenderZ();
+	// TODO: Optimize by only calculating this once per frame
+	const entitiesRenderZ: [number, Entity][] = Array.from(entities.values()).map(
+		(entity) => [getEntitiesRenderZ(entity), entity],
+	);
 
 	// Row used for depth sorting: approximate “feet row”
-	const playerRow = Math.floor((player.yPx + TILE_SIZE_PX - 1) / TILE_SIZE_PX);
 
 	for (const layer of worldImageLayers) {
 		for (let ty = startY; ty <= endY; ty++) {
@@ -401,12 +427,17 @@ function draw(dt: number) {
 				const image = layer[sublayer];
 				if (!image) continue;
 
-				const shouldDrawPlayer =
-					sublayer === "front" && layer.z === playerRenderZ && ty === playerRow;
+				entitiesRenderZ.forEach(([renderZ, entity]) => {
+					const entityRow = Math.floor(
+						(entity.yPx + TILE_SIZE_PX - 1) / TILE_SIZE_PX,
+					);
+					const shouldDrawEntity =
+						sublayer === "front" && layer.z === renderZ && ty === entityRow;
 
-				if (shouldDrawPlayer) {
-					drawPlayer();
-				}
+					if (shouldDrawEntity) {
+						drawEntity(entity);
+					}
+				});
 
 				ctx.drawImage(image, sx, sy, w, TILE_SIZE_PX, dx, dy, w, TILE_SIZE_PX);
 			}
@@ -430,7 +461,7 @@ function draw(dt: number) {
 			`move to tile: ${player.movingToTile?.x ?? "x"}, ${player.movingToTile?.y ?? "y"}, ${player.movingToTile?.z ?? "z"}`,
 			`facing: ${player.facingDirection}`,
 			`moving: ${player.movingDirection}`,
-			`faster: ${getIsMovingFaster("player")}`,
+			`faster: ${getIsMovingFaster(player)}`,
 			`transition animation: ${player.movingToAnimation ?? "-"}`,
 		].forEach((line, index) => {
 			ctx.fillText(line, 4, 2 + index * 8);
@@ -439,42 +470,44 @@ function draw(dt: number) {
 	}
 }
 
-function getPlayerRenderZ(): number {
-	if (!player.movingDirection) return player.z;
+function getEntitiesRenderZ(entity: Entity): number {
+	if (!entity.movingDirection) return entity.z;
 
-	const fromZ = player.zi;
-	const toZ = player.zf;
-	if (fromZ === toZ) return player.z;
+	const fromZ = entity.zi;
+	const toZ = entity.zf;
+	if (fromZ === toZ) return entity.z;
 
-	return player.pathSegmentProgress < 0.5 ? fromZ : toZ;
+	return entity.pathSegmentProgress < 0.5 ? fromZ : toZ;
 }
 
-function drawPlayer() {
-	const playerScreenX = Math.round(player.xPx - camera.xPx);
-	const playerScreenY = Math.round(player.yPx - camera.yPx);
+function drawEntity(entity: Entity) {
+	const entityScreenX = Math.round(entity.xPx - camera.xPx);
+	const entityScreenY = Math.round(entity.yPx - camera.yPx);
 
-	const feetScreenX = playerScreenX + TILE_SIZE_PX / 2;
-	const feetScreenY = playerScreenY + TILE_SIZE_PX - 2;
-
+	const feetScreenX = entityScreenX + TILE_SIZE_PX / 2;
+	const feetScreenY = entityScreenY + TILE_SIZE_PX - 2;
 	ctx.save();
 	ctx.translate(feetScreenX, feetScreenY);
 
-	const animName = player.animationCurrent;
-	const anim = playerAnimations[animName];
+	const animName = entity.animationCurrent;
+	const entityAnimations = characters[entity.type].animations;
+	const anim = entityAnimations[animName];
 
 	if (!anim) {
-		throw new Error(`Character player is missing animation ${animName}`);
-	}
-
-	const frameLayers = anim.frames[player.animationFrameIndex];
-	if (frameLayers === undefined) {
 		throw new Error(
-			`Invalid animation frame index for ${animName}, index ${player.animationFrameIndex} but frames are ${anim.frames.length} long`,
+			`Character ${entity.type} is missing animation ${animName}`,
 		);
 	}
 
-	const dw = player.width;
-	const dh = player.height;
+	const frameLayers = anim.frames[entity.animationFrameIndex];
+	if (frameLayers === undefined) {
+		throw new Error(
+			`Invalid animation frame index for ${animName}, index ${entity.animationFrameIndex} but frames are ${anim.frames.length} long`,
+		);
+	}
+
+	const dw = entity.width;
+	const dh = entity.height;
 
 	if (!frameLayers[0]) return;
 
@@ -490,7 +523,7 @@ function drawPlayer() {
 	renderFrameLayer({
 		sheet: frameLayers[0].sheet,
 		index: frameLayers[0].index,
-		direction: player.facingDirection,
+		direction: entity.facingDirection,
 		x: -dw / 2,
 		y: -dh,
 	});

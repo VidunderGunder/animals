@@ -6,6 +6,7 @@ import {
 import { ctx } from "../gfx/canvas";
 import type { Direction } from "../input/input";
 import { directionToRow } from "../scenes/menu/moves";
+import type { EntityTypes } from "../state";
 
 type OnRenderProps = {
 	/** Destination x on the canvas */
@@ -404,7 +405,7 @@ export const characters = {
 			}),
 		},
 	},
-} as const satisfies Record<string, Character>;
+} as const satisfies Record<EntityTypes, Character>;
 
 export type CharacterKey = keyof typeof characters;
 export const characterKeys = Object.keys(characters) as CharacterKey[];
