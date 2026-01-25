@@ -30,7 +30,7 @@ const playerDefault = {
 	height: CHARACTER_SPRITE_HEIGHT_PX,
 	width: CHARACTER_SPRITE_WIDTH_PX,
 	speed: movementSpeeds[DEFAULT_MOVEMENT],
-	movingDirection: null,
+	isMoving: false,
 
 	xPx: startTileX * TILE_SIZE_PX,
 	yPx: startTileY * TILE_SIZE_PX,

@@ -61,7 +61,7 @@ function dirToDxDy(direction: Direction): { dx: number; dy: number } {
 }
 
 function getIsMoving(entity: Entity): boolean {
-	return !!entity.movingDirection || !!movementIntent;
+	return !!entity.isMoving || !!movementIntent;
 }
 
 function getIsMovingFaster(entity: Entity): boolean {
@@ -263,11 +263,7 @@ function updateEntity(dt: number, entity: Entity) {
 
 	// 2.5) Interaction: activate on current tile (placeholder)
 	// Replace "a" with your actual action name if different.
-	if (
-		!gameState.disabled &&
-		activeActions.has("a") &&
-		!entity.movingDirection
-	) {
+	if (!gameState.disabled && activeActions.has("a") && !entity.isMoving) {
 		const activationCell = {
 			x: entity.x,
 			y: entity.y,
@@ -296,13 +292,13 @@ function updateEntity(dt: number, entity: Entity) {
 	}
 
 	// 3) Movement start
-	if (!entity.movingDirection) {
+	if (!entity.isMoving) {
 		if (desired) {
 			entity.direction = desired;
 
 			const planned = tryPlanMove(desired, entity);
 			if (planned) {
-				entity.movingDirection = desired;
+				entity.isMoving = true;
 
 				entity.movingToTile = planned.end;
 				entity.movingToAnimation = planned.animation ?? null;
@@ -317,7 +313,7 @@ function updateEntity(dt: number, entity: Entity) {
 	}
 
 	// 4) Movement tween (pixel-based segments)
-	if (entity.movingDirection) {
+	if (entity.isMoving) {
 		const dx = entity.xPxf - entity.xPxi;
 		const dy = entity.yPxf - entity.yPxi;
 
@@ -367,7 +363,7 @@ function updateEntity(dt: number, entity: Entity) {
 				entity.y = entity.movingToTile.y;
 				entity.z = entity.movingToTile.z;
 
-				entity.movingDirection = null;
+				entity.isMoving = false;
 				entity.movingToTile = null;
 				entity.movingToAnimation = null;
 
@@ -465,7 +461,7 @@ function draw(dt: number) {
 			`current tile: ${player.x}, ${player.y}, ${player.z}`,
 			`move to tile: ${player.movingToTile?.x ?? "x"}, ${player.movingToTile?.y ?? "y"}, ${player.movingToTile?.z ?? "z"}`,
 			`facing: ${player.direction}`,
-			`moving: ${player.movingDirection}`,
+			`moving: ${player.isMoving}`,
 			`faster: ${getIsMovingFaster(player)}`,
 			`transition animation: ${player.movingToAnimation ?? "-"}`,
 		].forEach((line, index) => {
@@ -476,7 +472,7 @@ function draw(dt: number) {
 }
 
 function getEntitiesRenderZ(entity: Entity): number {
-	if (!entity.movingDirection) return entity.z;
+	if (!entity.isMoving) return entity.z;
 
 	const fromZ = entity.zi;
 	const toZ = entity.zf;
