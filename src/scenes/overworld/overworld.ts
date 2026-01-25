@@ -23,13 +23,14 @@ import {
 	directions,
 	movementIntent,
 } from "../../input/input";
-import { type Entity, entities, player } from "../../state";
-import { savePlayerState } from "../../storage";
+import { type Entity, player } from "../../state";
+import { saveEntitiesState } from "../../storage";
 import { menuState, openMenu } from "../menu/menu";
 import { camera, updateCamera } from "./camera";
 import { getCell, getEdge, type Transition } from "./data";
 import { initializeArea as initializeStartArea } from "./data/start";
 import { renderDialogs } from "./dialog";
+import { entities } from "./entities";
 
 initializeStartArea();
 
@@ -365,9 +366,6 @@ function updateEntity(dt: number, entity: Entity) {
 				entity.movingDirection = null;
 				entity.movingToTile = null;
 				entity.movingToAnimation = null;
-
-				// Autosave on step end
-				savePlayerState();
 			}
 		} else {
 			const t = entity.pathSegmentProgress;
@@ -535,4 +533,7 @@ export function overworld(dt: number) {
 	update(dt);
 	draw(dt);
 	renderDialogs();
+
+	// Autosave on step end
+	saveEntitiesState();
 }
