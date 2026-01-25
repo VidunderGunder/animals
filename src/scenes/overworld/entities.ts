@@ -10,8 +10,8 @@ import {
 import type { Direction } from "../../input/input";
 import type { Transition } from "./data";
 
-export type Entities = Map<string, Entity>;
-export const entities: Entities = new Map<string, Entity>();
+export const entities = new Map<string, Entity>();
+export type Entities = typeof entities;
 
 export type Entity = {
 	renderVariant: AnimationVariant;

@@ -6,6 +6,8 @@ Nostalgic GBA inspired game about a skater collecting animals and mythological b
 
 General
 
+- [ ] ⚠️ Fix: onSegmentStart on a second segment is triggered on first segment (climbing down ladder flips character immediately)
+- [ ] ⚠️ Fix: Hot Module Reloading (HMR) got broken (or super slow/flaky) on 25th January 2026
 - [ ] Clean up state  
   Lots of duplications in player state, should be replaced with getters (e.g., path related stuff)
 

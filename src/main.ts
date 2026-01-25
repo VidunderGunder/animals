@@ -1,4 +1,4 @@
-import "./.css/reset.css";
+import "./css/reset.css";
 
 import { initializeAudio } from "./audio/audio";
 import { FPS_LIMIT, initScreen } from "./config";
@@ -6,9 +6,11 @@ import { initFullscreenSupport } from "./gfx/fullscreen";
 import { activeActions, initInput, input } from "./input/input";
 import { initVirtualGamepad } from "./input/touch";
 import { menu } from "./scenes/menu/menu";
+import { initializeArea as initializeStartArea } from "./scenes/overworld/data/start";
 import { overworld } from "./scenes/overworld/overworld";
 import { loadEntitiesState } from "./storage";
 
+initializeStartArea();
 initScreen();
 initInput();
 initVirtualGamepad();
@@ -60,11 +62,6 @@ function startGame() {
 	rafId = requestAnimationFrame(loop);
 }
 
-try {
-	// Initialize storage and autoload saved state on game start
-	await loadEntitiesState();
-} catch (error) {
-	console.error("Failed to initialize storage:", error);
-}
+await loadEntitiesState();
 
 startGame();

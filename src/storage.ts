@@ -1,5 +1,9 @@
-import { entities, type Entities, type Entity } from "./scenes/overworld/entities";
-import {   player, resetPlayer} from "./state";
+import {
+	type Entities,
+	type Entity,
+	entities,
+} from "./scenes/overworld/entities";
+import { player, resetPlayer } from "./state";
 
 const DB_NAME = "animals-game";
 const USERS_STORE = "users";
@@ -259,4 +263,3 @@ export async function loadEntitiesState() {
 		// Ignore errors, start with default state
 	}
 }
-
