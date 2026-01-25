@@ -1,8 +1,4 @@
-import {
-	CHARACTER_SPRITE_HEIGHT_PX,
-	CHARACTER_SPRITE_WIDTH_PX,
-	TILE_SIZE_PX,
-} from "../../../config";
+import { TILE_SIZE_PX } from "../../../config";
 import {
 	cellToPx,
 	getCellsOutline,
@@ -12,7 +8,7 @@ import {
 	setEdge,
 } from "../data";
 import { rsvp } from "../dialog";
-import { type Entity, entities } from "../entities";
+import { type Entity, entities, getEntityCharacterDefaults } from "../entities";
 
 export function initializeArea() {
 	// dock camera position
@@ -81,12 +77,9 @@ export function initializeArea() {
 	}
 
 	setCell(30, 36, 0, {
-		interact: {
-			id: "dock_lookout",
-			onActivate: () => {
-				const sentence = "The clouds look like cotton candy";
-				rsvp("dock_lookout", sentence);
-			},
+		onActivate: () => {
+			const sentence = "The clouds look like cotton candy";
+			rsvp("dock_lookout", sentence);
 		},
 		blocked: true,
 	});
@@ -144,12 +137,9 @@ export function initializeArea() {
 	mushroomCells.forEach((cell) => {
 		setCell(...cell, {
 			blocked: true,
-			interact: {
-				id: "pretty_mushrooms",
-				onActivate: () => {
-					const sentence = "Mushrooms! ... ... Let's leave them alone ❤";
-					rsvp("pretty_mushrooms", sentence);
-				},
+			onActivate: () => {
+				const sentence = "Mushrooms! ... ... Let's leave them alone ❤";
+				rsvp("pretty_mushrooms", sentence);
 			},
 		});
 	});
@@ -271,29 +261,9 @@ export function initializeArea() {
 
 function populateArea() {
 	entities.set("npc_player", {
-		renderVariant: "player",
-		x: 32,
-		y: 41,
-		xPx: 32 * TILE_SIZE_PX,
-		yPx: 41 * TILE_SIZE_PX,
-		z: 0,
-		direction: "down",
-		width: CHARACTER_SPRITE_WIDTH_PX,
-		height: CHARACTER_SPRITE_HEIGHT_PX,
-		speed: 0,
-		animationCurrent: "idle",
-		animationFrameIndex: 0,
-		animationTimer: 0,
-		path: [],
-		isMoving: false,
-		xPxi: 0,
-		yPxi: 0,
-		zi: 0,
-		xPxf: 0,
-		yPxf: 0,
-		zf: 0,
-		pathSegmentProgress: 1,
-		movingToTile: null,
-		movingToAnimation: null,
+		...getEntityCharacterDefaults({ x: 32, y: 41 }),
+		onActivate: () => {
+			rsvp("npc_interact", "Hello!");
+		},
 	});
 }
