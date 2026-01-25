@@ -24,6 +24,7 @@ import {
 	movementIntent,
 } from "../../input/input";
 import { gameState, player } from "../../state";
+import { saveEntitiesState } from "../../storage";
 import { menuState, openMenu } from "../menu/menu";
 import { camera, updateCamera } from "./camera";
 import { getCell, getEdge, setCell, type Transition } from "./data";
