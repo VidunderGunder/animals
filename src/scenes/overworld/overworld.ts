@@ -198,7 +198,7 @@ function startSegment(
 function popNextWaypoint(): boolean {
 	const next = player.path.shift();
 	if (!next) return false;
-	startSegment(next.x, next.y, next.z, next.duration);
+	startSegment(next.xPx, next.yPx, next.z, next.duration);
 	return true;
 }
 
@@ -296,10 +296,7 @@ function updatePlayer(dt: number) {
 				player.movingToAnimation = planned.animation ?? null;
 
 				player.path = planned.path.map((p) => ({
-					x: p.xPx,
-					y: p.yPx,
-					z: p.z,
-					ms: p.duration,
+					...p,
 				}));
 
 				popNextWaypoint();

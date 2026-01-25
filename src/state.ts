@@ -31,7 +31,7 @@ export type Player = {
 	yPx: number;
 
 	/** Remaining waypoints (world pixels) */
-	path: { x: number; y: number; z: number; duration?: number }[];
+	path: Transition["path"];
 
 	/** Segment interpolation (world pixels) */
 	xPxi: number;
