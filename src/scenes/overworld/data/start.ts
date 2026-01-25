@@ -262,8 +262,8 @@ export function initializeArea() {
 function populateArea() {
 	entities.set("npc_player", {
 		...getEntityCharacterDefaults({ x: 32, y: 41 }),
-		onActivate: () => {
-			rsvp("npc_interact", "Hello!");
+		onActivate: ({ activated }) => {
+			rsvp("npc_interact", "Hello!", activated);
 		},
 	});
 }
