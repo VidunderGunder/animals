@@ -61,7 +61,7 @@ export type Player = {
 // TODO: Move to overworld/entities.ts
 export type Entity = Player;
 
-export const startTileX = 12;
+export const startTileX = 30;
 export const startTileY = 37;
 export const startLayerZ = 0;
 

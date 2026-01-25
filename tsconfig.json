@@ -15,7 +15,6 @@
     "noEmit": true,
 
     // Best practices
-    "noImplicitAny": true,
     "strict": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true,
