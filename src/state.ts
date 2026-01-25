@@ -59,6 +59,8 @@ export const startTileX = 12;
 export const startTileY = 37;
 export const startLayerZ = 0;
 
+export const entities = new Map<string, Player>();
+
 const playerDefault = {
 	x: startTileX,
 	y: startTileY,
@@ -95,30 +97,7 @@ export const player: Player = {
 	...playerDefault,
 };
 
-export const playerDirectionRow: Record<Direction, number> = {
-	down: 0,
-	left: 1,
-	right: 2,
-	up: 3,
-} as const;
-
-export function setPlayerState(playerData: PlayerSaveData | null): void {
-	if (!playerData) return;
-	player.x = playerData.x;
-	player.y = playerData.y;
-	player.z = playerData.z;
-	player.facingDirection = playerData.facingDirection;
-
-	// Update pixel positions to match tile positions
-	player.xPx = playerData.x * TILE_SIZE_PX;
-	player.yPx = playerData.y * TILE_SIZE_PX;
-	player.xPxi = player.xPx;
-	player.yPxi = player.yPx;
-	player.xPxf = player.xPx;
-	player.yPxf = player.yPx;
-	player.zi = playerData.z;
-	player.zf = playerData.z;
-}
+entities.set("player", player);
 
 export function getPlayerSaveData(): PlayerSaveData {
 	return {

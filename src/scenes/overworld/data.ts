@@ -34,6 +34,8 @@ export type Transition = {
 		z: number;
 		duration?: number;
 		onSegment?: () => void;
+		onComplete?: () => void;
+		onStart?: () => void;
 	}[];
 
 	/* Final snapped logical state once path completes */

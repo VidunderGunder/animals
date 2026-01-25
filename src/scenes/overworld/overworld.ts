@@ -22,7 +22,7 @@ import {
 	directions,
 	movementIntent,
 } from "../../input/input";
-import { getPlayerSaveData, player, playerAnimations } from "../../state";
+import { entities, player, playerAnimations } from "../../state";
 import { savePlayerState } from "../../storage";
 import { menuState, openMenu } from "../menu/menu";
 import { camera, updateCamera } from "./camera";
@@ -58,33 +58,35 @@ function dirToDxDy(direction: Direction): { dx: number; dy: number } {
 	}
 }
 
-function getIsMoving(): boolean {
-	return !!player.movingDirection || !!movementIntent;
+function getIsMoving(entityKey: string): boolean {
+	const entity = entities.get(entityKey);
+	if (!entity) return false;
+	return !!entity.movingDirection || !!movementIntent;
 }
 
-function getIsMovingFaster(): boolean {
-	const isMoving = getIsMoving();
+function getIsMovingFaster(entityKey: string): boolean {
+	const isMoving = getIsMoving(entityKey);
 	if (!isMoving) return false;
 	const bPressed = activeActions.has("b");
 	return DEFAULT_MOVEMENT === "run" ? !bPressed : bPressed;
 }
 
-function getPlayerAnimation(): CharacterAnimationID {
+function getPlayerAnimation(entityKey: string): CharacterAnimationID {
 	// If a transition is forcing an animation, keep it
 	if (player.movingToAnimation === "jump") return "jump";
 	if (player.movingToAnimation === "hop") return "hop";
 
-	const isMovingFaster = getIsMovingFaster();
+	const isMovingFaster = getIsMovingFaster(entityKey);
 	if (isMovingFaster) return "run";
 
-	const isMoving = getIsMoving();
+	const isMoving = getIsMoving(entityKey);
 	if (isMoving) return "walk";
 
 	return "idle";
 }
 
-function updatePlayerAnimation(dt: number) {
-	const desiredAnimation = getPlayerAnimation();
+function updatePlayerAnimation(dt: number, entityKey: string) {
+	const desiredAnimation = getPlayerAnimation(entityKey);
 
 	if (player.animationCurrent !== desiredAnimation) {
 		player.animationCurrent = desiredAnimation;
@@ -241,31 +243,34 @@ function tryPlanMove(desired: Direction): Transition | null {
 }
 
 /** Update player and world state */
-function updatePlayer(dt: number) {
-	if (player.paused) return;
+function updateEntity(dt: number, entityKey: string) {
+	const entity = entities.get(entityKey);
+	if (!entity) return;
 
-	if (!player.disabled && activeActions.has("start")) openMenu();
+	if (entity.paused) return;
 
-	const faster = getIsMovingFaster();
+	if (!entity.disabled && activeActions.has("start")) openMenu();
 
-	const desired = player.disabled ? null : movementIntent;
+	const faster = getIsMovingFaster(entityKey);
+
+	const desired = entity.disabled ? null : movementIntent;
 
 	// 2) Speed based on run/walk
-	player.speed = movementSpeeds[faster ? "run" : "walk"];
+	entity.speed = movementSpeeds[faster ? "run" : "walk"];
 
 	// 2.5) Interaction: activate on current tile (placeholder)
 	// Replace "a" with your actual action name if different.
-	if (!player.disabled && activeActions.has("a") && !player.movingDirection) {
+	if (!entity.disabled && activeActions.has("a") && !entity.movingDirection) {
 		const activationCell = {
-			x: player.x,
-			y: player.y,
-			z: player.z,
+			x: entity.x,
+			y: entity.y,
+			z: entity.z,
 		};
 
-		if (player.facingDirection === "right") activationCell.x += 1;
-		if (player.facingDirection === "down") activationCell.y += 1;
-		if (player.facingDirection === "left") activationCell.x -= 1;
-		if (player.facingDirection === "up") activationCell.y -= 1;
+		if (entity.facingDirection === "right") activationCell.x += 1;
+		if (entity.facingDirection === "down") activationCell.y += 1;
+		if (entity.facingDirection === "left") activationCell.x -= 1;
+		if (entity.facingDirection === "up") activationCell.y -= 1;
 
 		getCell(
 			activationCell.x,
@@ -274,32 +279,29 @@ function updatePlayer(dt: number) {
 		)?.interact?.onActivate();
 
 		getEdge(
-			player.x,
-			player.y,
-			player.z,
-			player.facingDirection,
+			entity.x,
+			entity.y,
+			entity.z,
+			entity.facingDirection,
 		)?.interact?.onActivate();
 
 		activeActions.delete("a");
 	}
 
 	// 3) Movement start
-	if (!player.movingDirection) {
+	if (!entity.movingDirection) {
 		if (desired) {
-			player.facingDirection = desired;
+			entity.facingDirection = desired;
 
 			const planned = tryPlanMove(desired);
 			if (planned) {
-				player.movingDirection = desired;
+				entity.movingDirection = desired;
 
-				player.movingToTile = planned.end;
-				player.movingToAnimation = planned.animation ?? null;
+				entity.movingToTile = planned.end;
+				entity.movingToAnimation = planned.animation ?? null;
 
-				player.path = planned.path.map((p) => ({
-					x: p.xPx,
-					y: p.yPx,
-					z: p.z,
-					ms: p.duration,
+				entity.path = planned.path.map((p) => ({
+					...p,
 				}));
 
 				popNextWaypoint();
@@ -308,50 +310,50 @@ function updatePlayer(dt: number) {
 	}
 
 	// 4) Movement tween (pixel-based segments)
-	if (player.movingDirection) {
-		const dx = player.xPxf - player.xPxi;
-		const dy = player.yPxf - player.yPxi;
+	if (entity.movingDirection) {
+		const dx = entity.xPxf - entity.xPxi;
+		const dy = entity.yPxf - entity.yPxi;
 
 		const distancePx = dx === 0 && dy === 0 ? 0 : Math.hypot(dx, dy);
 
 		const moveDuration =
-			player.pathSegmentDuration ?? distancePx / player.speed;
+			entity.pathSegmentDuration ?? distancePx / entity.speed;
 
-		player.pathSegmentProgress += moveDuration === 0 ? 1 : dt / moveDuration;
+		entity.pathSegmentProgress += moveDuration === 0 ? 1 : dt / moveDuration;
 
-		if (player.pathSegmentProgress >= 1) {
-			player.pathSegmentProgress = 1;
+		if (entity.pathSegmentProgress >= 1) {
+			entity.pathSegmentProgress = 1;
 			snapToSegmentEnd();
 
 			const hasMore = popNextWaypoint();
 			if (!hasMore) {
 				// Movement fully finished: snap logical state
-				if (!player.movingToTile) {
+				if (!entity.movingToTile) {
 					throw new Error(
 						"Invariant: movement finished but pendingEnd is null",
 					);
 				}
 
-				player.x = player.movingToTile.x;
-				player.y = player.movingToTile.y;
-				player.z = player.movingToTile.z;
+				entity.x = entity.movingToTile.x;
+				entity.y = entity.movingToTile.y;
+				entity.z = entity.movingToTile.z;
 
-				player.movingDirection = null;
-				player.movingToTile = null;
-				player.movingToAnimation = null;
+				entity.movingDirection = null;
+				entity.movingToTile = null;
+				entity.movingToAnimation = null;
 
 				// Autosave on step end
-				savePlayerState(getPlayerSaveData());
+				savePlayerState();
 			}
 		} else {
-			const t = player.pathSegmentProgress;
-			player.xPx = Math.round(player.xPxi + dx * t);
-			player.yPx = Math.round(player.yPxi + dy * t);
+			const t = entity.pathSegmentProgress;
+			entity.xPx = Math.round(entity.xPxi + dx * t);
+			entity.yPx = Math.round(entity.yPxi + dy * t);
 		}
 	}
 
 	// 5) Anim AFTER we've updated movement
-	updatePlayerAnimation(dt);
+	updatePlayerAnimation(dt, entityKey);
 }
 
 function update(dt: number) {
@@ -360,7 +362,9 @@ function update(dt: number) {
 
 	setTilesCountsIfNotSet();
 
-	updatePlayer(dt);
+	for (const key of entities.keys()) {
+		updateEntity(dt, key);
+	}
 	updateCamera(dt);
 }
 
@@ -426,7 +430,7 @@ function draw(dt: number) {
 			`move to tile: ${player.movingToTile?.x ?? "x"}, ${player.movingToTile?.y ?? "y"}, ${player.movingToTile?.z ?? "z"}`,
 			`facing: ${player.facingDirection}`,
 			`moving: ${player.movingDirection}`,
-			`faster: ${getIsMovingFaster()}`,
+			`faster: ${getIsMovingFaster("player")}`,
 			`transition animation: ${player.movingToAnimation ?? "-"}`,
 		].forEach((line, index) => {
 			ctx.fillText(line, 4, 2 + index * 8);
