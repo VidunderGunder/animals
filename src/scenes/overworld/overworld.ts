@@ -432,7 +432,7 @@ function updateEntity(dt: number, entity: Entity) {
 
 		const currentPathSegment = entity.path[0];
 		// On segment start
-		if (entity.pathSegmentProgress && currentPathSegment) {
+		if (!entity.pathSegmentProgress && currentPathSegment) {
 			currentPathSegment.onSegmentStart?.(entity);
 		}
 
