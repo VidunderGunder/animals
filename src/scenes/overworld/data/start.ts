@@ -66,11 +66,8 @@ export function initializeArea() {
 		...range(23, [41, 57]),
 
 		// Fence Woods
-		...range([18, 22], 57),
-		...range([38, 42], 57),
-
-		// Skateboard
-		[32, 58, 0],
+		...range([0, 22], 57),
+		...range([38, 60], 57),
 	] as const;
 
 	for (const xyz of blockedCells) {
