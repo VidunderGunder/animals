@@ -183,7 +183,7 @@ export function initializeArea() {
 					{
 						...cellToPx(31, 46),
 						z: 0,
-						onSegment: (entity: Entity) => {
+						onSegmentStart: (entity: Entity) => {
 							entity.direction = "right";
 						},
 					},

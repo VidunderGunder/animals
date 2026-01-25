@@ -321,26 +321,29 @@ function updatePlayer(dt: number) {
 		const dy = entity.yPxf - entity.yPxi;
 
 		const distancePx = dx === 0 && dy === 0 ? 0 : Math.hypot(dx, dy);
+		
+		
+		const currentPathSegment = entity.path[0];
+		// On segment start
+		if (!entity.pathSegmentProgress && currentPathSegment) {
+			currentPathSegment.onSegmentStart?.(entity);
+		}
 
 		const moveDuration =
 			entity.pathSegmentDuration ?? distancePx / entity.speed;
 
 		entity.pathSegmentProgress += moveDuration === 0 ? 1 : dt / moveDuration;
 
-		const currentPathSegment = entity.path[0];
-		// On segment start
-		if (entity.pathSegmentProgress && currentPathSegment) {
-			currentPathSegment.onSegmentStart?.(entity);
-		}
+	
 		// On segment update
 		currentPathSegment?.onSegment?.(entity);
 
 		// On segment end. The penultimate segment
 		const nextPathSegmentProgress =
-			entity.pathSegmentProgress + dt / moveDuration;
+			entity.pathSegmentProgress + (dt / moveDuration);
 		if (
-			entity.pathSegmentProgress < 1 &&
 			nextPathSegmentProgress >= 1 &&
+			entity.pathSegmentProgress < 1 &&
 			currentPathSegment
 		) {
 			currentPathSegment.onSegmentEnd?.(entity);
