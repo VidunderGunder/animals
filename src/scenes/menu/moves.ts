@@ -8,9 +8,9 @@ import {
 import { ctx } from "../../gfx/canvas";
 import { type Direction, directions } from "../../input/input";
 import {
+	type AnimationID,
 	animationIds,
-	type CharacterAnimationID,
-	entityRenders,
+	animations,
 	type RenderVariant,
 	renderFrameLayers,
 	renderVariantKeys,
@@ -24,7 +24,7 @@ export type EntitiesState = {
 	direction: Direction;
 
 	/** Current animation state */
-	animationCurrent: CharacterAnimationID;
+	animationCurrent: AnimationID;
 	animationFrameIndex: number;
 	animationTimer: number;
 };
@@ -64,14 +64,13 @@ export function initializeMovesState() {
 
 function update(dt: number) {
 	movesState.entities.forEach((entity) => {
-		const entityRender = entityRenders[entity.personId];
-		let animation = entityRender.animations[entity.animationCurrent];
+		let animation = animations[entity.personId][entity.animationCurrent];
 
 		if (!animation) {
 			console.warn(
 				`Character ${entity.personId} is missing animation ${entity.animationCurrent}, defaulting to walk`,
 			);
-			animation = entityRender.animations.walk;
+			animation = animations[entity.personId].walk;
 		}
 
 		entity.animationTimer += dt;
@@ -94,11 +93,7 @@ const marginY = 4;
 
 export function draw() {
 	movesState.entities.forEach((entity, i) => {
-		const entityRender = entityRenders[entity.personId];
-		const animation =
-			entityRender.animations[
-				entity.animationCurrent as keyof typeof entityRender.animations
-			];
+		const animation = animations[entity.personId][entity.animationCurrent];
 
 		const frameLayers = animation.frames[entity.animationFrameIndex];
 		if (frameLayers === undefined) {

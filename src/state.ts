@@ -6,7 +6,7 @@ import {
 	TILE_SIZE_PX,
 } from "./config";
 import type { Direction } from "./input/input";
-import type { CharacterAnimationID, RenderVariant } from "./render/entities";
+import type { AnimationID, RenderVariant } from "./render/entities";
 import type { Transition } from "./scenes/overworld/data";
 
 export type Player = {
@@ -50,7 +50,7 @@ export type Player = {
 	movingToTile: Transition["end"] | null;
 	movingToAnimation: Transition["animation"] | null;
 
-	animationCurrent: CharacterAnimationID;
+	animationCurrent: AnimationID;
 	animationFrameIndex: number;
 	animationTimer: number;
 

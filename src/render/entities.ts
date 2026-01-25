@@ -106,11 +106,7 @@ export type Animation = {
 	loop: boolean;
 };
 
-type Animations = Record<CharacterAnimationID, Animation>;
-
-export type Character = {
-	animations: Animations;
-};
+type Animations = Record<AnimationID, Animation>;
 
 export const animationIds = [
 	"idle",
@@ -125,7 +121,7 @@ export const animationIds = [
 	"spin",
 ] as const;
 
-export type CharacterAnimationID = (typeof animationIds)[number];
+export type AnimationID = (typeof animationIds)[number];
 
 export const idleDurationDefault = 350;
 export const walkDurationDefault = 130;
@@ -396,22 +392,20 @@ function getDefaultAnimations({
 	};
 }
 
-export const entityRenders = {
+export const animations = {
 	player: {
-		animations: {
-			...getDefaultAnimations({
-				characterSpriteSheet: playerSpriteSheet,
-			}),
-		},
+		...getDefaultAnimations({
+			characterSpriteSheet: playerSpriteSheet,
+		}),
 	},
-} as const satisfies Record<string, Character>;
+} as const satisfies Record<string, Animations>;
 
-export type RenderVariant = keyof typeof entityRenders;
-export const renderVariantKeys = Object.keys(entityRenders) as RenderVariant[];
+export type RenderVariant = keyof typeof animations;
+export const renderVariantKeys = Object.keys(animations) as RenderVariant[];
 
 // Crash early if dangerous empty frames are detected
-Object.entries(entityRenders).forEach(([key, character]) => {
-	Object.entries(character.animations).forEach(([animationId, animation]) => {
+renderVariantKeys.forEach((key) => {
+	Object.entries(animations[key]).forEach(([animationId, animation]) => {
 		if (animation.frames.length === 0) {
 			throw new Error(
 				`Character "${key}" has animation "${animationId}" with no frames defined.`,

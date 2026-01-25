@@ -19,8 +19,8 @@ import {
 	movementIntent,
 } from "../../input/input";
 import {
-	type CharacterAnimationID,
-	entityRenders,
+	type AnimationID,
+	animations,
 	renderFrameLayer,
 } from "../../render/entities";
 import { type Entity, entities, player } from "../../state";
@@ -70,7 +70,7 @@ function getIsMovingFaster(entity: Entity): boolean {
 	return DEFAULT_MOVEMENT === "run" ? !bPressed : bPressed;
 }
 
-function getPlayerAnimation(entity: Entity): CharacterAnimationID {
+function getPlayerAnimation(entity: Entity): AnimationID {
 	// If a transition is forcing an animation, keep it
 	if (entity.movingToAnimation === "jump") return "jump";
 	if (entity.movingToAnimation === "hop") return "hop";
@@ -94,7 +94,7 @@ function updatePlayerAnimation(dt: number, entity: Entity) {
 		return;
 	}
 
-	const entityAnimations = entityRenders[entity.renderVariant].animations;
+	const entityAnimations = animations[entity.renderVariant];
 	const anim = entityAnimations[desiredAnimation];
 	if (!anim) {
 		throw new Error(
@@ -490,7 +490,7 @@ function drawEntity(entity: Entity) {
 	ctx.translate(feetScreenX, feetScreenY);
 
 	const animName = entity.animationCurrent;
-	const entityAnimations = entityRenders[entity.renderVariant].animations;
+	const entityAnimations = animations[entity.renderVariant];
 	const anim = entityAnimations[animName];
 
 	if (!anim) {
