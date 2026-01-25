@@ -2,6 +2,11 @@ import type {
 	AnimationID,
 	AnimationVariant,
 } from "../../animations/animations";
+import {
+	CHARACTER_SPRITE_HEIGHT_PX,
+	CHARACTER_SPRITE_WIDTH_PX,
+	TILE_SIZE_PX,
+} from "../../config";
 import type { Direction } from "../../input/input";
 import type { Transition } from "./data";
 
@@ -56,3 +61,38 @@ export type Entity = {
 
 	onActivate?: (props: { activator: Entity; activated: Entity }) => void;
 };
+
+export function getEntityCharacterDefaults({
+	x,
+	y,
+}: {
+	x: number;
+	y: number;
+}): Entity {
+	return {
+		renderVariant: "character",
+		x: x,
+		y: y,
+		xPx: x * TILE_SIZE_PX,
+		yPx: y * TILE_SIZE_PX,
+		z: 0,
+		direction: "down",
+		width: CHARACTER_SPRITE_WIDTH_PX,
+		height: CHARACTER_SPRITE_HEIGHT_PX,
+		speed: 0,
+		animationCurrent: "idle",
+		animationFrameIndex: 0,
+		animationTimer: 0,
+		path: [],
+		isMoving: false,
+		xPxi: 0,
+		yPxi: 0,
+		zi: 0,
+		xPxf: 0,
+		yPxf: 0,
+		zf: 0,
+		pathSegmentProgress: 0,
+		movingToTile: null,
+		movingToAnimation: null,
+	};
+}

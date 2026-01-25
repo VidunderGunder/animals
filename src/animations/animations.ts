@@ -393,7 +393,7 @@ function getDefaultAnimations({
 }
 
 export const animations = {
-	player: {
+	character: {
 		...getDefaultAnimations({
 			characterSpriteSheet: playerSpriteSheet,
 		}),
