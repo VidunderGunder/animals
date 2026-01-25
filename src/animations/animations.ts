@@ -400,11 +400,13 @@ export const animations = {
 	},
 } as const satisfies Record<string, Animations>;
 
-export type RenderVariant = keyof typeof animations;
-export const renderVariantKeys = Object.keys(animations) as RenderVariant[];
+export type AnimationVariant = keyof typeof animations;
+export const animationVariantKeys = Object.keys(
+	animations,
+) as AnimationVariant[];
 
 // Crash early if dangerous empty frames are detected
-renderVariantKeys.forEach((key) => {
+animationVariantKeys.forEach((key) => {
 	Object.entries(animations[key]).forEach(([animationId, animation]) => {
 		if (animation.frames.length === 0) {
 			throw new Error(

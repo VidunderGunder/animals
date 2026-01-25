@@ -1,3 +1,8 @@
+import {
+	type AnimationID,
+	animations,
+	renderFrameLayer,
+} from "../../animations/animations";
 import { createImageElement } from "../../assets/image";
 import {
 	ASPECT_RATIO_X,
@@ -18,11 +23,6 @@ import {
 	directions,
 	movementIntent,
 } from "../../input/input";
-import {
-	type AnimationID,
-	animations,
-	renderFrameLayer,
-} from "../../render/entities";
 import { type Entity, entities, player } from "../../state";
 import { savePlayerState } from "../../storage";
 import { menuState, openMenu } from "../menu/menu";

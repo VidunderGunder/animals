@@ -1,3 +1,4 @@
+import type { AnimationID, AnimationVariant } from "./animations/animations";
 import {
 	CHARACTER_SPRITE_HEIGHT_PX,
 	CHARACTER_SPRITE_WIDTH_PX,
@@ -6,11 +7,10 @@ import {
 	TILE_SIZE_PX,
 } from "./config";
 import type { Direction } from "./input/input";
-import type { AnimationID, RenderVariant } from "./render/entities";
 import type { Transition } from "./scenes/overworld/data";
 
 export type Player = {
-	renderVariant: RenderVariant;
+	renderVariant: AnimationVariant;
 	/* Tile position */
 	x: number;
 	/* Tile position */

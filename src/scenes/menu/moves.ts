@@ -1,4 +1,12 @@
 import {
+	type AnimationID,
+	type AnimationVariant,
+	animationIds,
+	animations,
+	animationVariantKeys,
+	renderFrameLayers,
+} from "../../animations/animations";
+import {
 	CHARACTER_SPRITE_HEIGHT_PX,
 	CHARACTER_SPRITE_WIDTH_PX,
 	GAME_HEIGHT_PX,
@@ -7,18 +15,10 @@ import {
 } from "../../config";
 import { ctx } from "../../gfx/canvas";
 import { type Direction, directions } from "../../input/input";
-import {
-	type AnimationID,
-	animationIds,
-	animations,
-	type RenderVariant,
-	renderFrameLayers,
-	renderVariantKeys,
-} from "../../render/entities";
 import { menuHeight, menuWidth } from "./menu";
 
 export type EntitiesState = {
-	personId: RenderVariant;
+	personId: AnimationVariant;
 
 	/** Facing direction */
 	direction: Direction;
@@ -47,7 +47,7 @@ export const movesState: MovesState = {
 };
 
 export function initializeMovesState() {
-	renderVariantKeys.forEach((key) => {
+	animationVariantKeys.forEach((key) => {
 		animationIds.forEach((animationId) => {
 			directions.forEach((direction) => {
 				movesState.entities.push({

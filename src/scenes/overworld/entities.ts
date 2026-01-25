@@ -1,11 +1,14 @@
+import type {
+	AnimationID,
+	AnimationVariant,
+} from "../../animations/animations";
 import type { Direction } from "../../input/input";
-import type { AnimationID, RenderVariant } from "../../render/entities";
 import type { Transition } from "./data";
 
 export const entities = new Map<string, Entity>();
 
 export type Entity = {
-	renderVariant: RenderVariant;
+	renderVariant: AnimationVariant;
 
 	/* Tile position */
 	x: number;

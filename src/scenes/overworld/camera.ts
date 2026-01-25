@@ -3,17 +3,12 @@ import { clamp, lerp } from "../../functions/general";
 import { player } from "../../state";
 import { getCell } from "./data";
 
-export type CameraTarget = {
+export type Vec2Px = {
 	xPx: number;
 	yPx: number;
 };
 
-export type CameraState = {
-	xPx: number;
-	yPx: number;
-};
-
-export const camera: CameraState = {
+export const camera: Vec2Px = {
 	xPx: 0,
 	yPx: 0,
 };
@@ -63,7 +58,7 @@ function getInterpolatedOffsetFromPlayerPx() {
 	};
 }
 
-export function getCameraTarget(): CameraTarget {
+export function getCameraTarget(): Vec2Px {
 	const baseX = player.xPx - GAME_WIDTH_PX / 2 + TILE_SIZE_PX / 2;
 	const baseY = player.yPx - GAME_HEIGHT_PX / 2 + TILE_SIZE_PX / 2;
 

@@ -1,6 +1,6 @@
+import type { AnimationID } from "../../animations/animations";
 import { TILE_SIZE_PX } from "../../config";
 import type { Direction } from "../../input/input";
-import type { AnimationID } from "../../render/entities";
 import { type Entity, player } from "../../state";
 
 export const cells = new Map<number, Cell>();
