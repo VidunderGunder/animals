@@ -43,7 +43,6 @@ export type Entity = {
 	yPxf: number;
 	zf: number;
 
-	currentPathSegment?: Transition["path"][number];
 	pathSegmentProgress: number;
 	/** Fixed duration for current segment (ms), undefined -> use entity speed */
 	pathSegmentDuration?: number;

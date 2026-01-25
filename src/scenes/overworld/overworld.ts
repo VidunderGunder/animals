@@ -206,11 +206,7 @@ function startSegment(
 
 function setCurrentSegment(entity: Entity): boolean {
 	const next = entity.path.shift();
-	if (!next) {
-		entity.currentPathSegment = undefined;
-		return false;
-	}
-	entity.currentPathSegment = next;
+	if (!next) return false;
 	startSegment(entity, next.xPx, next.yPx, next.z, next.duration);
 	return true;
 }
@@ -324,9 +320,6 @@ function updatePlayer(dt: number) {
 		const dx = entity.xPxf - entity.xPxi;
 		const dy = entity.yPxf - entity.yPxi;
 
-		if (!entity.pathSegmentDuration) {
-		}
-
 		const distancePx = dx === 0 && dy === 0 ? 0 : Math.hypot(dx, dy);
 
 		const moveDuration =
@@ -334,24 +327,25 @@ function updatePlayer(dt: number) {
 
 		entity.pathSegmentProgress += moveDuration === 0 ? 1 : dt / moveDuration;
 
+		const currentPathSegment = entity.path[0];
 		// On segment start
-		if (entity.pathSegmentProgress && entity.currentPathSegment) {
-			entity.currentPathSegment.onSegmentStart?.(entity);
+		if (entity.pathSegmentProgress && currentPathSegment) {
+			currentPathSegment.onSegmentStart?.(entity);
 		}
 		// On segment update
-		if (entity.currentPathSegment?.onSegment) {
-			entity.currentPathSegment.onSegment(entity);
-		}
+		currentPathSegment?.onSegment?.(entity);
+
 		// On segment end. The penultimate segment
 		const nextPathSegmentProgress =
 			entity.pathSegmentProgress + dt / moveDuration;
 		if (
 			entity.pathSegmentProgress < 1 &&
 			nextPathSegmentProgress >= 1 &&
-			entity.currentPathSegment
+			currentPathSegment
 		) {
-			entity.currentPathSegment.onSegmentEnd?.(entity);
+			currentPathSegment.onSegmentEnd?.(entity);
 		}
+
 
 		if (entity.pathSegmentProgress >= 1) {
 			entity.pathSegmentProgress = 1;
@@ -425,9 +419,6 @@ function updateEntity(dt: number, entity: Entity) {
 		const dx = entity.xPxf - entity.xPxi;
 		const dy = entity.yPxf - entity.yPxi;
 
-		if (!entity.pathSegmentDuration) {
-		}
-
 		const distancePx = dx === 0 && dy === 0 ? 0 : Math.hypot(dx, dy);
 
 		const moveDuration =
@@ -435,23 +426,23 @@ function updateEntity(dt: number, entity: Entity) {
 
 		entity.pathSegmentProgress += moveDuration === 0 ? 1 : dt / moveDuration;
 
+		const currentPathSegment = entity.path[0];
 		// On segment start
-		if (entity.pathSegmentProgress && entity.currentPathSegment) {
-			entity.currentPathSegment.onSegmentStart?.(entity);
+		if (entity.pathSegmentProgress && currentPathSegment) {
+			currentPathSegment.onSegmentStart?.(entity);
 		}
 		// On segment update
-		if (entity.currentPathSegment?.onSegment) {
-			entity.currentPathSegment.onSegment(entity);
-		}
+		currentPathSegment?.onSegment?.(entity);
+
 		// On segment end. The penultimate segment
 		const nextPathSegmentProgress =
 			entity.pathSegmentProgress + dt / moveDuration;
 		if (
 			entity.pathSegmentProgress < 1 &&
 			nextPathSegmentProgress >= 1 &&
-			entity.currentPathSegment
+			currentPathSegment
 		) {
-			entity.currentPathSegment.onSegmentEnd?.(entity);
+			currentPathSegment.onSegmentEnd?.(entity);
 		}
 
 		if (entity.pathSegmentProgress >= 1) {
