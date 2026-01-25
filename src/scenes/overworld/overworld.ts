@@ -365,9 +365,6 @@ function updateEntity(dt: number, entity: Entity) {
 				entity.movingDirection = null;
 				entity.movingToTile = null;
 				entity.movingToAnimation = null;
-
-				// Autosave on step end
-				savePlayerState();
 			}
 		} else {
 			const t = entity.pathSegmentProgress;
@@ -389,6 +386,9 @@ function update(dt: number) {
 	for (const entity of entities.values()) {
 		updateEntity(dt, entity);
 	}
+
+	// Autosave on step end
+	savePlayerState();
 	updateCamera(dt);
 }
 

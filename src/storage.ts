@@ -1,9 +1,12 @@
-import { TILE_SIZE_PX } from "./config";
-import { player, resetPlayer } from "./state";
+import type { Entities, Entity } from "./scenes/overworld/entities";
+import { entities, player, resetPlayer } from "./state";
 
 const DB_NAME = "animals-game";
 const USERS_STORE = "users";
 const SAVES_STORE = "saves";
+
+// Serializable format for IndexedDB (Map can't be stored directly)
+type SerializedEntities = [string, Entity][];
 
 export type User = {
 	id: number;
@@ -15,7 +18,7 @@ export type Save = {
 	id: number;
 	userId: number;
 	name: string;
-	playerData: PlayerSaveData;
+	playerData: SerializedEntities;
 	createdAt: number;
 	updatedAt: number;
 };
@@ -95,10 +98,19 @@ async function getUsers(): Promise<User[]> {
 
 // ============ Save functions ============
 
+// Helper functions to serialize/deserialize Map for IndexedDB
+function serializeEntities(map: Entities): SerializedEntities {
+	return Array.from(map.entries());
+}
+
+function deserializeEntities(arr: SerializedEntities): Entities {
+	return new Map(arr);
+}
+
 async function createSave(
 	userId: number,
 	name: string,
-	playerData: PlayerSaveData,
+	playerData: Entities,
 ): Promise<Save> {
 	const database = await openDB();
 	return new Promise((resolve, reject) => {
@@ -108,7 +120,7 @@ async function createSave(
 		const save: Omit<Save, "id"> = {
 			userId,
 			name,
-			playerData,
+			playerData: serializeEntities(playerData),
 			createdAt: now,
 			updatedAt: now,
 		};
@@ -143,10 +155,7 @@ async function getSave(id: number): Promise<Save | null> {
 	});
 }
 
-async function updateSave(
-	id: number,
-	playerData: PlayerSaveData,
-): Promise<void> {
+async function updateSave(id: number, playerData: Entities): Promise<void> {
 	const database = await openDB();
 	return new Promise((resolve, reject) => {
 		const tx = database.transaction(SAVES_STORE, "readwrite");
@@ -158,7 +167,7 @@ async function updateSave(
 				reject(new Error(`Save with id ${id} not found`));
 				return;
 			}
-			save.playerData = playerData;
+			save.playerData = serializeEntities(playerData);
 			save.updatedAt = Date.now();
 			const putRequest = store.put(save);
 			putRequest.onsuccess = () => resolve();
@@ -176,8 +185,8 @@ async function updateSave(
  * Returns the player data from the selected save, or null if new.
  */
 export async function initializeStorage(
-	defaultPlayerData: PlayerSaveData,
-): Promise<PlayerSaveData | null> {
+	defaultPlayerData: Entities,
+): Promise<Entities | null> {
 	await openDB();
 
 	// Get or create first user
@@ -204,7 +213,7 @@ export async function initializeStorage(
 	if (!save) throw new Error("No save found after creation.");
 	currentSaveId = save.id;
 
-	return save.playerData;
+	return deserializeEntities(save.playerData);
 }
 
 /**
@@ -213,45 +222,37 @@ export async function initializeStorage(
  */
 export async function savePlayerState(): Promise<void> {
 	if (currentSaveId === null) return;
-	const data = getPlayerSaveData();
-	await updateSave(currentSaveId, data);
+	await updateSave(currentSaveId, entities);
 }
 
 /**
  * Load player state from the current save slot.
  * Returns null if no save is selected.
  */
-export async function getSavedPlayerState(): Promise<PlayerSaveData | null> {
+export async function getSavedPlayerState(): Promise<Entities | null> {
 	if (currentSaveId === null) return null;
 	const save = await getSave(currentSaveId);
-	return save?.playerData ?? null;
+	return save ? deserializeEntities(save.playerData) : null;
 }
 
 export async function loadPlayerState() {
 	resetPlayer();
 	try {
-		const playerData = await initializeStorage(player);
-
-		if (!playerData) return;
-		player.x = playerData.x;
-		player.y = playerData.y;
-		player.z = playerData.z;
-		player.facingDirection = playerData.facingDirection;
-
-		player.xPx = playerData.x * TILE_SIZE_PX;
-		player.yPx = playerData.y * TILE_SIZE_PX;
+		const entitiesNew = await initializeStorage(entities);
+		if (!entitiesNew) return;
+		const p = entitiesNew.get("player");
+		if (p) {
+			Object.assign(player, p);
+		}
+		if (entitiesNew) {
+			entities.clear();
+			for (const [id, entity] of entitiesNew.entries()) {
+				entities.set(id, entity);
+			}
+		}
 	} catch {
 		// Ignore errors, start with default state
 	}
-}
-
-export function getPlayerSaveData(): PlayerSaveData {
-	return {
-		x: player.x,
-		y: player.y,
-		z: player.z,
-		facingDirection: player.facingDirection,
-	};
 }
 
 export type PlayerSaveData = Pick<
