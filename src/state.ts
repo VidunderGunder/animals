@@ -1,4 +1,3 @@
-import type { AnimationID, AnimationVariant } from "./animations/animations";
 import {
 	CHARACTER_SPRITE_HEIGHT_PX,
 	CHARACTER_SPRITE_WIDTH_PX,
@@ -6,62 +5,17 @@ import {
 	movementSpeeds,
 	TILE_SIZE_PX,
 } from "./config";
-import type { Direction } from "./input/input";
-import type { Transition } from "./scenes/overworld/data";
+import { type Entity, entities } from "./scenes/overworld/entities";
 
-export type Player = {
-	renderVariant: AnimationVariant;
-	/* Tile position */
-	x: number;
-	/* Tile position */
-	y: number;
-	/* Tile position */
-	z: number;
-
-	facingDirection: Direction;
-	// Is set when a transition happens. Null when it is done
-	movingDirection: Direction | null;
-
-	width: number;
-	height: number;
-
-	speed: number;
-
-	/** Render position */
-	xPx: number;
-	/** Render position */
-	yPx: number;
-
-	/** Remaining waypoints (world pixels) */
-	path: Transition["path"];
-
-	/** Segment interpolation (world pixels) */
-	xPxi: number;
-	yPxi: number;
-	zi: number;
-	xPxf: number;
-	yPxf: number;
-	zf: number;
-	currentPathSegment?: Transition["path"][number];
-	pathSegmentProgress: number;
-	/** Fixed duration for current segment (ms), undefined = use player speed */
-	pathSegmentDuration?: number;
-
-	movingToTile: Transition["end"] | null;
-	movingToAnimation: Transition["animation"] | null;
-
-	animationCurrent: AnimationID;
-	animationFrameIndex: number;
-	animationTimer: number;
-
+export type GameState = {
 	disabled: boolean;
 	paused: boolean;
 };
 
-// TODO: Move to overworld/entities.ts
-export type Entity = Player;
-export type Entities = Map<string, Entity>;
-export const entities = new Map<string, Entity>();
+export const gameState: GameState = {
+	disabled: false,
+	paused: false,
+};
 
 export const startTileX = 30;
 export const startTileY = 37;
@@ -72,11 +26,11 @@ const playerDefault = {
 	x: startTileX,
 	y: startTileY,
 	z: startLayerZ,
-	facingDirection: "up",
+	direction: "up",
 	height: CHARACTER_SPRITE_HEIGHT_PX,
 	width: CHARACTER_SPRITE_WIDTH_PX,
 	speed: movementSpeeds[DEFAULT_MOVEMENT],
-	movingDirection: null,
+	isMoving: false,
 
 	xPx: startTileX * TILE_SIZE_PX,
 	yPx: startTileY * TILE_SIZE_PX,
@@ -96,11 +50,9 @@ const playerDefault = {
 	animationCurrent: "idle",
 	animationFrameIndex: 0,
 	animationTimer: 0,
-	disabled: false,
-	paused: false,
-} as const satisfies Player;
+} as const satisfies Entity;
 
-export const player: Player = {
+export const player: Entity = {
 	...playerDefault,
 };
 

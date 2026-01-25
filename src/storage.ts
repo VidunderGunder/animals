@@ -1,4 +1,5 @@
-import {  entities, player, resetPlayer, type Entities, type Entity } from "./state";
+import { entities, type Entities, type Entity } from "./scenes/overworld/entities";
+import {   player, resetPlayer} from "./state";
 
 const DB_NAME = "animals-game";
 const USERS_STORE = "users";

@@ -1,5 +1,8 @@
-import { TILE_SIZE_PX } from "../../../config";
-import type { Entity } from "../../../state";
+import {
+	CHARACTER_SPRITE_HEIGHT_PX,
+	CHARACTER_SPRITE_WIDTH_PX,
+	TILE_SIZE_PX,
+} from "../../../config";
 import {
 	cellToPx,
 	getCellsOutline,
@@ -9,6 +12,7 @@ import {
 	setEdge,
 } from "../data";
 import { rsvp } from "../dialog";
+import { type Entity, entities } from "../entities";
 
 export function initializeArea() {
 	// dock camera position
@@ -180,7 +184,7 @@ export function initializeArea() {
 						...cellToPx(31, 46),
 						z: 0,
 						onSegment: (entity: Entity) => {
-							entity.facingDirection = "right";
+							entity.direction = "right";
 						},
 					},
 				],
@@ -260,5 +264,36 @@ export function initializeArea() {
 	});
 	setCell(32, 50, 0, {
 		blocked: true,
+	});
+
+	populateArea();
+}
+
+function populateArea() {
+	entities.set("npc_player", {
+		renderVariant: "player",
+		x: 32,
+		y: 41,
+		xPx: 32 * TILE_SIZE_PX,
+		yPx: 41 * TILE_SIZE_PX,
+		z: 0,
+		direction: "down",
+		width: CHARACTER_SPRITE_WIDTH_PX,
+		height: CHARACTER_SPRITE_HEIGHT_PX,
+		speed: 0,
+		animationCurrent: "idle",
+		animationFrameIndex: 0,
+		animationTimer: 0,
+		path: [],
+		isMoving: false,
+		xPxi: 0,
+		yPxi: 0,
+		zi: 0,
+		xPxf: 0,
+		yPxf: 0,
+		zf: 0,
+		pathSegmentProgress: 1,
+		movingToTile: null,
+		movingToAnimation: null,
 	});
 }

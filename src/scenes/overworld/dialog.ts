@@ -4,7 +4,7 @@ import { ctx } from "../../gfx/canvas";
 import { player } from "../../state";
 import { camera } from "./camera";
 
-type Vec2 = { xPx: number; yPx: number };
+type Vec2Px = { xPx: number; yPx: number };
 
 type RSVPTok =
 	| { kind: "word"; text: string; ms: number; emphasis: number }
@@ -54,7 +54,7 @@ type BubbleState = {
 	// identity + invalidation
 	contentKey: number;
 	tokens: RSVPTok[];
-	getPosition: () => Vec2;
+	getPosition?: () => Vec2Px;
 
 	// timing
 	tMs: number;
@@ -69,7 +69,7 @@ type BubbleState = {
 	lastWordEmphasis?: number;
 
 	// presentation
-	pos: Vec2;
+	pos: Vec2Px;
 	opts: Required<RSVPOptions>;
 };
 
@@ -102,6 +102,13 @@ const DEFAULT_OPTS: Required<RSVPOptions> = {
 	paddingY: 3,
 };
 
+function getPlayerRSVPPosition(): Vec2Px {
+	return {
+		xPx: player.xPx - camera.xPx + player.width / 2,
+		yPx: player.yPx - camera.yPx,
+	};
+}
+
 const bubbles = new Map<string, BubbleState>();
 
 // Internal clock (no dt passed around)
@@ -120,10 +127,7 @@ function getNowMs() {
 export function rsvp(
 	id: string,
 	content: RSVPContent,
-	getPosition: () => Vec2 = () => ({
-		xPx: player.xPx - camera.xPx + player.width / 2,
-		yPx: player.yPx - camera.yPx,
-	}),
+	getPosition?: () => Vec2Px,
 	options: RSVPOptions = {},
 ) {
 	const now = getNowMs();
@@ -135,13 +139,14 @@ export function rsvp(
 	// create or reset if content changed
 	if (!bubble || bubble.contentKey !== key) {
 		const tokens = compileTokens(content, opts);
-		const pos = getPosition();
 
 		bubble = {
 			id,
 			contentKey: key,
 			tokens,
-			getPosition,
+			getPosition() {
+				return getPosition?.() ?? getPlayerRSVPPosition();
+			},
 
 			tMs: 0,
 			lastTouchedAtMs: now,
@@ -153,7 +158,7 @@ export function rsvp(
 			lastWordText: null,
 			lastWordEmphasis: 1,
 
-			pos,
+			pos: { xPx: 0, yPx: 0 },
 			opts,
 		};
 
@@ -172,7 +177,7 @@ export function rsvp(
 
 	// Update existing bubble “freshness” and presentation
 	bubble.lastTouchedAtMs = now;
-	bubble.getPosition = getPosition;
+	bubble.getPosition ??= getPosition;
 	bubble.opts = opts;
 
 	// If you want “calling rsvp again” to restart the bubble, uncomment:
@@ -214,8 +219,7 @@ export function renderDialogs() {
 	// Advance + render
 	for (const b of bubbles.values()) {
 		// update position live (camera/player moves)
-		b.pos = b.getPosition();
-
+		b.pos = b.getPosition?.() ?? getPlayerRSVPPosition();
 		advanceBubble(b, dtMs);
 		renderBubble(b);
 	}
@@ -302,8 +306,8 @@ function renderBubble(b: BubbleState) {
 	// finished: keep showing last word
 	if (b.finishedAtMs !== null) {
 		if (!b.lastWordText) return;
-		const x = Math.round(b.pos.xPx);
-		const y = Math.round(b.pos.yPx + b.opts.offsetYPx);
+		const x = Math.round(b.getPosition?.().xPx ?? 0);
+		const y = Math.round((b.getPosition?.().yPx ?? 0) + b.opts.offsetYPx);
 		drawTextWithBubble(
 			b.lastWordText,
 			{ xPx: x, yPx: y },
@@ -319,8 +323,8 @@ function renderBubble(b: BubbleState) {
 
 	// pause token: keep showing last word
 	if (tok.kind === "pause") {
-		const x = Math.round(b.pos.xPx);
-		const y = Math.round(b.pos.yPx + b.opts.offsetYPx);
+		const x = Math.round(b.getPosition?.().xPx ?? 0);
+		const y = Math.round((b.getPosition?.().yPx ?? 0) + b.opts.offsetYPx);
 
 		drawTextWithBubble(
 			b.lastWordText ?? "...", // empty bubble if nothing yet
@@ -337,15 +341,15 @@ function renderBubble(b: BubbleState) {
 	b.lastWordText = tok.text;
 	b.lastWordEmphasis = tok.emphasis;
 
-	const x = Math.round(b.pos.xPx);
-	const y = Math.round(b.pos.yPx + b.opts.offsetYPx);
+	const x = Math.round(b.getPosition?.().xPx ?? 0);
+	const y = Math.round((b.getPosition?.().yPx ?? 0) + b.opts.offsetYPx);
 
 	drawTextWithBubble(tok.text, { xPx: x, yPx: y }, b.opts, alpha, tok.emphasis);
 }
 
 function drawTextWithBubble(
 	text: string,
-	{ xPx, yPx }: Vec2,
+	{ xPx, yPx }: Vec2Px,
 	opts: Required<RSVPOptions>,
 	alpha: number,
 	emphasis: number = 1,
