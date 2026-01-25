@@ -63,3 +63,5 @@ export function trimTyped<T extends string>(str: T): Trim<T> {
 export function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
+
+export type StringWithSuggestions<T extends string> = T | (string & {});

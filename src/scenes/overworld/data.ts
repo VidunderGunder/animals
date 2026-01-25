@@ -1,7 +1,7 @@
-import type { CharacterAnimationID } from "../../characters/characters";
 import { TILE_SIZE_PX } from "../../config";
 import type { Direction } from "../../input/input";
-import { player } from "../../state";
+import type { CharacterAnimationID } from "../../render/entities";
+import { type Entity, player } from "../../state";
 
 export const cells = new Map<number, Cell>();
 export const edges = new Map<number, Edge>();
@@ -10,7 +10,7 @@ export type Cell = {
 	blocked?: boolean;
 	interact?: {
 		id: string;
-		onActivate: () => void;
+		onActivate: (entity: Entity) => void;
 	};
 	/**
 	 * Camera offset when player is in this cell
@@ -22,7 +22,7 @@ export type Cell = {
 };
 
 export type Transition = {
-	condition?: () => boolean;
+	condition?: (entity: Entity) => boolean;
 
 	/* optional: force animation during the tr ansition */
 	animation?: CharacterAnimationID;
@@ -33,7 +33,9 @@ export type Transition = {
 		yPx: number;
 		z: number;
 		duration?: number;
-		onSegment?: () => void;
+		onSegment?: (entity: Entity) => void;
+		onSegmentEnd?: (entity: Entity) => void;
+		onSegmentStart?: (entity: Entity) => void;
 	}[];
 
 	/* Final snapped logical state once path completes */
@@ -45,7 +47,7 @@ export type Edge = {
 	transition?: Transition | Transition[];
 	interact?: {
 		id: string;
-		onActivate: () => void;
+		onActivate: (entity: Entity) => void;
 	};
 };
 
