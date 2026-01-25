@@ -55,8 +55,6 @@ function loop(timestamp: number) {
 	menu(dt);
 
 	rafId = requestAnimationFrame(loop);
-
-	console.log(entities.entries());
 }
 
 function startGame() {

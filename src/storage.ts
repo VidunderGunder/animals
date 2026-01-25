@@ -83,7 +83,7 @@ async function createUser(name: string): Promise<User> {
 		};
 		const request = store.add(user);
 		request.onsuccess = () => {
-			resolve({ ...user, id: request.result as number });
+			resolve({ ...user, id: Number(request.result) });
 		};
 		request.onerror = () => reject(request.error);
 	});
