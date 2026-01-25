@@ -182,7 +182,7 @@ export function getJumpTransition({
 	let path: Transition["path"] | undefined;
 
 	const durUp = 100;
-	const durDown = 220;
+	const durDown = 200;
 
 	if (dir === "left") {
 		path = [
