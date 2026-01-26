@@ -25,8 +25,7 @@ Audio
 
 Entities
 
-- [ ] 💛 Entities (characters, items, animals)
-- [ ] Movement support for NPCs
+- [ ] Movement/routines for entities
 
 Character Movement & Animation
 
