@@ -8,7 +8,7 @@ General
 
 - [ ] ⚠️ Fix: onSegmentStart on a second segment is triggered on first segment (climbing down ladder flips character immediately)
 - [ ] Clean up state  
-  Lots of duplications in player state, should be replaced with getters (e.g., path related stuff)
+  Potentially several duplications in player state, that could be replaced with getters (e.g., path related stuff)
 
 World
 
