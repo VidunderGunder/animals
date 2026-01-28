@@ -140,22 +140,35 @@ const sublayers = ["back", "front"] as const;
 
 const worldImageLayers: {
 	z: number;
-	back?: HTMLImageElement;
-	front?: HTMLImageElement;
+	back?: HTMLImageElement[];
+	front?: HTMLImageElement[];
 }[] = [
 	{
 		z: 0,
-		back: createImageElement("/world/start/scenery.png"),
+		back: [
+			createImageElement("/world/start/scenery-frame-1.png"),
+			createImageElement("/world/start/scenery-frame-2.png"),
+		],
 	},
 	{
 		z: 0,
-		back: createImageElement("/world/start/obstacle-course/0-back.png"),
-		front: createImageElement("/world/start/obstacle-course/0-front.png"),
+		back: [
+			createImageElement("/world/start/obstacle-course/0-back-frame-1.png"),
+			createImageElement("/world/start/obstacle-course/0-back-frame-2.png"),
+		],
+		front: [
+			createImageElement("/world/start/obstacle-course/0-front-frame-1-2.png"),
+		],
 	},
 	{
 		z: 1,
-		back: createImageElement("/world/start/obstacle-course/1-back.png"),
-		front: createImageElement("/world/start/obstacle-course/1-front.png"),
+		back: [
+			createImageElement("/world/start/obstacle-course/1-back-frame-1-2.png"),
+		],
+
+		front: [
+			createImageElement("/world/start/obstacle-course/1-front-frame-1-2.png"),
+		],
 	},
 ] as const;
 
@@ -164,7 +177,8 @@ let tilesXCount = 0;
 
 function setTilesCountsIfNotSet() {
 	if (!tilesYCount || !tilesXCount) {
-		const firstImage = worldImageLayers[0]?.back || worldImageLayers[0]?.front;
+		const firstImage =
+			worldImageLayers[0]?.back?.[0] || worldImageLayers[0]?.front?.[0];
 		if (!firstImage || !firstImage.complete || firstImage.naturalWidth === 0)
 			return;
 		tilesXCount = firstImage.naturalWidth / TILE_SIZE_PX;
@@ -175,10 +189,10 @@ function setTilesCountsIfNotSet() {
 function isWorldImagesReady() {
 	return worldImageLayers.every((layer) => {
 		const backReady = layer.back
-			? layer.back.complete && layer.back.naturalWidth > 0
+			? layer.back.every((img) => img.complete && img.naturalWidth > 0)
 			: true;
 		const frontReady = layer.front
-			? layer.front.complete && layer.front.naturalWidth > 0
+			? layer.front.every((img) => img.complete && img.naturalWidth > 0)
 			: true;
 		return backReady && frontReady;
 	});
@@ -548,7 +562,12 @@ function draw(dt: number) {
 			const w = (endX - startX + 1) * TILE_SIZE_PX;
 
 			for (const sublayer of sublayers) {
-				const image = layer[sublayer];
+				const images = layer[sublayer];
+
+				const frameIndex =
+					Math.floor(performance.now() / 1000) % (images?.length ?? 1);
+				const image = images ? images[frameIndex] : undefined;
+
 				if (!image) continue;
 
 				entitiesRenderZ.forEach(([renderZ, entity]) => {
