@@ -10,13 +10,6 @@ General
 - [ ] Clean up state  
   Potentially several duplications in player state, that could be replaced with getters (e.g., path related stuff)
 
-World
-
-- [ ] 💛 Animated world map  
-  `worldImageLayers` in `src/scenes/overworld.ts` is static now, but we want to support simple animated layers
-- [ ] Expand start area to not show map edges in 16:9 view
-  Do together with animated world map
-
 Audio
 
 - [ ] 💛 Ambient sounds
