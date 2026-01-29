@@ -1,4 +1,5 @@
 import { TILE_SIZE_PX } from "../../../config";
+import type { Direction } from "../../../input/input";
 import {
 	cellToPx,
 	getCellsOutline,
@@ -6,6 +7,7 @@ import {
 	range,
 	setCell,
 	setEdge,
+	setStubJumpTransitions,
 } from "../data";
 import { rsvp } from "../dialog";
 import { type Entity, entities, getEntityCharacterDefaults } from "../entities";
@@ -37,7 +39,7 @@ export function initializeArea() {
 		},
 	});
 
-	const stubs: [number, number][] = [
+	const trunks: [number, number][] = [
 		[28, 44],
 		[27, 44],
 		[26, 44],
@@ -46,8 +48,14 @@ export function initializeArea() {
 		[28, 46],
 	] as const;
 
-	for (const xy of stubs) {
-		setCell(...xy, 0, { blocked: true });
+	for (const [x, y] of trunks) {
+		const neighbors: Record<Direction, boolean> = {
+			up: trunks.some(([nx, ny]) => nx === x && ny === y - 1),
+			right: trunks.some(([nx, ny]) => nx === x + 1 && ny === y),
+			down: trunks.some(([nx, ny]) => nx === x && ny === y + 1),
+			left: trunks.some(([nx, ny]) => nx === x - 1 && ny === y),
+		};
+		setStubJumpTransitions(x, y, 0, neighbors);
 	}
 
 	const blockedCells: [number, number, number][] = [

@@ -201,8 +201,8 @@ function isWorldImagesReady() {
 // --- path mover helpers ---
 function startSegment(
 	entity: Entity,
-	toX: number,
-	toY: number,
+	toXPx: number,
+	toYPx: number,
 	toZ: number,
 	duration?: number,
 ) {
@@ -210,8 +210,8 @@ function startSegment(
 	entity.yPxi = entity.yPx;
 	entity.zi = entity.z;
 
-	entity.xPxf = toX;
-	entity.yPxf = toY;
+	entity.xPxf = toXPx;
+	entity.yPxf = toYPx;
 	entity.zf = toZ;
 
 	entity.pathSegmentProgress = 0;
@@ -221,7 +221,9 @@ function startSegment(
 function setCurrentSegment(entity: Entity): boolean {
 	const next = entity.path.shift();
 	if (!next) return false;
-	startSegment(entity, next.xPx, next.yPx, next.z, next.duration);
+	const duration =
+		typeof next.duration === "function" ? next.duration(entity) : next.duration;
+	startSegment(entity, next.xPx, next.yPx, next.z, duration);
 	return true;
 }
 
