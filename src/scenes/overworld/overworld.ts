@@ -27,10 +27,11 @@ import { gameState, player } from "../../state";
 import { saveEntitiesState } from "../../storage";
 import { menuState, openMenu } from "../menu/menu";
 import { camera, updateCamera } from "./camera";
-import { getCell, getEdge, setCell, type Transition } from "./data";
+import { getCell, getEdge, setCell } from "./cells";
 import { initializeArea as initializeStartArea } from "./data/start";
 import { renderDialogs } from "./dialog";
 import { type Entity, entities } from "./entities";
+import type { Transition } from "./transition/transition";
 
 initializeStartArea();
 

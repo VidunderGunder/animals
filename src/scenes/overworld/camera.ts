@@ -1,7 +1,7 @@
 import { GAME_HEIGHT_PX, GAME_WIDTH_PX, TILE_SIZE_PX } from "../../config";
 import { clamp, lerp } from "../../functions/general";
 import { player } from "../../state";
-import { getCell } from "./data";
+import { getCell } from "./cells";
 
 export type Vec2Px = {
 	xPx: number;

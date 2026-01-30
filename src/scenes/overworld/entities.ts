@@ -8,7 +8,7 @@ import {
 	TILE_SIZE_PX,
 } from "../../config";
 import type { Direction } from "../../input/input";
-import type { Transition } from "./data";
+import type { Transition } from "./cells";
 
 export const entities = new Map<string, Entity>();
 export type Entities = typeof entities;

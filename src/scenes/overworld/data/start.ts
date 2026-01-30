@@ -1,16 +1,10 @@
 import { TILE_SIZE_PX } from "../../../config";
 import type { Direction } from "../../../input/input";
-import {
-	cellToPx,
-	getCellsOutline,
-	getJumpTransition,
-	range,
-	setCell,
-	setEdge,
-	setStubJumpTransitions,
-} from "../data";
+import { cellToPx, getCellsOutline, range, setCell, setEdge } from "../cells";
 import { rsvp } from "../dialog";
 import { type Entity, entities, getEntityCharacterDefaults } from "../entities";
+import { getJumpTransition } from "../transition/jump-down";
+import { setStubJumpTransitions } from "../transition/jump-stub";
 
 export function initializeArea() {
 	// dock camera position
