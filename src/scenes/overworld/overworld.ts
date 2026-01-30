@@ -220,7 +220,7 @@ function startSegment(
 }
 
 function setCurrentSegment(entity: Entity): boolean {
-	const next = entity.path.shift();
+	const next = entity.path[0];
 
 	if (!next) return false;
 
@@ -315,115 +315,48 @@ function updatePlayer(dt: number) {
 		activeActions.delete("a");
 	}
 
-	// 3) Movement start
-	if (!entity.isMoving) {
-		if (desired) {
-			entity.direction = desired;
-
-			const planned = tryPlanMove(desired, entity);
-			if (planned) {
-				entity.isMoving = true;
-
-				entity.movingToTile = planned.end;
-				entity.movingToAnimation = planned.animation ?? null;
-
-				entity.path = planned.path.map((p) => ({
-					...p,
-				}));
-
-				setCurrentSegment(entity);
-			}
-		}
-	}
-
-	// 4) Movement tween (pixel-based segments)
-	if (entity.isMoving) {
-		const dx = entity.xPxf - entity.xPxi;
-		const dy = entity.yPxf - entity.yPxi;
-
-		const distancePx = dx === 0 && dy === 0 ? 0 : Math.hypot(dx, dy);
-
-		const currentPathSegment = entity.path[0];
-		// On segment start
-		if (!entity.pathSegmentProgress && currentPathSegment) {
-			currentPathSegment.onSegmentStart?.(entity);
-		}
-
-		const moveDuration =
-			entity.pathSegmentDuration ?? distancePx / entity.speed;
-
-		entity.pathSegmentProgress += moveDuration === 0 ? 1 : dt / moveDuration;
-
-		// On segment update
-		currentPathSegment?.onSegment?.(entity);
-
-		// On segment end. The penultimate segment
-		const nextPathSegmentProgress =
-			entity.pathSegmentProgress + dt / moveDuration;
-		if (
-			nextPathSegmentProgress >= 1 &&
-			entity.pathSegmentProgress < 1 &&
-			currentPathSegment
-		) {
-			setCell(entity.x, entity.y, entity.z, {
-				...getCell(entity.x, entity.y, entity.z),
-				blocked: false,
-			});
-			currentPathSegment.onSegmentEnd?.(entity);
-		}
-
-		if (entity.pathSegmentProgress >= 1) {
-			entity.pathSegmentProgress = 1;
-			snapToSegmentEnd(entity);
-
-			const hasMore = setCurrentSegment(entity);
-			if (!hasMore) {
-				// Movement fully finished: snap logical state
-				if (!entity.movingToTile) {
-					throw new Error(
-						"Invariant: movement finished but pendingEnd is null",
-					);
-				}
-
-				entity.x = entity.movingToTile.x;
-				entity.y = entity.movingToTile.y;
-				entity.z = entity.movingToTile.z;
-
-				entity.isMoving = false;
-				entity.movingToTile = null;
-				entity.movingToAnimation = null;
-			}
-		} else {
-			const t = entity.pathSegmentProgress;
-			entity.xPx = Math.round(entity.xPxi + dx * t);
-			entity.yPx = Math.round(entity.yPxi + dy * t);
-		}
-	}
-
-	const desiredAnimation = getPlayerAnimation();
-
-	// 5) Anim AFTER we've updated movement
-	updateEntityAnimation(dt, entity, desiredAnimation);
+	updateEntityAndPlayer({
+		dt,
+		entity,
+		desiredDirection: desired,
+		faster,
+		desiredAnimation: getPlayerAnimation(),
+	});
 }
 /** Update player and world state */
 function updateEntity(dt: number, entity: Entity) {
 	if (gameState.paused) return;
 
-	// TODO
-	const faster = false;
+	updateEntityAndPlayer({
+		dt,
+		entity,
+		desiredDirection: null,
+		faster: false,
+	});
+}
 
-	// TODO
-	const desired = undefined;
-
+function updateEntityAndPlayer({
+	dt,
+	entity,
+	desiredDirection,
+	faster,
+	desiredAnimation,
+}: {
+	dt: number;
+	entity: Entity;
+	desiredDirection: Direction | null;
+	faster: boolean;
+	desiredAnimation?: AnimationID;
+}) {
 	// 2) Speed based on run/walk
 	entity.speed = movementSpeeds[faster ? "run" : "walk"];
 
 	// 3) Movement start
 	if (!entity.isMoving) {
-		if (desired) {
-			entity.direction = desired;
+		if (desiredDirection) {
+			entity.direction = desiredDirection;
 
-			const planned = tryPlanMove(desired, entity);
+			const planned = tryPlanMove(desiredDirection, entity);
 			if (planned) {
 				entity.isMoving = true;
 
@@ -460,14 +393,7 @@ function updateEntity(dt: number, entity: Entity) {
 		// On segment update
 		currentPathSegment?.onSegment?.(entity);
 
-		// On segment end. The penultimate segment
-		const nextPathSegmentProgress =
-			entity.pathSegmentProgress + dt / moveDuration;
-		if (
-			entity.pathSegmentProgress < 1 &&
-			nextPathSegmentProgress >= 1 &&
-			currentPathSegment
-		) {
+		if (entity.pathSegmentProgress >= 1 && currentPathSegment) {
 			setCell(entity.x, entity.y, entity.z, {
 				...getCell(entity.x, entity.y, entity.z),
 				blocked: false,
@@ -478,6 +404,8 @@ function updateEntity(dt: number, entity: Entity) {
 		if (entity.pathSegmentProgress >= 1) {
 			entity.pathSegmentProgress = 1;
 			snapToSegmentEnd(entity);
+
+			entity.path.shift();
 
 			const hasMore = setCurrentSegment(entity);
 			if (!hasMore) {
@@ -503,7 +431,7 @@ function updateEntity(dt: number, entity: Entity) {
 		}
 	}
 
-	const desiredAnimation = entity.animationCurrent;
+	desiredAnimation ??= entity.animationCurrent;
 
 	// 5) Anim AFTER we've updated movement
 	updateEntityAnimation(dt, entity, desiredAnimation);

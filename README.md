@@ -6,7 +6,6 @@ Nostalgic GBA inspired game about a skater collecting animals and mythological b
 
 General
 
-- [ ] ⚠️ Fix: onSegmentStart on a second segment is triggered on first segment (climbing down ladder flips character immediately)
 - [ ] Clean up state  
   Potentially several duplications in player state, that could be replaced with getters (e.g., path related stuff)
 
@@ -38,6 +37,7 @@ Character Movement & Animation
 
 
 Controls
+
 - [ ] Fix start/select behavior (inconsistent toggling after gamepad refactor)
 
 Bugs (clearly defined issues)
