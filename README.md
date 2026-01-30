@@ -23,7 +23,7 @@ Entities
 Character Movement & Animation
 
 - [ ] 🤍 Smoke effect for jumps, drops, tricks etc.
-- [ ] 🤍 Terrain movement  
+- [ ] 🤍 Terrain dependant rendering 
   Cut off lower part of sprite (dynamic height), add animated overlay (e.g., water, grass, mud)
 - [ ] 🤍 Tap to turn  
   Enable turning by tapping direction (not in facing direction) when in slow mode (e.g., walk), yet still allow smooth direction changes when moving or in fast mode (e.g., run)
@@ -42,10 +42,10 @@ Controls
 
 Bugs (clearly defined issues)
 
-- [ ] Properly pause game (now animations still play, and the current transition continues—but we should freeze everything)
-- [ ] Input is not working after leaving Safari on iOS and returning to the game
+- [ ] Game is freezed after leaving Safari on iOS and returning to the game
 
 Spikes (investigation tasks)
 
+- [ ] Maybe we should properly pause the game (now animations still play, and the current transition continues—but we should freeze everything), but it could be fine the way it is for now
 - [ ] Is it cleaner to only use `currentAnimation`, and not `movingToAnimation`?
 - [ ] Why is `movingToAnimation` only working for jumping off the platform, and not for anything with a default `walk` animation (e.g., moving up and down ladders and stairs)?
