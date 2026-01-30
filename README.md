@@ -16,7 +16,7 @@ Entities
 
 Character Movement & Animation
 
-- [ ] 🤍 Camera control for transitions + Reduce camera motion for stub jumps
+- [ ] 🤍 Camera control for transitions + Remove vertical camera motion for stub-to-stub-jumps
 - [ ] 🤍 Smoke effect for jumps, drops, tricks etc.
 - [ ] 🤍 Terrain dependant rendering 
   Cut off lower part of sprite (dynamic height), add animated overlay (e.g., water, grass, mud)
