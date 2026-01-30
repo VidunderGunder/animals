@@ -1,5 +1,4 @@
 import { TILE_SIZE_PX } from "../../../config";
-import type { Direction } from "../../../input/input";
 import { cellToPx, getCellsOutline, range, setCell, setEdge } from "../cells";
 import { rsvp } from "../dialog";
 import { type Entity, entities, getEntityCharacterDefaults } from "../entities";
@@ -42,15 +41,7 @@ export function initializeArea() {
 		[28, 46],
 	] as const;
 
-	for (const [x, y] of trunks) {
-		const neighbors: Record<Direction, boolean> = {
-			up: trunks.some(([nx, ny]) => nx === x && ny === y - 1),
-			right: trunks.some(([nx, ny]) => nx === x + 1 && ny === y),
-			down: trunks.some(([nx, ny]) => nx === x && ny === y + 1),
-			left: trunks.some(([nx, ny]) => nx === x - 1 && ny === y),
-		};
-		setStubJumpTransitions(x, y, 0, neighbors);
-	}
+	setStubJumpTransitions(trunks);
 
 	const blockedCells: [number, number, number][] = [
 		// Dock

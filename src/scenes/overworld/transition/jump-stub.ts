@@ -4,6 +4,21 @@ import { cellToPx, setEdge } from "../cells";
 import type { Entity } from "../entities";
 import type { Transition } from "./transition";
 
+export function setStubJumpTransitions(
+	stubs: [number, number][],
+	z: number = 0,
+) {
+	for (const [x, y] of stubs) {
+		const neighbors: Record<Direction, boolean> = {
+			up: stubs.some(([nx, ny]) => nx === x && ny === y - 1),
+			right: stubs.some(([nx, ny]) => nx === x + 1 && ny === y),
+			down: stubs.some(([nx, ny]) => nx === x && ny === y + 1),
+			left: stubs.some(([nx, ny]) => nx === x - 1 && ny === y),
+		};
+		setStubJumpTransitionsSingle(x, y, z, neighbors);
+	}
+}
+
 /**
  *
  * @param x - X cell
@@ -11,7 +26,7 @@ import type { Transition } from "./transition";
  * @param z - Z layer
  * @param neighbors - Neighboring stubs the entity can jump to (same height as current stub)
  */
-export function setStubJumpTransitions(
+function setStubJumpTransitionsSingle(
 	x: number,
 	y: number,
 	z: number,
