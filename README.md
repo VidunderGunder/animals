@@ -35,7 +35,6 @@ Character Movement & Animation
   - [ ] Roll on activate (A button) when running
   - [ ] Crash animation on collision or any non-rollable transition
 
-
 Controls
 
 - [ ] Fix start/select behavior (inconsistent toggling after gamepad refactor)
