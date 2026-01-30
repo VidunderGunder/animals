@@ -4,11 +4,6 @@ Nostalgic GBA inspired game about a skater collecting animals and mythological b
 
 ## TODO
 
-General
-
-- [ ] Clean up state  
-  Potentially several duplications in player state, that could be replaced with getters (e.g., path related stuff)
-
 Audio
 
 - [ ] 💛 Ambient sounds
@@ -17,7 +12,7 @@ Audio
 
 Entities
 
-- [ ] Movement/routines for entities
+- [ ] 💛 Movement/routines for entities
 
 Character Movement & Animation
 
@@ -26,11 +21,8 @@ Character Movement & Animation
   Cut off lower part of sprite (dynamic height), add animated overlay (e.g., water, grass, mud)
 - [ ] 🤍 Tap to turn  
   Enable turning by tapping direction (not in facing direction) when in slow mode (e.g., walk), yet still allow smooth direction changes when moving or in fast mode (e.g., run)
-- [ ] 🤍 Adjust character state in transitions  
-  E.g., climbing down ladders backwards
-- [ ] Additive position offsets for animation and transition
-- [ ] Stub jumps (tree trunks)  
-  `src/scenes/overworld/data/start.ts`
+- [ ] Additive position offsets for animation and transition  
+  Transitions now override animation position offsets, but they should be combined (optionally maybe?)
 - [ ] Roll & flip animation
   - [ ] Roll on activate (A button) when running
   - [ ] Crash animation on collision or any non-rollable transition
