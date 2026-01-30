@@ -31,7 +31,7 @@ import { getCell, getEdge, setCell } from "./cells";
 import { initializeArea as initializeStartArea } from "./data/start";
 import { renderDialogs } from "./dialog";
 import { type Entity, entities } from "./entities";
-import type { Transition } from "./transition/transition";
+import { getPathValues, type Transition } from "./transition/transition";
 
 initializeStartArea();
 
@@ -221,10 +221,12 @@ function startSegment(
 
 function setCurrentSegment(entity: Entity): boolean {
 	const next = entity.path.shift();
+
 	if (!next) return false;
-	const duration =
-		typeof next.duration === "function" ? next.duration(entity) : next.duration;
-	startSegment(entity, next.xPx, next.yPx, next.z, duration);
+
+	const path = getPathValues(next, entity);
+	startSegment(entity, path.xPx, path.yPx, path.z, path.duration);
+
 	return true;
 }
 

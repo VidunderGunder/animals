@@ -3,7 +3,7 @@ import type { Direction } from "../../../input/input";
 import { cellToPx, getCellsOutline, range, setCell, setEdge } from "../cells";
 import { rsvp } from "../dialog";
 import { type Entity, entities, getEntityCharacterDefaults } from "../entities";
-import { getJumpTransition } from "../transition/jump-down";
+import { getJumpDownTransition } from "../transition/jump-down";
 import { setStubJumpTransitions } from "../transition/jump-stub";
 
 export function initializeArea() {
@@ -115,7 +115,7 @@ export function initializeArea() {
 
 	for (const { x, y, z, dir } of jumpablePlatformEdges) {
 		setEdge(x, y, z, dir, {
-			transition: getJumpTransition({
+			transition: getJumpDownTransition({
 				x,
 				y,
 				z,
@@ -183,7 +183,7 @@ export function initializeArea() {
 				end: { x: 31, y: 46, z: 0 },
 			},
 			{
-				...getJumpTransition({
+				...getJumpDownTransition({
 					x: 32,
 					y: 45,
 					z: 1,

@@ -2,7 +2,7 @@ import type { Direction } from "../../../input/input";
 import { cellToPx } from "../cells";
 import type { Transition } from "./transition";
 
-export function getJumpTransition({
+export function getJumpDownTransition({
 	x,
 	y,
 	z,

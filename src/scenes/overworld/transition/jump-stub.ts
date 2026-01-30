@@ -1,3 +1,4 @@
+import { movementSpeeds, TILE_SIZE_PX } from "../../../config";
 import type { Direction } from "../../../input/input";
 import { cellToPx, setEdge } from "../cells";
 import type { Entity } from "../entities";
@@ -32,19 +33,15 @@ export function setStubJumpTransitions(
 
 	const TOP_Y = -6;
 
-	// Horizontal "jump lift" stays as your working baseline
-	const JUMP_LIFT_H = 10;
+	const jumpLiftHorizontal = (entity: Entity) =>
+		isRunning(entity) ? -TOP_Y : 10;
+	const jumpLiftUp = (entity: Entity) => (isRunning(entity) ? -TOP_Y : 10);
+	const jumpLiftDown = (entity: Entity) => (isRunning(entity) ? -TOP_Y : 12);
 
-	// Vertical: slightly higher + slightly slower to read like a hop
-	const JUMP_LIFT_V_UP = 9;
-	const JUMP_LIFT_V_DOWN = 15;
+	const duration = (entity: Entity) =>
+		isRunning(entity) ? 0.5 * (TILE_SIZE_PX / movementSpeeds.run) : 115;
 
-	const durH1 = ({ animationCurrent }: Entity) =>
-		animationCurrent === "run" ? 80 : 115;
-	const durH2 = ({ animationCurrent }: Entity) =>
-		animationCurrent === "run" ? 120 : 150;
-	const durV1 = durH1;
-	const durV2 = durH2;
+	const HALF_TILE_PX = TILE_SIZE_PX / 2;
 
 	// ============================================================
 	// Right jump edges (always)
@@ -56,16 +53,16 @@ export function setStubJumpTransitions(
 			animation: "walk",
 			path: pathWithEndPause([
 				{
-					xPx: dirPxs.right.xPx - 8,
-					yPx: dirPxs.right.yPx - JUMP_LIFT_H,
+					xPx: dirPxs.right.xPx - HALF_TILE_PX,
+					yPx: (entity) => dirPxs.right.yPx - jumpLiftHorizontal(entity),
 					z,
-					duration: durH1,
+					duration: duration,
 				},
 				{
 					xPx,
 					yPx: yPx + TOP_Y,
 					z,
-					duration: durH2,
+					duration,
 				},
 			]),
 		},
@@ -80,16 +77,16 @@ export function setStubJumpTransitions(
 			animation: "walk",
 			path: pathWithEndPause([
 				{
-					xPx: xPx + 8,
-					yPx: yPx - JUMP_LIFT_H,
+					xPx: xPx + HALF_TILE_PX,
+					yPx: (entity) => yPx - jumpLiftHorizontal(entity),
 					z,
-					duration: durH1,
+					duration,
 				},
 				{
 					xPx: dirPxs.right.xPx,
 					yPx: dirPxs.right.yPx + rightDstTop,
 					z,
-					duration: durH1,
+					duration,
 				},
 			]),
 		},
@@ -106,16 +103,16 @@ export function setStubJumpTransitions(
 				animation: "walk",
 				path: pathWithEndPause([
 					{
-						xPx: dirPxs.left.xPx + 8,
-						yPx: dirPxs.left.yPx - JUMP_LIFT_H,
+						xPx: dirPxs.left.xPx + HALF_TILE_PX,
+						yPx: (entity) => dirPxs.left.yPx - jumpLiftHorizontal(entity),
 						z,
-						duration: durH1,
+						duration,
 					},
 					{
 						xPx,
 						yPx: yPx + TOP_Y,
 						z,
-						duration: durH2,
+						duration,
 					},
 				]),
 			},
@@ -126,16 +123,16 @@ export function setStubJumpTransitions(
 				animation: "walk",
 				path: pathWithEndPause([
 					{
-						xPx: xPx - 8,
-						yPx: yPx - JUMP_LIFT_H,
+						xPx: xPx - HALF_TILE_PX,
+						yPx: (entity) => yPx - jumpLiftHorizontal(entity),
 						z,
-						duration: durH1,
+						duration,
 					},
 					{
 						xPx: dirPxs.left.xPx,
 						yPx: dirPxs.left.yPx,
 						z,
-						duration: durH1,
+						duration,
 					},
 				]),
 			},
@@ -148,7 +145,6 @@ export function setStubJumpTransitions(
 
 	// Source is the down cell. If that down cell is a stub, base its arc from TOP_Y.
 	// const downSrcTop = neighbors.down ? TOP_Y : 0;
-	const downSrcTop = neighbors.down ? TOP_Y : 0;
 
 	setEdge(x, y + 1, z, "up", {
 		transition: {
@@ -157,15 +153,15 @@ export function setStubJumpTransitions(
 			path: pathWithEndPause([
 				{
 					xPx: dirPxs.down.xPx,
-					yPx: dirPxs.down.yPx + downSrcTop - 8 - JUMP_LIFT_V_UP,
+					yPx: (entity) => dirPxs.down.yPx - HALF_TILE_PX - jumpLiftUp(entity),
 					z,
-					duration: durV1,
+					duration,
 				},
 				{
 					xPx,
 					yPx: yPx + TOP_Y,
 					z,
-					duration: durV2,
+					duration,
 				},
 			]),
 		},
@@ -180,16 +176,16 @@ export function setStubJumpTransitions(
 			animation: "walk",
 			path: pathWithEndPause([
 				{
-					xPx: xPx,
-					yPx: yPx + 8 - JUMP_LIFT_V_DOWN,
+					xPx,
+					yPx: (entity) => yPx + HALF_TILE_PX - jumpLiftDown(entity),
 					z,
-					duration: durV1,
+					duration,
 				},
 				{
 					xPx: dirPxs.down.xPx,
 					yPx: dirPxs.down.yPx + downDstTop,
 					z,
-					duration: durV1,
+					duration,
 				},
 			]),
 		},
@@ -207,15 +203,16 @@ export function setStubJumpTransitions(
 				path: pathWithEndPause([
 					{
 						xPx: dirPxs.up.xPx,
-						yPx: dirPxs.up.yPx + 8 - JUMP_LIFT_V_DOWN,
+						yPx: (entity) =>
+							dirPxs.up.yPx + HALF_TILE_PX - jumpLiftDown(entity),
 						z,
-						duration: durV1,
+						duration,
 					},
 					{
 						xPx,
 						yPx: yPx + TOP_Y,
 						z,
-						duration: durV2,
+						duration,
 					},
 				]),
 			},
@@ -226,16 +223,16 @@ export function setStubJumpTransitions(
 				animation: "walk",
 				path: pathWithEndPause([
 					{
-						xPx: xPx,
-						yPx: yPx - 8 - JUMP_LIFT_V_UP,
+						xPx,
+						yPx: (entity) => yPx - HALF_TILE_PX - jumpLiftUp(entity),
 						z,
-						duration: durV1,
+						duration,
 					},
 					{
 						xPx: dirPxs.up.xPx,
 						yPx: dirPxs.up.yPx,
 						z,
-						duration: durV1,
+						duration,
 					},
 				]),
 			},
@@ -253,7 +250,11 @@ function pathWithEndPause(
 		...path,
 		{
 			...lastSegment,
-			duration: pauseMs,
+			duration: (entity: Entity) => (isRunning(entity) ? 0 : pauseMs),
 		},
-	];
+	] satisfies Transition["path"];
+}
+
+function isRunning(entity: Entity): boolean {
+	return entity.speed === movementSpeeds.run;
 }
