@@ -50,8 +50,8 @@ function setStubJumpTransitionsSingle(
 
 	const jumpLiftHorizontal = (entity: Entity) =>
 		isRunning(entity) ? -TOP_Y : 10;
-	const jumpLiftUp = (entity: Entity) => (isRunning(entity) ? -TOP_Y : 10);
-	const jumpLiftDown = (entity: Entity) => (isRunning(entity) ? -TOP_Y : 12);
+	const jumpLiftUp = (entity: Entity) => (isRunning(entity) ? -TOP_Y : 13);
+	const jumpLiftDown = (entity: Entity) => (isRunning(entity) ? -TOP_Y : 15);
 
 	const duration = (entity: Entity) =>
 		isRunning(entity) ? 0.5 * (TILE_SIZE_PX / movementSpeeds.run) : 115;
@@ -168,7 +168,10 @@ function setStubJumpTransitionsSingle(
 			path: pathWithEndPause([
 				{
 					xPx: dirPxs.down.xPx,
-					yPx: (entity) => dirPxs.down.yPx - HALF_TILE_PX - jumpLiftUp(entity),
+					yPx: (entity) =>
+						dirPxs.down.yPx -
+						HALF_TILE_PX -
+						jumpLiftUp(entity) * (neighbors.down ? 1 : 0.75),
 					z,
 					duration,
 				},
@@ -192,7 +195,10 @@ function setStubJumpTransitionsSingle(
 			path: pathWithEndPause([
 				{
 					xPx,
-					yPx: (entity) => yPx + HALF_TILE_PX - jumpLiftDown(entity),
+					yPx: (entity) =>
+						yPx +
+						HALF_TILE_PX -
+						jumpLiftDown(entity) * (neighbors.down ? 1 : 0.5),
 					z,
 					duration,
 				},
@@ -219,7 +225,10 @@ function setStubJumpTransitionsSingle(
 					{
 						xPx: dirPxs.up.xPx,
 						yPx: (entity) =>
-							dirPxs.up.yPx + HALF_TILE_PX - jumpLiftDown(entity),
+							dirPxs.up.yPx +
+							HALF_TILE_PX -
+							jumpLiftDown(entity) *
+								(neighbors.up || isRunning(entity) ? 1 : 0.75),
 						z,
 						duration,
 					},
@@ -239,7 +248,11 @@ function setStubJumpTransitionsSingle(
 				path: pathWithEndPause([
 					{
 						xPx,
-						yPx: (entity) => yPx - HALF_TILE_PX - jumpLiftUp(entity),
+						yPx: (entity) =>
+							yPx -
+							HALF_TILE_PX -
+							jumpLiftUp(entity) *
+								(neighbors.up || isRunning(entity) ? 1 : 0.75),
 						z,
 						duration,
 					},
