@@ -7,7 +7,7 @@ Nostalgic GBA inspired game about a skater collecting animals and mythological b
 Audio
 
 - [ ] 💛 Ambient sounds
-- [ ] 💛 Animations sounds
+- [ ] 💛 Triggered sounds (to be used anywhere, e.g., animation, transition, interaction and so on)
 - [ ] 💛 Music
 
 Entities
