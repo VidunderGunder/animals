@@ -85,7 +85,7 @@ function ensureOverlay(): HTMLDivElement {
 				Click to regain focus
 			</div>
 			<div> 
-        Your browser temporarily dropped focus when entering fullscreen.
+        Your browser dropped focus.
       </div>
 			<div> 
 				Click anywhere to continue.
