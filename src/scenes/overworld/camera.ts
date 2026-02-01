@@ -70,13 +70,8 @@ export function getCameraTarget(): Vec2Px {
 	};
 }
 
-export function updateCamera(dt: number) {
-	// For zero lag and perfect lockstep:
+export function updateCamera() {
 	const target = getCameraTarget();
 	camera.xPx = Math.round(target.xPx);
 	camera.yPx = Math.round(target.yPx);
-
-	// If you later want a tiny bit of smoothing on the base-follow (not the offset),
-	// we can reintroduce spring ONLY on baseX/baseY and keep offset immediate.
-	void dt;
 }

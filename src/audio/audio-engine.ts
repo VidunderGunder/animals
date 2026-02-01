@@ -4,6 +4,8 @@ import {
 	ambiencePaths,
 	type MusicId,
 	musicPaths,
+	type SfxId,
+	sfxPaths,
 } from "./audio-paths";
 
 /**
@@ -122,11 +124,48 @@ function disconnectMedia(ch?: MediaChannel) {
 	} catch {}
 }
 
+export async function unlockAudio(): Promise<void> {
+	await audio.unlock();
+}
+
+function bindAutoUnlock(): void {
+	const s = ensure();
+	if (s.unlockBound) return;
+	s.unlockBound = true;
+
+	const unlockEvents = [
+		"touchstart",
+		"touchend",
+		"pointerdown",
+		"pointerup",
+		"mousedown",
+		"keydown",
+		"click",
+		"dblclick",
+		"contextmenu",
+		"wheel",
+		"focus",
+		"focusin",
+		"focusout",
+	] as const satisfies readonly (keyof WindowEventMap)[];
+
+	const handler = () => {
+		void audio.unlock();
+		for (const ev of unlockEvents) window.removeEventListener(ev, handler);
+		s.unlockBound = false;
+	};
+
+	for (const ev of unlockEvents) {
+		window.addEventListener(ev, handler, { passive: true });
+	}
+}
+
 /** Public singleton API */
 export const audio = {
 	/** Create nodes lazily (does not force resume). Safe to call anytime. */
 	init(): void {
 		ensure();
+		bindAutoUnlock();
 	},
 
 	/** Returns true if context is running. */
@@ -139,42 +178,6 @@ export const audio = {
 	async unlock(): Promise<void> {
 		const { ctx } = ensure();
 		await safeResume(ctx);
-	},
-
-	/**
-	 * Attach unlock listeners for “first interaction unlock”.
-	 * Call once at startup; safe to call multiple times.
-	 */
-	bindAutoUnlock(): void {
-		const s = ensure();
-		if (s.unlockBound) return;
-		s.unlockBound = true;
-
-		const unlockEvents = [
-			"touchstart",
-			"touchend",
-			"pointerdown",
-			"pointerup",
-			"mousedown",
-			"keydown",
-			"click",
-			"dblclick",
-			"contextmenu",
-			"wheel",
-			"focus",
-			"focusin",
-			"focusout",
-		] as const satisfies readonly (keyof WindowEventMap)[];
-
-		const handler = () => {
-			void audio.unlock();
-			for (const ev of unlockEvents) window.removeEventListener(ev, handler);
-			s.unlockBound = false;
-		};
-
-		for (const ev of unlockEvents) {
-			window.addEventListener(ev, handler, { passive: true });
-		}
 	},
 
 	/** Expose the low-level nodes for advanced use (haptics, custom synth, etc.). */
@@ -267,6 +270,20 @@ export const audio = {
 		src.start();
 
 		return { stop };
+	},
+
+	async playSfx(
+		id: SfxId,
+		opts: { volume?: number; playbackRate?: number; detuneCents?: number } = {},
+	) {
+		const url = sfxPaths[id];
+		return audio.playBuffer(url, { bus: "sfx", ...opts });
+	},
+	async playVoice(
+		url: string,
+		opts: { volume?: number; playbackRate?: number; detuneCents?: number } = {},
+	) {
+		return audio.playBuffer(url, { bus: "voice", ...opts });
 	},
 
 	// -------------------------

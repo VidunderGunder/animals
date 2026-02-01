@@ -460,7 +460,7 @@ function update(dt: number) {
 	}
 
 	updatePlayer(dt);
-	updateCamera(dt);
+	updateCamera();
 }
 
 function draw(dt: number) {

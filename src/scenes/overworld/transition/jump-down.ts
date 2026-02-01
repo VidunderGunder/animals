@@ -1,4 +1,4 @@
-import { playSfx } from "../../../audio/audio-api";
+import { audio } from "../../../audio/audio-engine";
 import type { Direction } from "../../../input/input";
 import { cellToPx } from "../cells";
 import type { Transition } from "./transition";
@@ -131,9 +131,9 @@ export function getJumpDownTransition({
 }
 
 function onSegmentStart() {
-	playSfx("jump", { volume: 0.33, detuneCents: -100 });
+	audio.playSfx("jump", { volume: 0.33, detuneCents: -100 });
 }
 
 function playThudSfx() {
-	playSfx("thud", { volume: 0.25 });
+	audio.playSfx("thud", { volume: 0.25 });
 }

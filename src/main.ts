@@ -1,6 +1,6 @@
 import "./css/reset.css";
 
-import { initializeAudio } from "./audio/audio-api";
+import { audio } from "./audio/audio-engine";
 import { FPS_LIMIT, initScreen } from "./config";
 import { initFullscreenSupport } from "./gfx/fullscreen";
 import { activeActions, initInput, input } from "./input/input";
@@ -18,7 +18,7 @@ initFullscreenSupport();
 
 document.addEventListener("visibilitychange", () => {
 	if (!document.hidden) return;
-	initializeAudio();
+	audio.init();
 });
 
 let previousFrameTimestamp = 0;
