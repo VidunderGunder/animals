@@ -2,6 +2,20 @@
 
 Nostalgic GBA inspired game about a skater collecting animals and mythological beings to make them dance battle.
 
+## Sounds
+
+Music and ambience can be high fidelity, but sound effects should be lo-fi/chiptune style to match the retro aesthetic.
+
+Here are some in-browser synths you can create sound effects with:
+
+- [ChipTone](https://sfbgames.itch.io/chiptone)
+- [jsfxr](https://sfxr.me/)
+- [Bfxr](https://www.bfxr.net/)
+
+Make sure you export as or convert to `.mp3` before adding to the project.
+
+But you can use any tool you like, as long as the sound effects fit the style.
+
 ## TODO
 
 Audio
