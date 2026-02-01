@@ -1,8 +1,8 @@
-import { getAudio } from "../audio/audio";
-
 /**
  * Utility functions for device detection
  */
+
+import { audio } from "../audio/audio-engine";
 
 /**
  * Detects if the current device is running iOS
@@ -148,7 +148,7 @@ export function hapticAudio(): void {
 	if (nowMs - lastTapMs < 12) return;
 	lastTapMs = nowMs;
 
-	const { ctx, hapticsGain } = getAudio();
+	const { ctx, bus } = audio.get();
 
 	// Best effort: resume if suspended (iOS usually needs a gesture)
 	if (ctx.state === "suspended") {
@@ -188,7 +188,7 @@ export function hapticAudio(): void {
 	osc.connect(gain);
 	gain.connect(hp);
 	hp.connect(filter);
-	filter.connect(hapticsGain);
+	filter.connect(bus.haptics);
 
 	osc.start(t0);
 	osc.stop(t0 + dur + 0.004);

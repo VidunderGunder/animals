@@ -1,4 +1,7 @@
-const audioCtx = new AudioContext();
+import { audio } from "./audio-engine";
+
+const audioCtx = audio.get().ctx;
+const { bus } = audio.get(); // for routing
 
 // bcdfghjklmnpqrstvwxyz
 const consonants = [
@@ -67,7 +70,6 @@ const VOWEL_FORMANTS = {
 } as const satisfies Record<Vowel, { freq: number; q: number }>;
 
 const master = audioCtx.createGain();
-master.gain.value = 0.9;
 
 const hp = audioCtx.createBiquadFilter();
 hp.type = "highpass";
@@ -80,7 +82,7 @@ comp.ratio.value = 6;
 comp.attack.value = 0.005;
 comp.release.value = 0.12;
 
-hp.connect(comp).connect(master).connect(audioCtx.destination);
+hp.connect(comp).connect(master).connect(bus.voice);
 
 const SOFT_CLIP_CURVE = makeSoftClipCurve(1);
 

@@ -1,6 +1,6 @@
 import "./css/reset.css";
 
-import { initializeAudio } from "./audio/audio";
+import { initializeAudio } from "./audio/audio-api";
 import { FPS_LIMIT, initScreen } from "./config";
 import { initFullscreenSupport } from "./gfx/fullscreen";
 import { activeActions, initInput, input } from "./input/input";

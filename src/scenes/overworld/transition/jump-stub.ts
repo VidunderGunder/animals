@@ -1,3 +1,4 @@
+import { playSfx } from "../../../audio/audio-api";
 import { movementSpeeds, TILE_SIZE_PX } from "../../../config";
 import type { Direction } from "../../../input/input";
 import { cellToPx, setEdge } from "../cells";
@@ -68,6 +69,7 @@ function setStubJumpTransitionsSingle(
 			animation: "walk",
 			path: pathWithEndPause([
 				{
+					onSegmentStart,
 					xPx: dirPxs.right.xPx - HALF_TILE_PX,
 					yPx: (entity) => dirPxs.right.yPx - jumpLiftHorizontal(entity),
 					z,
@@ -92,6 +94,7 @@ function setStubJumpTransitionsSingle(
 			animation: "walk",
 			path: pathWithEndPause([
 				{
+					onSegmentStart,
 					xPx: xPx + HALF_TILE_PX,
 					yPx: (entity) => yPx - jumpLiftHorizontal(entity),
 					z,
@@ -118,6 +121,7 @@ function setStubJumpTransitionsSingle(
 				animation: "walk",
 				path: pathWithEndPause([
 					{
+						onSegmentStart,
 						xPx: dirPxs.left.xPx + HALF_TILE_PX,
 						yPx: (entity) => dirPxs.left.yPx - jumpLiftHorizontal(entity),
 						z,
@@ -138,6 +142,7 @@ function setStubJumpTransitionsSingle(
 				animation: "walk",
 				path: pathWithEndPause([
 					{
+						onSegmentStart,
 						xPx: xPx - HALF_TILE_PX,
 						yPx: (entity) => yPx - jumpLiftHorizontal(entity),
 						z,
@@ -167,6 +172,7 @@ function setStubJumpTransitionsSingle(
 			animation: "walk",
 			path: pathWithEndPause([
 				{
+					onSegmentStart,
 					xPx: dirPxs.down.xPx,
 					yPx: (entity) =>
 						dirPxs.down.yPx -
@@ -194,6 +200,7 @@ function setStubJumpTransitionsSingle(
 			animation: "walk",
 			path: pathWithEndPause([
 				{
+					onSegmentStart,
 					xPx,
 					yPx: (entity) =>
 						yPx +
@@ -223,6 +230,7 @@ function setStubJumpTransitionsSingle(
 				animation: "walk",
 				path: pathWithEndPause([
 					{
+						onSegmentStart,
 						xPx: dirPxs.up.xPx,
 						yPx: (entity) =>
 							dirPxs.up.yPx +
@@ -247,6 +255,7 @@ function setStubJumpTransitionsSingle(
 				animation: "walk",
 				path: pathWithEndPause([
 					{
+						onSegmentStart,
 						xPx,
 						yPx: (entity) =>
 							yPx -
@@ -285,4 +294,12 @@ function pathWithEndPause(
 
 function isRunning(entity: Entity): boolean {
 	return entity.speed === movementSpeeds.run;
+}
+
+function onSegmentStart(entity: Entity) {
+	if (isRunning(entity) && entity.yPx % TILE_SIZE_PX !== 0) {
+		playSfx("jump", { volume: 0.1, detuneCents: -500, playbackRate: 1.5 });
+		return;
+	}
+	playSfx("jump", { volume: 0.33, detuneCents: -350 });
 }

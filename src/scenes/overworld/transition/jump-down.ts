@@ -1,3 +1,4 @@
+import { playSfx } from "../../../audio/audio-api";
 import type { Direction } from "../../../input/input";
 import { cellToPx } from "../cells";
 import type { Transition } from "./transition";
@@ -34,6 +35,7 @@ export function getJumpDownTransition({
 				...cellToPx(x - 0.85, y - 0.25),
 				z,
 				duration: durUp,
+				onSegmentStart,
 			},
 			{
 				...cellToPx(x - 1, y + 1),
@@ -53,6 +55,7 @@ export function getJumpDownTransition({
 				...cellToPx(x, y - 0.25),
 				z,
 				duration: durUp,
+				onSegmentStart,
 			},
 			{
 				...cellToPx(x, y + 2),
@@ -72,6 +75,7 @@ export function getJumpDownTransition({
 				...cellToPx(x + 0.85, y - 0.25),
 				z,
 				duration: durUp,
+				onSegmentStart,
 			},
 			{
 				...cellToPx(x + 1, y + drop),
@@ -91,6 +95,7 @@ export function getJumpDownTransition({
 				...cellToPx(x, y - 0.75),
 				z,
 				duration: durUp,
+				onSegmentStart,
 			},
 			{
 				...cellToPx(x, y - 1 + drop),
@@ -119,4 +124,8 @@ export function getJumpDownTransition({
 		},
 		animation: "jump",
 	} satisfies Transition;
+}
+
+function onSegmentStart() {
+	playSfx("jump", { volume: 0.33, detuneCents: -100 });
 }
