@@ -21,7 +21,6 @@ But you can use any tool you like, as long as the sound effects fit the style.
 Audio
 
 - [ ] 💛 Ambient sounds
-- [ ] 💛 Triggered sounds (to be used anywhere, e.g., animation, transition, interaction and so on)
 - [ ] 💛 Music
 
 Entities
