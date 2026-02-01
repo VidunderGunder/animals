@@ -69,7 +69,7 @@ function setStubJumpTransitionsSingle(
 			animation: "walk",
 			path: pathWithEndPause([
 				{
-					onSegmentStart,
+					onSegmentStart: playJumpSfx,
 					xPx: dirPxs.right.xPx - HALF_TILE_PX,
 					yPx: (entity) => dirPxs.right.yPx - jumpLiftHorizontal(entity),
 					z,
@@ -80,6 +80,7 @@ function setStubJumpTransitionsSingle(
 					yPx: yPx + TOP_Y,
 					z,
 					duration,
+					onSegmentStart: playThudSfx,
 				},
 			]),
 		},
@@ -94,7 +95,7 @@ function setStubJumpTransitionsSingle(
 			animation: "walk",
 			path: pathWithEndPause([
 				{
-					onSegmentStart,
+					onSegmentStart: playJumpSfx,
 					xPx: xPx + HALF_TILE_PX,
 					yPx: (entity) => yPx - jumpLiftHorizontal(entity),
 					z,
@@ -105,6 +106,7 @@ function setStubJumpTransitionsSingle(
 					yPx: dirPxs.right.yPx + rightDstTop,
 					z,
 					duration,
+					onSegmentStart: playThudSfx,
 				},
 			]),
 		},
@@ -121,7 +123,7 @@ function setStubJumpTransitionsSingle(
 				animation: "walk",
 				path: pathWithEndPause([
 					{
-						onSegmentStart,
+						onSegmentStart: playJumpSfx,
 						xPx: dirPxs.left.xPx + HALF_TILE_PX,
 						yPx: (entity) => dirPxs.left.yPx - jumpLiftHorizontal(entity),
 						z,
@@ -132,6 +134,7 @@ function setStubJumpTransitionsSingle(
 						yPx: yPx + TOP_Y,
 						z,
 						duration,
+						onSegmentStart: playThudSfx,
 					},
 				]),
 			},
@@ -142,7 +145,7 @@ function setStubJumpTransitionsSingle(
 				animation: "walk",
 				path: pathWithEndPause([
 					{
-						onSegmentStart,
+						onSegmentStart: playJumpSfx,
 						xPx: xPx - HALF_TILE_PX,
 						yPx: (entity) => yPx - jumpLiftHorizontal(entity),
 						z,
@@ -153,6 +156,7 @@ function setStubJumpTransitionsSingle(
 						yPx: dirPxs.left.yPx,
 						z,
 						duration,
+						onSegmentStart: playThudSfx,
 					},
 				]),
 			},
@@ -172,7 +176,7 @@ function setStubJumpTransitionsSingle(
 			animation: "walk",
 			path: pathWithEndPause([
 				{
-					onSegmentStart,
+					onSegmentStart: playJumpSfx,
 					xPx: dirPxs.down.xPx,
 					yPx: (entity) =>
 						dirPxs.down.yPx -
@@ -186,6 +190,7 @@ function setStubJumpTransitionsSingle(
 					yPx: yPx + TOP_Y,
 					z,
 					duration,
+					onSegmentStart: playThudSfx,
 				},
 			]),
 		},
@@ -200,7 +205,7 @@ function setStubJumpTransitionsSingle(
 			animation: "walk",
 			path: pathWithEndPause([
 				{
-					onSegmentStart,
+					onSegmentStart: playJumpSfx,
 					xPx,
 					yPx: (entity) =>
 						yPx +
@@ -214,6 +219,7 @@ function setStubJumpTransitionsSingle(
 					yPx: dirPxs.down.yPx + downDstTop,
 					z,
 					duration,
+					onSegmentStart: playThudSfx,
 				},
 			]),
 		},
@@ -230,7 +236,7 @@ function setStubJumpTransitionsSingle(
 				animation: "walk",
 				path: pathWithEndPause([
 					{
-						onSegmentStart,
+						onSegmentStart: playJumpSfx,
 						xPx: dirPxs.up.xPx,
 						yPx: (entity) =>
 							dirPxs.up.yPx +
@@ -245,6 +251,7 @@ function setStubJumpTransitionsSingle(
 						yPx: yPx + TOP_Y,
 						z,
 						duration,
+						onSegmentStart: playThudSfx,
 					},
 				]),
 			},
@@ -255,7 +262,7 @@ function setStubJumpTransitionsSingle(
 				animation: "walk",
 				path: pathWithEndPause([
 					{
-						onSegmentStart,
+						onSegmentStart: playJumpSfx,
 						xPx,
 						yPx: (entity) =>
 							yPx -
@@ -270,6 +277,7 @@ function setStubJumpTransitionsSingle(
 						yPx: dirPxs.up.yPx,
 						z,
 						duration,
+						onSegmentStart: playThudSfx,
 					},
 				]),
 			},
@@ -287,6 +295,7 @@ function pathWithEndPause(
 		...path,
 		{
 			...lastSegment,
+			onSegmentStart: undefined,
 			duration: (entity: Entity) => (isRunning(entity) ? 0 : pauseMs),
 		},
 	] satisfies Transition["path"];
@@ -296,10 +305,15 @@ function isRunning(entity: Entity): boolean {
 	return entity.speed === movementSpeeds.run;
 }
 
-function onSegmentStart(entity: Entity) {
+function playJumpSfx(entity: Entity) {
 	if (isRunning(entity) && entity.yPx % TILE_SIZE_PX !== 0) {
 		playSfx("jump", { volume: 0.1, detuneCents: -500, playbackRate: 1.5 });
 		return;
 	}
 	playSfx("jump", { volume: 0.33, detuneCents: -350 });
+}
+
+function playThudSfx(entity: Entity) {
+	if (entity.yPxf % TILE_SIZE_PX !== 0) return;
+	playSfx("thud", { volume: 0.1 });
 }

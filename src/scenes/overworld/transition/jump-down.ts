@@ -41,6 +41,7 @@ export function getJumpDownTransition({
 				...cellToPx(x - 1, y + 1),
 				z: z - drop,
 				duration: durDown,
+				onSegmentStart: playThudSfx,
 			},
 		];
 		end = {
@@ -61,6 +62,7 @@ export function getJumpDownTransition({
 				...cellToPx(x, y + 2),
 				z,
 				duration: durDown,
+				onSegmentStart: playThudSfx,
 			},
 		];
 		end = {
@@ -81,6 +83,7 @@ export function getJumpDownTransition({
 				...cellToPx(x + 1, y + drop),
 				z: z - drop,
 				duration: durDown,
+				onSegmentStart: playThudSfx,
 			},
 		];
 		end = {
@@ -101,6 +104,7 @@ export function getJumpDownTransition({
 				...cellToPx(x, y - 1 + drop),
 				z: z - drop,
 				duration: durDown,
+				onSegmentStart: playThudSfx,
 			},
 		];
 		end = {
@@ -128,4 +132,8 @@ export function getJumpDownTransition({
 
 function onSegmentStart() {
 	playSfx("jump", { volume: 0.33, detuneCents: -100 });
+}
+
+function playThudSfx() {
+	playSfx("thud", { volume: 0.4 });
 }
