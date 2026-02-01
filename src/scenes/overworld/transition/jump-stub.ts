@@ -310,7 +310,11 @@ function playJumpSfx(entity: Entity) {
 		playSfx("jump", { volume: 0.1, detuneCents: -500, playbackRate: 1.5 });
 		return;
 	}
-	playSfx("jump", { volume: 0.33, detuneCents: -350 });
+	if (!isRunning(entity) && entity.yPx % TILE_SIZE_PX !== 0) {
+		playSfx("jump", { volume: 0.15, detuneCents: -400, playbackRate: 1.5 });
+		return;
+	}
+	playSfx("jump", { volume: 0.25, detuneCents: -350, playbackRate: 1.1 });
 }
 
 function playThudSfx(entity: Entity) {
