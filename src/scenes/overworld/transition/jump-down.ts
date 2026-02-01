@@ -135,5 +135,5 @@ function onSegmentStart() {
 }
 
 function playThudSfx() {
-	playSfx("thud", { volume: 0.4 });
+	playSfx("thud", { volume: 0.25 });
 }
