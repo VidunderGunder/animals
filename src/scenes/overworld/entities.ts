@@ -14,6 +14,7 @@ export const entities = new Map<string, Entity>();
 export type Entities = typeof entities;
 
 export type Entity = {
+	id: string;
 	renderVariant: AnimationVariant;
 
 	/* Tile position */
@@ -63,13 +64,16 @@ export type Entity = {
 };
 
 export function getEntityCharacterDefaults({
+	id,
 	x,
 	y,
 }: {
+	id: string;
 	x: number;
 	y: number;
 }): Entity {
 	return {
+		id,
 		renderVariant: "character",
 		x: x,
 		y: y,
