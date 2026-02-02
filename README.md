@@ -18,11 +18,6 @@ But you can use any tool you like, as long as the sound effects fit the style.
 
 ## TODO
 
-Audio
-
-- [ ] 💛 Ambient sounds
-- [ ] 💛 Music
-
 Entities
 
 - [ ] 💛 Movement/routines for entities
@@ -51,6 +46,6 @@ Bugs (clearly defined issues)
 
 Spikes (investigation tasks)
 
-- [ ] Maybe we should properly pause the game (now animations still play, and the current transition continues—but we should freeze everything), but it could be fine the way it is for now
+- [ ] Maybe we should properly pause the game (now animations still play, and the current transition continues—but we should probably freeze everything), but it could be fine the way it is for now?
 - [ ] Is it cleaner to only use `currentAnimation`, and not `movingToAnimation`?
 - [ ] Why is `movingToAnimation` only working for jumping off the platform, and not for anything with a default `walk` animation (e.g., moving up and down ladders and stairs)?

@@ -1,4 +1,3 @@
-// music.ts
 import { TILE_SIZE_PX } from "../config";
 import { clamp } from "../functions/general";
 import { player } from "../state";
@@ -57,14 +56,13 @@ type MusicField = {
 	options?: MusicOptions;
 };
 
-const musicFields = [
+const musicFields: readonly MusicField[] = [
 	{
 		a: { x: -Infinity, y: -Infinity, z: -Infinity },
 		b: { x: Infinity, y: Infinity, z: Infinity },
-		music: "placeholder",
-		options: { volume: 0.025, loop: true },
+		music: null,
 	},
-] as const satisfies readonly MusicField[];
+] as const;
 
 // --------------------
 // Implementation

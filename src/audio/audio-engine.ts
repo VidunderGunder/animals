@@ -1,4 +1,3 @@
-// audio-engine.ts
 import { clamp } from "../functions/general";
 import {
 	type AmbienceId,
