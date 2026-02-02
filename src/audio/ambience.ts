@@ -48,7 +48,7 @@ type AmbienceField = AmbienceFieldDynamic | AmbienceFieldStatic;
 const ambienceFields = [
 	{
 		mix: {
-			beach: 0.7,
+			beach: 0.2,
 		},
 		a: {
 			x: -Infinity,
@@ -68,7 +68,7 @@ const ambienceFields = [
 			y: 30,
 			z: -Infinity,
 			mix: {
-				beach: 0.7,
+				beach: 0.2,
 				forest: 0,
 			},
 		},

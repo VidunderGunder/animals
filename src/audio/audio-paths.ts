@@ -9,7 +9,7 @@ export const ambiencePaths = {
 } as const;
 
 export const musicPaths = {
-	// ...
+	placeholder: "/audio/music/placeholder.mp3",
 } as const;
 
 export type SfxId = keyof typeof sfxPaths;
