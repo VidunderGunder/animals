@@ -1,3 +1,4 @@
+// src/main.ts
 import "./css/reset.css";
 
 import { audio } from "./audio/audio-engine";
@@ -16,30 +17,11 @@ initInput();
 initVirtualGamepad();
 initFullscreenSupport();
 
-document.addEventListener("visibilitychange", () => {
-	if (!document.hidden) {
-		audio.init();
-	}
-});
-
 let previousFrameTimestamp = 0;
-let isRenderPaused = false;
 let rafId: number | null = null;
 
-document.addEventListener("visibilitychange", () => {
-	if (document.hidden) {
-		isRenderPaused = true;
-		activeActions.clear();
-	} else {
-		// Reset timing when returning so dt doesn't explode
-		isRenderPaused = false;
-		previousFrameTimestamp = 0;
-	}
-});
-
 function loop(timestamp: number) {
-	if (isRenderPaused) return;
-
+	// If RAF was resumed after a pause, reset dt so it doesn't explode.
 	if (!previousFrameTimestamp) previousFrameTimestamp = timestamp;
 	const dt = timestamp - previousFrameTimestamp;
 
@@ -57,12 +39,45 @@ function loop(timestamp: number) {
 	rafId = requestAnimationFrame(loop);
 }
 
-function startGame() {
+function stopGameLoop() {
+	if (rafId !== null) {
+		cancelAnimationFrame(rafId);
+		rafId = null;
+	}
+	previousFrameTimestamp = 0;
+
+	// Clear any “stuck input” state when backgrounding.
+	activeActions.clear();
+}
+
+function startGameLoop() {
+	// Always (re)start if not currently scheduled.
 	if (rafId !== null) return;
 	previousFrameTimestamp = 0;
 	rafId = requestAnimationFrame(loop);
 }
 
-await loadEntitiesState();
+function onHidden() {
+	stopGameLoop();
+}
 
-startGame();
+function onShown() {
+	audio.init();
+	startGameLoop();
+}
+
+document.addEventListener("visibilitychange", () => {
+	if (document.hidden) onHidden();
+	else onShown();
+});
+
+window.addEventListener("pagehide", () => {
+	onHidden();
+});
+
+window.addEventListener("pageshow", () => {
+	onShown();
+});
+
+await loadEntitiesState();
+startGameLoop();
