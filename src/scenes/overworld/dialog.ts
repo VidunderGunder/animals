@@ -74,7 +74,7 @@ type BubbleState = {
 };
 
 const DEFAULT_OPTS: Required<RSVPOptions> = {
-	baseWordMs: 170,
+	baseWordMs: 200,
 	jitterMs: 25,
 	firstTokenExtraMs: 250,
 
