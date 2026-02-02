@@ -43,6 +43,7 @@ Controls
 Bugs (clearly defined issues)
 
 - [ ] Game is freezed after leaving Safari on iOS and returning to the game
+- [ ] Looping ambience (forest definitely, beach maybe) has a small gap/pause when looping
 
 Spikes (investigation tasks)
 
