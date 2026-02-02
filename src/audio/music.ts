@@ -4,25 +4,22 @@ import { player } from "../state";
 import { audio, type MusicOptions } from "./audio-engine";
 import { isMusicId, type MusicId } from "./audio-paths";
 
-/**
- * Call this from your game loop with dtMs.
- * Example:
- *   updateMusic(dtMs)
- */
+let accMs = 0;
+const UPDATE_EVERY_MS = 500;
+
 export function updateMusic(dtMs: number) {
 	accMs += dtMs;
 
-	// Throttle: we don't need to check music every frame.
 	if (accMs < UPDATE_EVERY_MS) return;
 	accMs = 0;
 
 	const next = getMusicForPosition(player);
 
-	if (next === null) return;
-	if (next.id === lastMusic) return;
-	lastMusic = next.id;
+	if (next === null) {
+		void audio.setMusic(null);
+		return;
+	}
 
-	// Fire and forget; audio engine guards against restarting same track.
 	void audio.setMusic(next.id, next.options);
 }
 
@@ -48,18 +45,13 @@ const musicFields = [
 		a: { x: -Infinity, y: -Infinity, z: -Infinity },
 		b: { x: Infinity, y: Infinity, z: Infinity },
 		music: "placeholder",
-		options: { volume: 0.1, loop: true },
+		options: { volume: 0.05, loop: true },
 	},
 ] as const satisfies readonly MusicField[];
 
 // --------------------
 // Implementation
 // --------------------
-
-const UPDATE_EVERY_MS = 200;
-
-let accMs = 0;
-let lastMusic: MusicId | null = null;
 
 function getMusicForPosition(pos: { xPx: number; yPx: number; z: number }) {
 	// Work in "tile units" (matches ambience semantics).

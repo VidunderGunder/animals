@@ -221,6 +221,15 @@ async function safeResume(ctx: AudioContext) {
 	}
 }
 
+async function tryPlay(el: HTMLAudioElement): Promise<boolean> {
+	try {
+		await el.play();
+		return true;
+	} catch {
+		return false;
+	}
+}
+
 function disconnectMedia(ch?: MediaChannel) {
 	if (!ch) return;
 	try {
@@ -293,8 +302,21 @@ export const audio = {
 	},
 
 	async unlock(): Promise<void> {
-		const { ctx } = ensure();
-		await safeResume(ctx);
+		const s = ensure();
+		await safeResume(s.ctx);
+
+		// If music exists but got blocked earlier, retry now that we might be unlocked.
+		if (s.music?.el?.paused) {
+			await tryPlay(s.music.el);
+		}
+
+		// Retry desired ambience tracks too (same failure mode).
+		for (const [id, ch] of s.ambience) {
+			const desired = s.ambienceDesired.get(id) ?? 0;
+			if (desired > 0 && ch.el.paused) {
+				await tryPlay(ch.el);
+			}
+		}
 	},
 
 	get() {
@@ -407,11 +429,29 @@ export const audio = {
 	 */
 	async setMusic(id: MusicId | null, opts: MusicOptions = {}): Promise<void> {
 		const s = ensure();
+
 		if (id === null) {
 			if (s.musicId !== undefined) audio.stopMusic();
 			return;
 		}
-		if (s.musicId === id) return;
+
+		// If same track is selected, we still may need to:
+		// - retry play (if autoplay was blocked earlier)
+		// - apply updated volume/loop options
+		if (s.musicId === id) {
+			if (s.music) {
+				s.music.el.loop = opts.loop ?? true;
+				s.music.gain.gain.value = clamp(opts.volume ?? 1, 0, 1);
+
+				void safeResume(s.ctx);
+
+				if (s.music.el.paused) {
+					void tryPlay(s.music.el);
+				}
+			}
+			return;
+		}
+
 		await audio.playMusic(id, opts);
 	},
 
