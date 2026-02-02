@@ -10,7 +10,7 @@ const UPDATE_EVERY_MS = 500;
 
 // last applied state (so we don't restart / re-apply constantly)
 let lastId: MusicId | null = null;
-let lastSig = "";
+let lastSignature = "";
 
 export function updateMusic(dtMs: number) {
 	accMs += dtMs;
@@ -23,19 +23,19 @@ export function updateMusic(dtMs: number) {
 		// Stop only once
 		if (lastId !== null) {
 			lastId = null;
-			lastSig = "";
+			lastSignature = "";
 			void audio.setMusic(null);
 		}
 		return;
 	}
 
-	const sig = optionsSig(next.options);
+	const signature = optionsSignature(next.options);
 
 	// Only apply if id/options changed
-	if (next.id === lastId && sig === lastSig) return;
+	if (next.id === lastId && signature === lastSignature) return;
 
 	lastId = next.id;
-	lastSig = sig;
+	lastSignature = signature;
 
 	void audio.setMusic(next.id, next.options);
 }
@@ -100,7 +100,7 @@ function inRange(v: number, a: number, b: number) {
 	return v >= lo && v <= hi;
 }
 
-function optionsSig(opts?: MusicOptions) {
+function optionsSignature(opts?: MusicOptions) {
 	// normalize defaults to keep signature stable
 	const volume = clamp(opts?.volume ?? 1, 0, 1);
 	const loop = opts?.loop ?? true;
