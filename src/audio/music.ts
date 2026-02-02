@@ -1,5 +1,6 @@
 // music.ts
 import { TILE_SIZE_PX } from "../config";
+import { clamp } from "../functions/general";
 import { player } from "../state";
 import { audio, type MusicOptions } from "./audio-engine";
 import { isMusicId, type MusicId } from "./audio-paths";
@@ -7,18 +8,34 @@ import { isMusicId, type MusicId } from "./audio-paths";
 let accMs = 0;
 const UPDATE_EVERY_MS = 500;
 
+// last applied state (so we don't restart / re-apply constantly)
+let lastId: MusicId | null = null;
+let lastSig = "";
+
 export function updateMusic(dtMs: number) {
 	accMs += dtMs;
-
 	if (accMs < UPDATE_EVERY_MS) return;
 	accMs = 0;
 
 	const next = getMusicForPosition(player);
 
-	if (next === null) {
-		void audio.setMusic(null);
+	if (next === null || next.id === null) {
+		// Stop only once
+		if (lastId !== null) {
+			lastId = null;
+			lastSig = "";
+			void audio.setMusic(null);
+		}
 		return;
 	}
+
+	const sig = optionsSig(next.options);
+
+	// Only apply if id/options changed
+	if (next.id === lastId && sig === lastSig) return;
+
+	lastId = next.id;
+	lastSig = sig;
 
 	void audio.setMusic(next.id, next.options);
 }
@@ -54,7 +71,6 @@ const musicFields = [
 // --------------------
 
 function getMusicForPosition(pos: { xPx: number; yPx: number; z: number }) {
-	// Work in "tile units" (matches ambience semantics).
 	const p = {
 		x: pos.xPx / TILE_SIZE_PX,
 		y: pos.yPx / TILE_SIZE_PX,
@@ -69,22 +85,24 @@ function getMusicForPosition(pos: { xPx: number; yPx: number; z: number }) {
 		if (!inRange(p.y, field.a.y, field.b.y)) continue;
 		if (!inRange(p.z, field.a.z, field.b.z)) continue;
 
-		// last match wins
 		id = field.music;
 		options = field.options;
 	}
 
-	// Extra safety if someone mistypes a music id.
 	if (id !== null && !isMusicId(id)) return null;
 
-	return {
-		id,
-		options,
-	};
+	return { id, options };
 }
 
 function inRange(v: number, a: number, b: number) {
 	const lo = Math.min(a, b);
 	const hi = Math.max(a, b);
 	return v >= lo && v <= hi;
+}
+
+function optionsSig(opts?: MusicOptions) {
+	// normalize defaults to keep signature stable
+	const volume = clamp(opts?.volume ?? 1, 0, 1);
+	const loop = opts?.loop ?? true;
+	return `${volume.toFixed(4)}|${loop ? 1 : 0}`;
 }

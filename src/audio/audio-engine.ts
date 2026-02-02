@@ -12,7 +12,8 @@ import {
 /**
  * Audio buses (submixes).
  * - master is the final volume
- * - music/ambience are long streams (MediaElement)
+ * - music is a single looping decoded buffer (stable on iOS Safari)
+ * - ambience are long streams (MediaElement) mixed together
  * - sfx/voice/haptics are short buffers (AudioBufferSource)
  */
 export type AudioBus =
@@ -31,6 +32,12 @@ type MediaChannel = {
 	gain: GainNode; // per-track trim (in addition to bus)
 };
 
+type MusicChannel = {
+	id: MusicId;
+	src: AudioBufferSourceNode;
+	gain: GainNode;
+};
+
 type AudioState = {
 	ctx: AudioContext;
 	bus: BusNodes;
@@ -38,11 +45,10 @@ type AudioState = {
 	// Caches
 	buffers: Map<string, AudioBuffer>;
 
-	// Current media per channel
-	music?: MediaChannel;
-	musicId?: MusicId; // <--- NEW: remember current music id
+	// Current music (buffer-based, single track)
+	music?: MusicChannel;
 
-	// Ambience is a multi-track mix
+	// Ambience is a multi-track mix (media-based)
 	ambience: Map<AmbienceId, MediaChannel>;
 
 	// Track stop timers to avoid stale timeouts killing revived tracks
@@ -105,7 +111,6 @@ function setGainSmooth(
 	const t0 = ctx.currentTime;
 	const t1 = t0 + Math.max(0, fadeMs) / 1000;
 
-	// Prefer cancelAndHoldAtTime when available (better retargeting)
 	const anyParam = param as unknown as {
 		cancelAndHoldAtTime?: (t: number) => void;
 	};
@@ -140,6 +145,19 @@ function disconnectAndUnloadMedia(ch?: MediaChannel) {
 		ch.el.pause();
 		ch.el.src = "";
 		ch.el.load();
+	} catch {}
+}
+
+function disconnectMusic(ch?: MusicChannel) {
+	if (!ch) return;
+	try {
+		ch.src.stop();
+	} catch {}
+	try {
+		ch.src.disconnect();
+	} catch {}
+	try {
+		ch.gain.disconnect();
 	} catch {}
 }
 
@@ -202,6 +220,7 @@ function ensure(): AudioState {
 		ctx,
 		bus,
 		buffers: new Map(),
+		music: undefined,
 		ambience: new Map(),
 		ambienceStopTimers: new Map(),
 		ambienceDesired: new Map(),
@@ -228,21 +247,6 @@ async function tryPlay(el: HTMLAudioElement): Promise<boolean> {
 	} catch {
 		return false;
 	}
-}
-
-function disconnectMedia(ch?: MediaChannel) {
-	if (!ch) return;
-	try {
-		ch.src.disconnect();
-	} catch {}
-	try {
-		ch.gain.disconnect();
-	} catch {}
-	try {
-		ch.el.pause();
-		ch.el.src = "";
-		ch.el.load();
-	} catch {}
 }
 
 export async function unlockAudio(): Promise<void> {
@@ -291,34 +295,35 @@ function cancelAmbienceStopTimer(s: AudioState, id: AmbienceId) {
 
 /** Public singleton API */
 export const audio = {
+	/** Create nodes lazily (does not force resume). Safe to call anytime. */
 	init(): void {
 		ensure();
 		bindAutoUnlock();
 	},
 
+	/** Returns true if context is running. */
 	isUnlocked(): boolean {
 		const { ctx } = ensure();
 		return ctx.state === "running";
 	},
 
+	/** Best-effort resume. Must be called from a user gesture to reliably unlock on iOS/Safari. */
 	async unlock(): Promise<void> {
 		const s = ensure();
 		await safeResume(s.ctx);
 
-		// If music exists but got blocked earlier, retry now that we might be unlocked.
-		if (s.music?.el?.paused) {
-			await tryPlay(s.music.el);
-		}
-
-		// Retry desired ambience tracks too (same failure mode).
+		// Retry desired ambience tracks (media elements can still be blocked)
 		for (const [id, ch] of s.ambience) {
 			const desired = s.ambienceDesired.get(id) ?? 0;
 			if (desired > 0 && ch.el.paused) {
 				await tryPlay(ch.el);
 			}
 		}
+
+		// Music is buffer-based, so nothing to "play" here; it will start once ctx runs.
 	},
 
+	/** Expose low-level nodes for advanced use. */
 	get() {
 		const { ctx, bus } = ensure();
 		return { ctx, bus };
@@ -335,7 +340,7 @@ export const audio = {
 	},
 
 	// -------------------------
-	// Buffer loading (SFX/voice)
+	// Buffer loading (SFX/voice/music)
 	// -------------------------
 	async loadBuffer(url: string): Promise<AudioBuffer> {
 		const s = ensure();
@@ -353,13 +358,17 @@ export const audio = {
 		return buf;
 	},
 
+	/**
+	 * Play a short decoded sound. Good for SFX/voice/haptics.
+	 * Returns a stop() handle.
+	 */
 	async playBuffer(
 		url: string,
 		opts: {
 			bus?: Exclude<AudioBus, "master" | "music" | "ambience">;
-			volume?: number;
-			playbackRate?: number;
-			detuneCents?: number;
+			volume?: number; // 0..1
+			playbackRate?: number; // default 1
+			detuneCents?: number; // +/- cents
 			loop?: boolean;
 		} = {},
 	): Promise<{ stop: () => void }> {
@@ -420,34 +429,29 @@ export const audio = {
 	},
 
 	// -------------------------
-	// Media playback (Music/Ambience)
+	// Music (buffer-based, stable loop)
 	// -------------------------
 
 	/**
-	 * "Smart" setter: only (re)starts when the track actually changes.
+	 * Smart setter: only (re)starts when track changes.
 	 * Pass null to stop.
 	 */
 	async setMusic(id: MusicId | null, opts: MusicOptions = {}): Promise<void> {
 		const s = ensure();
 
 		if (id === null) {
-			if (s.musicId !== undefined) audio.stopMusic();
+			if (s.music) audio.stopMusic();
 			return;
 		}
 
-		// If same track is selected, we still may need to:
-		// - retry play (if autoplay was blocked earlier)
-		// - apply updated volume/loop options
-		if (s.musicId === id) {
-			if (s.music) {
-				s.music.el.loop = opts.loop ?? true;
-				s.music.gain.gain.value = clamp(opts.volume ?? 1, 0, 1);
+		// Same track: just update gain/loop preference (loop change requires restart)
+		if (s.music?.id === id) {
+			s.music.gain.gain.value = clamp(opts.volume ?? 1, 0, 1);
 
-				void safeResume(s.ctx);
-
-				if (s.music.el.paused) {
-					void tryPlay(s.music.el);
-				}
+			const wantLoop = opts.loop ?? true;
+			if (s.music.src.loop !== wantLoop) {
+				// restart to apply loop flag reliably
+				await audio.playMusic(id, opts);
 			}
 			return;
 		}
@@ -456,30 +460,33 @@ export const audio = {
 	},
 
 	async playMusic(id: MusicId, opts: MusicOptions = {}): Promise<void> {
-		const url = musicPaths[id];
 		const s = ensure();
 		void safeResume(s.ctx);
 
-		disconnectMedia(s.music);
+		// Stop previous
+		disconnectMusic(s.music);
+		s.music = undefined;
 
-		const el = new Audio();
-		el.src = url;
-		el.loop = opts.loop ?? true;
-		el.preload = "auto";
-		el.crossOrigin = "anonymous";
+		const url = musicPaths[id];
+		const buffer = await audio.loadBuffer(url);
 
-		const src = s.ctx.createMediaElementSource(el);
+		const src = s.ctx.createBufferSource();
+		src.buffer = buffer;
+		src.loop = opts.loop ?? true;
+
+		// Be explicit about loop points (helps some Safari edge cases)
+		src.loopStart = 0;
+		src.loopEnd = buffer.duration;
 
 		const gain = s.ctx.createGain();
 		gain.gain.value = clamp(opts.volume ?? 1, 0, 1);
 
 		src.connect(gain).connect(s.bus.music);
 
-		s.music = { el, src, gain };
-		s.musicId = id; // <--- NEW
+		s.music = { id, src, gain };
 
 		try {
-			await el.play();
+			src.start();
 		} catch {
 			// ignore
 		}
@@ -487,11 +494,13 @@ export const audio = {
 
 	stopMusic(): void {
 		const s = ensure();
-		disconnectMedia(s.music);
+		disconnectMusic(s.music);
 		s.music = undefined;
-		s.musicId = undefined; // <--- NEW
 	},
 
+	// -------------------------
+	// Ambience (media-element mix)
+	// -------------------------
 	async setAmbienceMix(
 		mix: AmbienceMix,
 		opts: AmbienceOptions = {},
