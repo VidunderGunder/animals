@@ -2,10 +2,9 @@ import { speak } from "../../audio/speak";
 import { clamp } from "../../functions/general";
 import { ctx } from "../../gfx/canvas";
 import { player } from "../../state";
+import type { Vec2Px } from "../../types";
 import { camera } from "./camera";
 import type { Entity } from "./entities";
-
-type Vec2Px = { xPx: number; yPx: number };
 
 type RSVPTok =
 	| { kind: "word"; text: string; ms: number; emphasis: number }

@@ -22,34 +22,6 @@ document.addEventListener("visibilitychange", () => {
 	}
 });
 
-// TEMPORARY: Auto-start ambience on first user interaction
-// -------------------------------
-let ambienceStarted = false;
-
-[
-	"touchstart",
-	"touchend",
-	"pointerdown",
-	"pointerup",
-	"mousedown",
-	"keydown",
-	"click",
-	"dblclick",
-	"contextmenu",
-	"wheel",
-].forEach((ev) => {
-	document.addEventListener(
-		ev,
-		() => {
-			if (ambienceStarted) return;
-			ambienceStarted = true;
-			audio.playAmbience("forest");
-		},
-		{ once: true },
-	);
-});
-// -------------------------------
-
 let previousFrameTimestamp = 0;
 let isRenderPaused = false;
 let rafId: number | null = null;

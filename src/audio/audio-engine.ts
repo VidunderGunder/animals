@@ -1,3 +1,4 @@
+// audio-engine.ts
 import { clamp } from "../functions/general";
 import {
 	type AmbienceId,
@@ -39,10 +40,39 @@ type AudioState = {
 
 	// Current media per channel
 	music?: MediaChannel;
-	ambience?: MediaChannel;
+
+	// Ambience is a multi-track mix
+	ambience: Map<AmbienceId, MediaChannel>;
+
+	// Track stop timers to avoid stale timeouts killing revived tracks
+	ambienceStopTimers: Map<AmbienceId, number>;
+
+	// Latest desired weights (used by stop timers for correctness)
+	ambienceDesired: Map<AmbienceId, number>;
 
 	// Unlock listeners (so we can remove them)
 	unlockBound: boolean;
+};
+
+export type AmbienceMix = Partial<Record<AmbienceId, number>>;
+export type AmbienceOptions = {
+	/** Fade time for changes (ms). Default 600 */
+	fadeMs?: number;
+
+	/** Default true */
+	loop?: boolean;
+
+	/**
+	 * If true, tracks that fade to 0 will be paused+disconnected after the fade.
+	 * Default true.
+	 */
+	stopWhenSilent?: boolean;
+
+	/**
+	 * Optional global trim on the ambience bus for this call.
+	 * (If you want global ambience control, you may prefer setBusVolume("ambience", ...))
+	 */
+	busVolume?: number;
 };
 
 let state: AudioState | null = null;
@@ -55,6 +85,84 @@ function getCtor(): typeof AudioContext {
 	const Ctx = AnyWindow.AudioContext ?? AnyWindow.webkitAudioContext;
 	if (!Ctx) throw new Error("Web Audio API not supported in this browser");
 	return Ctx;
+}
+
+function setGainSmooth(
+	param: AudioParam,
+	target: number,
+	fadeMs: number,
+	ctx: AudioContext,
+) {
+	const t0 = ctx.currentTime;
+	const t1 = t0 + Math.max(0, fadeMs) / 1000;
+
+	// Prefer cancelAndHoldAtTime when available (better retargeting)
+	const anyParam = param as unknown as {
+		cancelAndHoldAtTime?: (t: number) => void;
+	};
+	if (typeof anyParam.cancelAndHoldAtTime === "function") {
+		anyParam.cancelAndHoldAtTime(t0);
+	} else {
+		param.cancelScheduledValues(t0);
+		try {
+			param.setValueAtTime(param.value, t0);
+		} catch {
+			// ignore
+		}
+	}
+
+	if (fadeMs <= 0) {
+		param.setValueAtTime(target, t0);
+		return;
+	}
+
+	// Linear is fine for ambience; if you prefer perceptual fades,
+	// swap to exponential with a small floor.
+	param.linearRampToValueAtTime(target, t1);
+}
+
+function disconnectAndUnloadMedia(ch?: MediaChannel) {
+	if (!ch) return;
+	try {
+		ch.src.disconnect();
+	} catch {}
+	try {
+		ch.gain.disconnect();
+	} catch {}
+	try {
+		ch.el.pause();
+		ch.el.src = "";
+		ch.el.load();
+	} catch {}
+}
+
+function getOrCreateAmbienceTrack(
+	s: AudioState,
+	id: AmbienceId,
+	opts: { loop: boolean },
+): MediaChannel {
+	const existing = s.ambience.get(id);
+	if (existing) return existing;
+
+	const url = ambiencePaths[id];
+
+	const el = new Audio();
+	el.src = url;
+	el.loop = opts.loop;
+	el.preload = "auto";
+	el.crossOrigin = "anonymous";
+
+	const src = s.ctx.createMediaElementSource(el);
+
+	const gain = s.ctx.createGain();
+	gain.gain.value = 0; // start silent; setAmbienceMix will fade it
+
+	src.connect(gain).connect(s.bus.ambience);
+
+	const ch: MediaChannel = { el, src, gain };
+	s.ambience.set(id, ch);
+
+	return ch;
 }
 
 function ensure(): AudioState {
@@ -93,6 +201,9 @@ function ensure(): AudioState {
 		ctx,
 		bus,
 		buffers: new Map(),
+		ambience: new Map(),
+		ambienceStopTimers: new Map(),
+		ambienceDesired: new Map(),
 		unlockBound: false,
 	};
 
@@ -160,6 +271,14 @@ function bindAutoUnlock(): void {
 	}
 }
 
+function cancelAmbienceStopTimer(s: AudioState, id: AmbienceId) {
+	const t = s.ambienceStopTimers.get(id);
+	if (t) {
+		clearTimeout(t);
+		s.ambienceStopTimers.delete(id);
+	}
+}
+
 /** Public singleton API */
 export const audio = {
 	/** Create nodes lazily (does not force resume). Safe to call anytime. */
@@ -204,7 +323,6 @@ export const audio = {
 		const cached = s.buffers.get(url);
 		if (cached) return cached;
 
-		// If you call this before unlock, decoding can still work; playback just won’t start until unlocked.
 		const res = await fetch(url);
 		if (!res.ok)
 			throw new Error(`Failed to fetch audio: ${url} (${res.status})`);
@@ -235,7 +353,6 @@ export const audio = {
 
 		const buffer = await audio.loadBuffer(url);
 
-		// best-effort resume, doesn’t hurt if already running
 		void safeResume(ctx);
 
 		const src = ctx.createBufferSource();
@@ -279,6 +396,7 @@ export const audio = {
 		const url = sfxPaths[id];
 		return audio.playBuffer(url, { bus: "sfx", ...opts });
 	},
+
 	async playVoice(
 		url: string,
 		opts: { volume?: number; playbackRate?: number; detuneCents?: number } = {},
@@ -314,7 +432,6 @@ export const audio = {
 
 		s.music = { el, src, gain };
 
-		// Try to play; if blocked, it’ll start once unlocked + user triggers play again via game logic.
 		try {
 			await el.play();
 		} catch {
@@ -328,41 +445,120 @@ export const audio = {
 		s.music = undefined;
 	},
 
-	async playAmbience(
-		id: AmbienceId,
-		opts: { volume?: number; loop?: boolean } = {},
+	async setAmbienceMix(
+		mix: AmbienceMix,
+		opts: AmbienceOptions = {},
 	): Promise<void> {
-		const url = ambiencePaths[id];
 		const s = ensure();
 		void safeResume(s.ctx);
 
-		disconnectMedia(s.ambience);
+		const fadeMs = opts.fadeMs ?? 600;
+		const loop = opts.loop ?? true;
+		const stopWhenSilent = opts.stopWhenSilent ?? true;
 
-		const el = new Audio();
-		el.src = url;
-		el.loop = opts.loop ?? true;
-		el.preload = "auto";
-		el.crossOrigin = "anonymous";
-
-		const src = s.ctx.createMediaElementSource(el);
-
-		const gain = s.ctx.createGain();
-		gain.gain.value = clamp(opts.volume ?? 1, 0, 1);
-
-		src.connect(gain).connect(s.bus.ambience);
-
-		s.ambience = { el, src, gain };
-
-		try {
-			await el.play();
-		} catch {
-			// ignore
+		if (typeof opts.busVolume === "number") {
+			s.bus.ambience.gain.value = clamp(opts.busVolume, 0, 1);
 		}
+
+		// Normalize inputs: clamp weights 0..1
+		const target = new Map<AmbienceId, number>();
+		for (const k in mix) {
+			const id = k as AmbienceId;
+			const w = mix[id];
+			if (typeof w === "number") {
+				target.set(id, clamp(w, 0, 1));
+			}
+		}
+
+		// Publish latest desired weights so timers check current intent (not stale closure data)
+		s.ambienceDesired = target;
+
+		// Ensure all target tracks exist and start them (silent first, then fade)
+		const playPromises: Promise<void>[] = [];
+
+		for (const [id, weight] of target) {
+			// If this track is desired (>0), it must not be killed by a previous fade-out timer
+			if (weight > 0) cancelAmbienceStopTimer(s, id);
+
+			const ch = getOrCreateAmbienceTrack(s, id, { loop });
+
+			// Update loop behavior if caller changes it
+			ch.el.loop = loop;
+
+			// Start if needed (best-effort)
+			if (ch.el.paused) {
+				playPromises.push(
+					ch.el.play().then(
+						() => {},
+						() => {},
+					) as Promise<void>,
+				);
+			}
+
+			setGainSmooth(ch.gain.gain, weight, fadeMs, s.ctx);
+		}
+
+		// Fade out any existing tracks not in target (or explicitly set to 0)
+		for (const [id, ch] of s.ambience) {
+			const desired = target.get(id) ?? 0;
+
+			if (desired === 0) {
+				setGainSmooth(ch.gain.gain, 0, fadeMs, s.ctx);
+
+				if (stopWhenSilent) {
+					// Cancel any existing timer and replace it
+					cancelAmbienceStopTimer(s, id);
+
+					const timer = window.setTimeout(() => {
+						// Still alive?
+						if (!s.ambience.has(id)) return;
+
+						// Check *latest* desired state (not the state at scheduling time)
+						const nowDesired = s.ambienceDesired.get(id) ?? 0;
+						if (nowDesired > 0) return;
+
+						s.ambience.delete(id);
+						disconnectAndUnloadMedia(ch);
+						s.ambienceStopTimers.delete(id);
+					}, fadeMs + 50);
+
+					s.ambienceStopTimers.set(id, timer);
+				}
+			}
+		}
+
+		// If a mix is empty, this function becomes “fade all out”
+		await Promise.all(playPromises);
 	},
 
-	stopAmbience(): void {
+	stopAmbience(opts: { fadeMs?: number; stopWhenSilent?: boolean } = {}): void {
 		const s = ensure();
-		disconnectMedia(s.ambience);
-		s.ambience = undefined;
+		const fadeMs = opts.fadeMs ?? 300;
+		const stopWhenSilent = opts.stopWhenSilent ?? true;
+
+		// Clear desired state
+		s.ambienceDesired = new Map();
+
+		for (const [id, ch] of s.ambience) {
+			setGainSmooth(ch.gain.gain, 0, fadeMs, s.ctx);
+
+			if (stopWhenSilent) {
+				cancelAmbienceStopTimer(s, id);
+
+				const timer = window.setTimeout(() => {
+					if (!s.ambience.has(id)) return;
+
+					// Still not desired?
+					const nowDesired = s.ambienceDesired.get(id) ?? 0;
+					if (nowDesired > 0) return;
+
+					s.ambience.delete(id);
+					disconnectAndUnloadMedia(ch);
+					s.ambienceStopTimers.delete(id);
+				}, fadeMs + 50);
+
+				s.ambienceStopTimers.set(id, timer);
+			}
+		}
 	},
 } as const;

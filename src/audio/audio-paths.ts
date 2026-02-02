@@ -14,4 +14,13 @@ export const musicPaths = {
 
 export type SfxId = keyof typeof sfxPaths;
 export type AmbienceId = keyof typeof ambiencePaths;
+
+export function isAmbienceId(id: string): id is AmbienceId {
+	return id in ambiencePaths;
+}
+
 export type MusicId = keyof typeof musicPaths;
+
+export function isMusicId(id: string): id is MusicId {
+	return id in musicPaths;
+}

@@ -4,6 +4,7 @@ import {
 	renderFrameLayer,
 } from "../../animations/animations";
 import { createImageElement } from "../../assets/image";
+import { updateAmbience } from "../../audio/ambience";
 import {
 	ASPECT_RATIO_X,
 	ASPECT_RATIO_Y,
@@ -461,6 +462,7 @@ function update(dt: number) {
 
 	updatePlayer(dt);
 	updateCamera();
+	updateAmbience(dt);
 }
 
 function draw(dt: number) {

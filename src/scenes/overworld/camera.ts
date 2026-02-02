@@ -1,12 +1,8 @@
 import { GAME_HEIGHT_PX, GAME_WIDTH_PX, TILE_SIZE_PX } from "../../config";
 import { clamp, lerp } from "../../functions/general";
 import { player } from "../../state";
+import type { Vec2Px } from "../../types";
 import { getCell } from "./cells";
-
-export type Vec2Px = {
-	xPx: number;
-	yPx: number;
-};
 
 export const camera: Vec2Px = {
 	xPx: 0,

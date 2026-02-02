@@ -65,3 +65,8 @@ export function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 export type StringWithSuggestions<T extends string> = T | (string & {});
+
+export type Vec2Px = {
+	xPx: number;
+	yPx: number;
+};

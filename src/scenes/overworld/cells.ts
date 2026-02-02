@@ -1,5 +1,6 @@
 import { TILE_SIZE_PX } from "../../config";
 import type { Direction } from "../../input/input";
+import type { Vec2Px } from "../../types";
 import type { Entity } from "./entities";
 import type { Transition } from "./transition/transition";
 
@@ -45,7 +46,7 @@ export function edgeKey(
 ): number {
 	return (cellKey(x, y, z) << 2) | DIR_INDEX[dir];
 }
-export function cellToPx(x: number, y: number): { xPx: number; yPx: number } {
+export function cellToPx(x: number, y: number): Vec2Px {
 	return { xPx: x * TILE_SIZE_PX, yPx: y * TILE_SIZE_PX };
 }
 
@@ -87,8 +88,8 @@ export type OutlineEdge = {
 	y: number; // cell y
 	z: number; // layer
 	dir: Direction;
-	a: { xPx: number; yPx: number }; // segment start
-	b: { xPx: number; yPx: number }; // segment end
+	a: Vec2Px; // segment start
+	b: Vec2Px; // segment end
 };
 
 /**
