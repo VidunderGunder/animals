@@ -62,7 +62,7 @@ const musicFields = [
 		a: { x: -Infinity, y: -Infinity, z: -Infinity },
 		b: { x: Infinity, y: Infinity, z: Infinity },
 		music: "placeholder",
-		options: { volume: 0.05, loop: true },
+		options: { volume: 0.025, loop: true },
 	},
 ] as const satisfies readonly MusicField[];
 
