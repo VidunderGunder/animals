@@ -44,6 +44,7 @@ Bugs (clearly defined issues)
 
 - [ ] Game is freezed after leaving Safari on iOS and returning to the game
 - [ ] Looping ambience (forest definitely, beach maybe) has a small gap/pause when looping
+- [ ] Current ambience implementation hijacks audio on iOS, stopping music playback from other apps—we want to allow both to play simultaneously
 
 Spikes (investigation tasks)
 
