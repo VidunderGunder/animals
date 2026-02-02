@@ -40,6 +40,7 @@ type AudioState = {
 
 	// Current media per channel
 	music?: MediaChannel;
+	musicId?: MusicId; // <--- NEW: remember current music id
 
 	// Ambience is a multi-track mix
 	ambience: Map<AmbienceId, MediaChannel>;
@@ -73,6 +74,14 @@ export type AmbienceOptions = {
 	 * (If you want global ambience control, you may prefer setBusVolume("ambience", ...))
 	 */
 	busVolume?: number;
+};
+
+export type MusicOptions = {
+	/** Volume trim for this track (0-1). Default 1 */
+	volume?: number;
+
+	/** Whether to loop the track. Default true */
+	loop?: boolean;
 };
 
 let state: AudioState | null = null;
@@ -116,8 +125,6 @@ function setGainSmooth(
 		return;
 	}
 
-	// Linear is fine for ambience; if you prefer perceptual fades,
-	// swap to exponential with a small floor.
 	param.linearRampToValueAtTime(target, t1);
 }
 
@@ -171,12 +178,6 @@ function ensure(): AudioState {
 	const Ctx = getCtor();
 	const ctx = new Ctx();
 
-	// --- bus graph ---
-	//    [music] \
-	// [ambience]  \
-	//      [sfx]   -> [master] -> destination
-	//    [voice]  /
-	//  [haptics] /
 	const master = ctx.createGain();
 	master.gain.value = 1;
 	master.connect(ctx.destination);
@@ -215,7 +216,7 @@ async function safeResume(ctx: AudioContext) {
 		try {
 			await ctx.resume();
 		} catch {
-			// ignore; gesture restrictions etc.
+			// ignore
 		}
 	}
 }
@@ -281,25 +282,21 @@ function cancelAmbienceStopTimer(s: AudioState, id: AmbienceId) {
 
 /** Public singleton API */
 export const audio = {
-	/** Create nodes lazily (does not force resume). Safe to call anytime. */
 	init(): void {
 		ensure();
 		bindAutoUnlock();
 	},
 
-	/** Returns true if context is running. */
 	isUnlocked(): boolean {
 		const { ctx } = ensure();
 		return ctx.state === "running";
 	},
 
-	/** Best-effort resume. Must be called from a user gesture to reliably unlock on iOS/Safari. */
 	async unlock(): Promise<void> {
 		const { ctx } = ensure();
 		await safeResume(ctx);
 	},
 
-	/** Expose the low-level nodes for advanced use (haptics, custom synth, etc.). */
 	get() {
 		const { ctx, bus } = ensure();
 		return { ctx, bus };
@@ -334,17 +331,13 @@ export const audio = {
 		return buf;
 	},
 
-	/**
-	 * Play a short decoded sound. Good for SFX.
-	 * Returns a stop() handle.
-	 */
 	async playBuffer(
 		url: string,
 		opts: {
 			bus?: Exclude<AudioBus, "master" | "music" | "ambience">;
-			volume?: number; // 0..1 (per-play trim)
-			playbackRate?: number; // default 1
-			detuneCents?: number; // +/- cents
+			volume?: number;
+			playbackRate?: number;
+			detuneCents?: number;
 			loop?: boolean;
 		} = {},
 	): Promise<{ stop: () => void }> {
@@ -407,10 +400,22 @@ export const audio = {
 	// -------------------------
 	// Media playback (Music/Ambience)
 	// -------------------------
-	async playMusic(
-		id: MusicId,
-		opts: { volume?: number; loop?: boolean } = {},
-	): Promise<void> {
+
+	/**
+	 * "Smart" setter: only (re)starts when the track actually changes.
+	 * Pass null to stop.
+	 */
+	async setMusic(id: MusicId | null, opts: MusicOptions = {}): Promise<void> {
+		const s = ensure();
+		if (id === null) {
+			if (s.musicId !== undefined) audio.stopMusic();
+			return;
+		}
+		if (s.musicId === id) return;
+		await audio.playMusic(id, opts);
+	},
+
+	async playMusic(id: MusicId, opts: MusicOptions = {}): Promise<void> {
 		const url = musicPaths[id];
 		const s = ensure();
 		void safeResume(s.ctx);
@@ -431,6 +436,7 @@ export const audio = {
 		src.connect(gain).connect(s.bus.music);
 
 		s.music = { el, src, gain };
+		s.musicId = id; // <--- NEW
 
 		try {
 			await el.play();
@@ -443,6 +449,7 @@ export const audio = {
 		const s = ensure();
 		disconnectMedia(s.music);
 		s.music = undefined;
+		s.musicId = undefined; // <--- NEW
 	},
 
 	async setAmbienceMix(
@@ -460,7 +467,6 @@ export const audio = {
 			s.bus.ambience.gain.value = clamp(opts.busVolume, 0, 1);
 		}
 
-		// Normalize inputs: clamp weights 0..1
 		const target = new Map<AmbienceId, number>();
 		for (const k in mix) {
 			const id = k as AmbienceId;
@@ -470,22 +476,16 @@ export const audio = {
 			}
 		}
 
-		// Publish latest desired weights so timers check current intent (not stale closure data)
 		s.ambienceDesired = target;
 
-		// Ensure all target tracks exist and start them (silent first, then fade)
 		const playPromises: Promise<void>[] = [];
 
 		for (const [id, weight] of target) {
-			// If this track is desired (>0), it must not be killed by a previous fade-out timer
 			if (weight > 0) cancelAmbienceStopTimer(s, id);
 
 			const ch = getOrCreateAmbienceTrack(s, id, { loop });
-
-			// Update loop behavior if caller changes it
 			ch.el.loop = loop;
 
-			// Start if needed (best-effort)
 			if (ch.el.paused) {
 				playPromises.push(
 					ch.el.play().then(
@@ -498,7 +498,6 @@ export const audio = {
 			setGainSmooth(ch.gain.gain, weight, fadeMs, s.ctx);
 		}
 
-		// Fade out any existing tracks not in target (or explicitly set to 0)
 		for (const [id, ch] of s.ambience) {
 			const desired = target.get(id) ?? 0;
 
@@ -506,14 +505,11 @@ export const audio = {
 				setGainSmooth(ch.gain.gain, 0, fadeMs, s.ctx);
 
 				if (stopWhenSilent) {
-					// Cancel any existing timer and replace it
 					cancelAmbienceStopTimer(s, id);
 
 					const timer = window.setTimeout(() => {
-						// Still alive?
 						if (!s.ambience.has(id)) return;
 
-						// Check *latest* desired state (not the state at scheduling time)
 						const nowDesired = s.ambienceDesired.get(id) ?? 0;
 						if (nowDesired > 0) return;
 
@@ -527,7 +523,6 @@ export const audio = {
 			}
 		}
 
-		// If a mix is empty, this function becomes “fade all out”
 		await Promise.all(playPromises);
 	},
 
@@ -536,7 +531,6 @@ export const audio = {
 		const fadeMs = opts.fadeMs ?? 300;
 		const stopWhenSilent = opts.stopWhenSilent ?? true;
 
-		// Clear desired state
 		s.ambienceDesired = new Map();
 
 		for (const [id, ch] of s.ambience) {
@@ -548,7 +542,6 @@ export const audio = {
 				const timer = window.setTimeout(() => {
 					if (!s.ambience.has(id)) return;
 
-					// Still not desired?
 					const nowDesired = s.ambienceDesired.get(id) ?? 0;
 					if (nowDesired > 0) return;
 

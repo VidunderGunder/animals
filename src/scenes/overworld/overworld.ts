@@ -5,6 +5,7 @@ import {
 } from "../../animations/animations";
 import { createImageElement } from "../../assets/image";
 import { updateAmbience } from "../../audio/ambience";
+import { updateMusic } from "../../audio/music";
 import {
 	ASPECT_RATIO_X,
 	ASPECT_RATIO_Y,
@@ -463,6 +464,7 @@ function update(dt: number) {
 	updatePlayer(dt);
 	updateCamera();
 	updateAmbience(dt);
+	updateMusic(dt);
 }
 
 function draw(dt: number) {
