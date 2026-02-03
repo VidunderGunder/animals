@@ -45,59 +45,12 @@ type AmbienceFieldStatic = {
 };
 type AmbienceField = AmbienceFieldDynamic | AmbienceFieldStatic;
 
-const ambienceFields = [
-	{
-		mix: {
-			beach: 0.2,
-		},
-		a: {
-			x: -Infinity,
-			y: -Infinity,
-			z: -Infinity,
-		},
-		b: {
-			x: Infinity,
-			y: 30,
-			z: Infinity,
-		},
-	},
-	{
-		axis: "y",
-		a: {
-			x: 24,
-			y: 30,
-			z: -Infinity,
-			mix: {
-				beach: 0.2,
-				forest: 0,
-			},
-		},
-		b: {
-			x: 36,
-			y: 47,
-			z: Infinity,
-			mix: {
-				beach: 0,
-				forest: 1,
-			},
-		},
-	},
-	{
-		mix: {
-			forest: 1,
-		},
-		a: {
-			x: -Infinity,
-			y: 47,
-			z: -Infinity,
-		},
-		b: {
-			x: Infinity,
-			y: Infinity,
-			z: Infinity,
-		},
-	},
-] as const satisfies AmbienceField[];
+const ambienceFields: AmbienceField[] = [];
+
+export function setAmbienceFields(fields: AmbienceField[]) {
+	ambienceFields.length = 0;
+	ambienceFields.push(...fields);
+}
 
 // --------------------
 // Implementation

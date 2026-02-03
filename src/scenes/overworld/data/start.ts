@@ -1,3 +1,4 @@
+import { setAmbienceFields } from "../../../audio/ambience";
 import { TILE_SIZE_PX } from "../../../config";
 import { cellToPx, getCellsOutline, range, setCell, setEdge } from "../cells";
 import { rsvp } from "../dialog";
@@ -248,6 +249,60 @@ export function initializeArea() {
 	setCell(32, 50, 0, {
 		blocked: true,
 	});
+
+	setAmbienceFields([
+		{
+			mix: {
+				beach: 0.2,
+			},
+			a: {
+				x: -Infinity,
+				y: -Infinity,
+				z: -Infinity,
+			},
+			b: {
+				x: Infinity,
+				y: 30,
+				z: Infinity,
+			},
+		},
+		{
+			axis: "y",
+			a: {
+				x: 24,
+				y: 30,
+				z: -Infinity,
+				mix: {
+					beach: 0.2,
+					forest: 0,
+				},
+			},
+			b: {
+				x: 36,
+				y: 47,
+				z: Infinity,
+				mix: {
+					beach: 0,
+					forest: 1,
+				},
+			},
+		},
+		{
+			mix: {
+				forest: 1,
+			},
+			a: {
+				x: -Infinity,
+				y: 47,
+				z: -Infinity,
+			},
+			b: {
+				x: Infinity,
+				y: Infinity,
+				z: Infinity,
+			},
+		},
+	]);
 
 	populateArea();
 }
