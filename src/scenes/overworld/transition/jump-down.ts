@@ -124,9 +124,7 @@ export function getJumpDownTransition({
 	return {
 		end,
 		path,
-		condition(entity) {
-			return entity.animationCurrent === "run";
-		},
+		condition: (entity) => entity.moveMode === "run",
 		animation: "jump",
 	} satisfies Transition;
 }

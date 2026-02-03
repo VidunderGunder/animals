@@ -296,12 +296,10 @@ function updatePlayer(dt: number) {
 
 	if (!gameState.disabled && activeActions.has("start")) openMenu();
 
-	const faster = getIsPlayerMovingFaster();
-
 	const desired = gameState.disabled ? null : movementIntent;
 
 	// 2) Speed based on run/walk
-	entity.speed = movementSpeeds[faster ? "run" : "walk"];
+	entity.speed = movementSpeeds[entity.moveMode ?? "walk"];
 
 	// 2.5) Interaction: activate on current tile (placeholder)
 	// Replace "a" with your actual action name if different.
@@ -339,7 +337,6 @@ function updatePlayer(dt: number) {
 		dt,
 		entity,
 		desiredDirection: desired,
-		faster,
 		desiredAnimation: getPlayerAnimation(),
 	});
 }
@@ -365,7 +362,6 @@ async function updateEntity(dt: number, entity: Entity) {
 		dt,
 		entity,
 		desiredDirection: entity.intentDir ?? null,
-		faster: entity.moveMode === "run",
 		desiredAnimation: getEntityAnimation(entity),
 	});
 	// clear intentDir each tick so commands must re-request if they need it again
@@ -376,17 +372,15 @@ function updateEntityAndPlayer({
 	dt,
 	entity,
 	desiredDirection,
-	faster,
 	desiredAnimation,
 }: {
 	dt: number;
 	entity: Entity;
 	desiredDirection: Direction | null;
-	faster: boolean;
 	desiredAnimation?: AnimationID;
 }) {
 	// 2) Speed based on run/walk
-	entity.speed = movementSpeeds[faster ? "run" : "walk"];
+	entity.speed = movementSpeeds[entity.moveMode ?? "walk"];
 
 	// 3) Movement start
 	if (!entity.isMoving) {

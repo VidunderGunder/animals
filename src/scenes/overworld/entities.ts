@@ -6,7 +6,6 @@ import type {
 import {
 	CHARACTER_SPRITE_HEIGHT_PX,
 	CHARACTER_SPRITE_WIDTH_PX,
-	movementSpeeds,
 	TILE_SIZE_PX,
 } from "../../config";
 import type { Direction } from "../../input/input";
@@ -114,12 +113,4 @@ export function getEntityCharacterDefaults({
 		moveMode: "walk",
 		intentDir: null,
 	};
-}
-
-export function isRunning(entity: Entity): boolean {
-	return entity.speed === movementSpeeds.run;
-}
-
-export function isWalking(entity: Entity): boolean {
-	return entity.speed === movementSpeeds.walk;
 }

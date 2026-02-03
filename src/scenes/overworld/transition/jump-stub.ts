@@ -2,7 +2,7 @@ import { audio } from "../../../audio/audio-engine";
 import { movementSpeeds, TILE_SIZE_PX } from "../../../config";
 import type { Direction } from "../../../input/input";
 import { cellToPx, setEdge } from "../cells";
-import { type Entity, isRunning } from "../entities";
+import type { Entity } from "../entities";
 import type { Transition } from "./transition";
 
 export function setStubJumpTransitions(
@@ -50,12 +50,14 @@ function setStubJumpTransitionsSingle(
 	const TOP_Y = -6;
 
 	const jumpLiftHorizontal = (entity: Entity) =>
-		isRunning(entity) ? -TOP_Y : 10;
-	const jumpLiftUp = (entity: Entity) => (isRunning(entity) ? -TOP_Y : 13);
-	const jumpLiftDown = (entity: Entity) => (isRunning(entity) ? -TOP_Y : 15);
+		entity.moveMode === "run" ? -TOP_Y : 10;
+	const jumpLiftUp = (entity: Entity) =>
+		entity.moveMode === "run" ? -TOP_Y : 13;
+	const jumpLiftDown = (entity: Entity) =>
+		entity.moveMode === "run" ? -TOP_Y : 15;
 
 	const duration = (entity: Entity) =>
-		isRunning(entity) ? 0.5 * (TILE_SIZE_PX / movementSpeeds.run) : 115;
+		entity.moveMode === "run" ? 0.5 * (TILE_SIZE_PX / movementSpeeds.run) : 115;
 
 	const HALF_TILE_PX = TILE_SIZE_PX / 2;
 
@@ -242,7 +244,7 @@ function setStubJumpTransitionsSingle(
 							dirPxs.up.yPx +
 							HALF_TILE_PX -
 							jumpLiftDown(entity) *
-								(neighbors.up || isRunning(entity) ? 1 : 0.75),
+								(neighbors.up || entity.moveMode === "run" ? 1 : 0.75),
 						z,
 						duration,
 					},
@@ -268,7 +270,7 @@ function setStubJumpTransitionsSingle(
 							yPx -
 							HALF_TILE_PX -
 							jumpLiftUp(entity) *
-								(neighbors.up || isRunning(entity) ? 1 : 0.75),
+								(neighbors.up || entity.moveMode === "run" ? 1 : 0.75),
 						z,
 						duration,
 					},
@@ -296,14 +298,14 @@ function pathWithEndPause(
 		{
 			...lastSegment,
 			onSegmentStart: undefined,
-			duration: (entity: Entity) => (isRunning(entity) ? 0 : pauseMs),
+			duration: (entity: Entity) => (entity.moveMode === "run" ? 0 : pauseMs),
 		},
 	] satisfies Transition["path"];
 }
 
 function playJumpSfx(entity: Entity) {
 	const volumeFactor = entity.id === "player" ? 0.5 : 0.1;
-	if (isRunning(entity) && entity.yPx % TILE_SIZE_PX !== 0) {
+	if (entity.moveMode === "run" && entity.yPx % TILE_SIZE_PX !== 0) {
 		audio.playSfx("jump", {
 			volume: 0.1 * volumeFactor,
 			detuneCents: -500,
@@ -311,7 +313,7 @@ function playJumpSfx(entity: Entity) {
 		});
 		return;
 	}
-	if (!isRunning(entity) && entity.yPx % TILE_SIZE_PX !== 0) {
+	if (entity.moveMode !== "run" && entity.yPx % TILE_SIZE_PX !== 0) {
 		audio.playSfx("jump", {
 			volume: 0.15 * volumeFactor,
 			detuneCents: -400,

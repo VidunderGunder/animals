@@ -4,13 +4,7 @@ import { CommandRunner } from "../ai/brain";
 import { cmd } from "../ai/commands";
 import { cellToPx, getCellsOutline, range, setCell, setEdge } from "../cells";
 import { rsvp } from "../dialog";
-import {
-	type Entity,
-	entities,
-	getEntityCharacterDefaults,
-	isRunning,
-	isWalking,
-} from "../entities";
+import { type Entity, entities, getEntityCharacterDefaults } from "../entities";
 import { getJumpDownTransition } from "../transition/jump-down";
 import { setStubJumpTransitions } from "../transition/jump-stub";
 
@@ -174,7 +168,7 @@ function initCellsAndEdges() {
 	setEdge(32, 45, 1, "left", {
 		transition: [
 			{
-				condition: isWalking,
+				condition: (entity: Entity) => entity.moveMode === "walk",
 				animation: "walk",
 				path: [
 					{ ...cellToPx(31, 45), z: 1 },
@@ -195,7 +189,7 @@ function initCellsAndEdges() {
 					z: 1,
 					dir: "left",
 				}),
-				condition: isRunning,
+				condition: (entity: Entity) => entity.moveMode === "run",
 			},
 		],
 	});
@@ -205,7 +199,7 @@ function initCellsAndEdges() {
 	// Fence roll
 	setEdge(26, 52, 0, "down", {
 		transition: {
-			condition: isRunning,
+			condition: (entity: Entity) => entity.moveMode === "run",
 			animation: "spin",
 			path: [{ ...cellToPx(26, 54), z: 0 }],
 			end: { x: 26, y: 54, z: 0 },
@@ -213,7 +207,7 @@ function initCellsAndEdges() {
 	});
 	setEdge(26, 53, 0, "up", {
 		transition: {
-			condition: isRunning,
+			condition: (entity: Entity) => entity.moveMode === "run",
 			animation: "spin",
 			path: [{ ...cellToPx(26, 51), z: 0 }],
 			end: { x: 26, y: 51, z: 0 },
