@@ -1,6 +1,7 @@
 import { audio } from "../../../audio/audio-engine";
 import type { Direction } from "../../../input/input";
 import { cellToPx } from "../cells";
+import type { Entity } from "../entities";
 import type { Transition } from "./transition";
 
 export function getJumpDownTransition({
@@ -130,10 +131,12 @@ export function getJumpDownTransition({
 	} satisfies Transition;
 }
 
-function onSegmentStart() {
-	audio.playSfx("jump", { volume: 0.33, detuneCents: -100 });
+function onSegmentStart(entity: Entity) {
+	const volumeFactor = entity.id === "player" ? 0.5 : 0.1;
+	audio.playSfx("jump", { volume: 0.33 * volumeFactor, detuneCents: -100 });
 }
 
-function playThudSfx() {
-	audio.playSfx("thud", { volume: 0.25 });
+function playThudSfx(entity: Entity) {
+	const volumeFactor = entity.id === "player" ? 1 : 0.1;
+	audio.playSfx("thud", { volume: 0.25 * volumeFactor });
 }

@@ -1,3 +1,4 @@
+// src/scenes/overworld/overworld.ts
 import {
 	type AnimationID,
 	animations,
@@ -33,6 +34,7 @@ import { getCell, getEdge, setCell } from "./cells";
 import { initializeArea as initializeStartArea } from "./data/start";
 import { renderDialogs } from "./dialog";
 import { type Entity, entities } from "./entities";
+import { occupy, vacate } from "./occupancy";
 import { getPathValues, type Transition } from "./transition/transition";
 
 initializeStartArea();
@@ -87,6 +89,19 @@ function getPlayerAnimation(): AnimationID {
 
 	const isMoving = getPlayerIsMoving();
 	if (isMoving) return "walk";
+
+	return "idle";
+}
+
+function getEntityAnimation(entity: Entity): AnimationID {
+	// If a transition is forcing an animation, keep it
+	if (entity.movingToAnimation) return entity.movingToAnimation;
+
+	// If currently moving (or about to move this tick), pick walk/run
+	const isTryingToMove = entity.isMoving || !!entity.intentDir;
+	if (isTryingToMove) {
+		return entity.moveMode === "run" ? "run" : "walk";
+	}
 
 	return "idle";
 }
@@ -219,6 +234,9 @@ function startSegment(
 
 	entity.pathSegmentProgress = 0;
 	entity.pathSegmentDuration = duration;
+
+	/* Occupancy: vacate tile at movement start so others can path through */
+	vacate(entity.x, entity.y, entity.z, entity.id);
 }
 
 function setCurrentSegment(entity: Entity): boolean {
@@ -325,16 +343,33 @@ function updatePlayer(dt: number) {
 		desiredAnimation: getPlayerAnimation(),
 	});
 }
-/** Update player and world state */
-function updateEntity(dt: number, entity: Entity) {
+/** Update NPC */
+async function updateEntity(dt: number, entity: Entity) {
 	if (gameState.paused) return;
+
+	/* AI integration:
+	 * - If entity has a brain.runner, let it tick. It may set entity.intentDir (a single-tick request).
+	 * - Provide brain context including tryPlanMove and rsvp.
+	 */
+	if (entity.brain) {
+		// tick the runner (async-safe)
+		await entity.brain.runner.tick(entity, dt);
+
+		// optional routine enqueues commands when runner is idle
+		if (entity.brain.runner.isIdle() && entity.brain.routine) {
+			entity.brain.routine(entity, dt);
+		}
+	}
 
 	updateEntityAndPlayer({
 		dt,
 		entity,
-		desiredDirection: null,
-		faster: false,
+		desiredDirection: entity.intentDir ?? null,
+		faster: entity.moveMode === "run",
+		desiredAnimation: getEntityAnimation(entity),
 	});
+	// clear intentDir each tick so commands must re-request if they need it again
+	entity.intentDir = null;
 }
 
 function updateEntityAndPlayer({
@@ -396,10 +431,7 @@ function updateEntityAndPlayer({
 		currentPathSegment?.onSegment?.(entity);
 
 		if (entity.pathSegmentProgress >= 1 && currentPathSegment) {
-			setCell(entity.x, entity.y, entity.z, {
-				...getCell(entity.x, entity.y, entity.z),
-				blocked: false,
-			});
+			// previously: setCell(..., { blocked: false })
 			currentPathSegment.onSegmentEnd?.(entity);
 		}
 
@@ -425,6 +457,9 @@ function updateEntityAndPlayer({
 				entity.isMoving = false;
 				entity.movingToTile = null;
 				entity.movingToAnimation = null;
+
+				/* Occupancy: now occupy the destination tile for this entity */
+				occupy(entity.x, entity.y, entity.z, entity.id);
 			}
 		} else {
 			const t = entity.pathSegmentProgress;
@@ -439,14 +474,23 @@ function updateEntityAndPlayer({
 	updateEntityAnimation(dt, entity, desiredAnimation);
 
 	const cell = getCell(entity.x, entity.y, entity.z);
-	if (!entity.isMoving && !cell?.blocked) {
-		setCell(entity.x, entity.y, entity.z, {
-			...cell,
-			blocked: true,
-			onActivate({ activator }) {
-				return entity.onActivate?.({ activator, activated: entity });
-			},
-		});
+	/* Occupancy changes:
+	 * Previously you set cell.blocked to mark an entity standing on a tile.
+	 * Now we use the occupancy map. Whenever an entity is not moving we ensure
+	 * it occupies its tile (this is idempotent).
+	 */
+	if (!entity.isMoving) {
+		occupy(entity.x, entity.y, entity.z, entity.id);
+		// keep existing onActivate behavior by wiring getCell(...).onActivate to call entity.onActivate
+		if (!cell?.onActivate && entity.onActivate) {
+			setCell(entity.x, entity.y, entity.z, {
+				...cell,
+				// preserve any existing camera override; only attach onActivate wrapper
+				onActivate({ activator }) {
+					return entity.onActivate?.({ activator, activated: entity });
+				},
+			});
+		}
 	}
 }
 
@@ -456,9 +500,13 @@ function update(dt: number) {
 
 	setTilesCountsIfNotSet();
 
+	// Update NPCs first (their brains may set intentDir)
 	for (const [id, entity] of entities.entries()) {
 		if (id === "player") continue;
-		updateEntity(dt, entity);
+		// run asynchronously but we don't await here to avoid blocking - runner.tick is usually fast
+		// however we've implemented updateEntity to await the tick, so call it async and let it run
+		// Note: if your environment needs strict sync, you can await these, but that may stall frames.
+		void updateEntity(dt, entity);
 	}
 
 	updatePlayer(dt);

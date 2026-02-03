@@ -1,8 +1,16 @@
 import { setAmbienceFields } from "../../../audio/ambience";
 import { TILE_SIZE_PX } from "../../../config";
+import { CommandRunner } from "../ai/brain";
+import { cmd } from "../ai/commands";
 import { cellToPx, getCellsOutline, range, setCell, setEdge } from "../cells";
 import { rsvp } from "../dialog";
-import { type Entity, entities, getEntityCharacterDefaults } from "../entities";
+import {
+	type Entity,
+	entities,
+	getEntityCharacterDefaults,
+	isRunning,
+	isWalking,
+} from "../entities";
 import { getJumpDownTransition } from "../transition/jump-down";
 import { setStubJumpTransitions } from "../transition/jump-stub";
 
@@ -166,7 +174,7 @@ function initCellsAndEdges() {
 	setEdge(32, 45, 1, "left", {
 		transition: [
 			{
-				condition: (entity) => entity.animationCurrent === "walk",
+				condition: isWalking,
 				animation: "walk",
 				path: [
 					{ ...cellToPx(31, 45), z: 1 },
@@ -187,7 +195,7 @@ function initCellsAndEdges() {
 					z: 1,
 					dir: "left",
 				}),
-				condition: (entity) => entity.animationCurrent === "run",
+				condition: isRunning,
 			},
 		],
 	});
@@ -197,7 +205,7 @@ function initCellsAndEdges() {
 	// Fence roll
 	setEdge(26, 52, 0, "down", {
 		transition: {
-			condition: (entity) => entity.animationCurrent === "run",
+			condition: isRunning,
 			animation: "spin",
 			path: [{ ...cellToPx(26, 54), z: 0 }],
 			end: { x: 26, y: 54, z: 0 },
@@ -205,7 +213,7 @@ function initCellsAndEdges() {
 	});
 	setEdge(26, 53, 0, "up", {
 		transition: {
-			condition: (entity) => entity.animationCurrent === "run",
+			condition: isRunning,
 			animation: "spin",
 			path: [{ ...cellToPx(26, 51), z: 0 }],
 			end: { x: 26, y: 51, z: 0 },
@@ -316,9 +324,32 @@ function initAudio() {
 function initEntities() {
 	const id = "npc_player";
 	entities.set(id, {
-		...getEntityCharacterDefaults({ x: 32, y: 41, id }),
-		onActivate: ({ activated }) => {
-			rsvp("npc_interact", "Hello!", activated);
+		...getEntityCharacterDefaults({ x: 30, y: 44, id }),
+		brain: {
+			runner: new CommandRunner(),
+			routine(entity) {
+				if (entity.brain?.runner.isIdle()) {
+					[
+						cmd.step("left"),
+						cmd.wait(Math.random() * 1000),
+						cmd.step("left"),
+						cmd.step("left"),
+						cmd.step("left"),
+						cmd.step("down"),
+						cmd.wait(Math.random() * 1000),
+						cmd.step("down"),
+						cmd.step("right"),
+						cmd.wait(Math.random() * 1000),
+						cmd.step("right"),
+						cmd.step("right"),
+						cmd.step("right"),
+						cmd.step("up"),
+						cmd.step("up"),
+					].forEach((c) => {
+						entity.brain?.runner.push(c);
+					});
+				}
+			},
 		},
 	});
 }

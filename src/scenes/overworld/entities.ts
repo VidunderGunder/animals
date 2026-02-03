@@ -1,3 +1,4 @@
+// src/scenes/overworld/entities.ts
 import type {
 	AnimationID,
 	AnimationVariant,
@@ -5,16 +6,19 @@ import type {
 import {
 	CHARACTER_SPRITE_HEIGHT_PX,
 	CHARACTER_SPRITE_WIDTH_PX,
+	movementSpeeds,
 	TILE_SIZE_PX,
 } from "../../config";
 import type { Direction } from "../../input/input";
+import type { StringWithSuggestions } from "../../types";
+import type { Brain } from "./ai/brain";
 import type { Transition } from "./transition/transition";
 
 export const entities = new Map<string, Entity>();
 export type Entities = typeof entities;
 
 export type Entity = {
-	id: string;
+	id: StringWithSuggestions<"player">;
 	renderVariant: AnimationVariant;
 
 	/* Tile position */
@@ -61,8 +65,15 @@ export type Entity = {
 	animationTimer: number;
 
 	onActivate?: (props: { activator: Entity; activated: Entity }) => void;
-};
 
+	/* --- AI fields --- */
+	/** Optional brain (behaviour + script runner) */
+	brain?: Brain | null;
+	/** Current movement mode (affects available transitions) */
+	moveMode?: "walk" | "run";
+	/** Temporary desired direction set by brain for a single tick */
+	intentDir?: Direction | null;
+};
 export function getEntityCharacterDefaults({
 	id,
 	x,
@@ -98,5 +109,17 @@ export function getEntityCharacterDefaults({
 		pathSegmentProgress: 0,
 		movingToTile: null,
 		movingToAnimation: null,
+		// AI defaults:
+		brain: null,
+		moveMode: "walk",
+		intentDir: null,
 	};
+}
+
+export function isRunning(entity: Entity): boolean {
+	return entity.speed === movementSpeeds.run;
+}
+
+export function isWalking(entity: Entity): boolean {
+	return entity.speed === movementSpeeds.walk;
 }

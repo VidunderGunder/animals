@@ -2,7 +2,7 @@ import { audio } from "../../../audio/audio-engine";
 import { movementSpeeds, TILE_SIZE_PX } from "../../../config";
 import type { Direction } from "../../../input/input";
 import { cellToPx, setEdge } from "../cells";
-import type { Entity } from "../entities";
+import { type Entity, isRunning } from "../entities";
 import type { Transition } from "./transition";
 
 export function setStubJumpTransitions(
@@ -301,14 +301,11 @@ function pathWithEndPause(
 	] satisfies Transition["path"];
 }
 
-function isRunning(entity: Entity): boolean {
-	return entity.speed === movementSpeeds.run;
-}
-
 function playJumpSfx(entity: Entity) {
+	const volumeFactor = entity.id === "player" ? 0.5 : 0.1;
 	if (isRunning(entity) && entity.yPx % TILE_SIZE_PX !== 0) {
 		audio.playSfx("jump", {
-			volume: 0.1,
+			volume: 0.1 * volumeFactor,
 			detuneCents: -500,
 			playbackRate: 1.5,
 		});
@@ -316,16 +313,21 @@ function playJumpSfx(entity: Entity) {
 	}
 	if (!isRunning(entity) && entity.yPx % TILE_SIZE_PX !== 0) {
 		audio.playSfx("jump", {
-			volume: 0.15,
+			volume: 0.15 * volumeFactor,
 			detuneCents: -400,
 			playbackRate: 1.5,
 		});
 		return;
 	}
-	audio.playSfx("jump", { volume: 0.25, detuneCents: -350, playbackRate: 1.1 });
+	audio.playSfx("jump", {
+		volume: 0.25 * volumeFactor,
+		detuneCents: -350,
+		playbackRate: 1.1,
+	});
 }
 
 function playThudSfx(entity: Entity) {
+	const volumeFactor = entity.id === "player" ? 1 : 0.1;
 	if (entity.yPxf % TILE_SIZE_PX !== 0) return;
-	audio.playSfx("thud", { volume: 0.1 });
+	audio.playSfx("thud", { volume: 0.1 * volumeFactor });
 }
