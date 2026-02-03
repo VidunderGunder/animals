@@ -7,6 +7,12 @@ import { getJumpDownTransition } from "../transition/jump-down";
 import { setStubJumpTransitions } from "../transition/jump-stub";
 
 export function initializeArea() {
+	initCellsAndEdges();
+	initAudio();
+	initEntities();
+}
+
+function initCellsAndEdges() {
 	// dock camera position
 	setCell(30, 37, 0, {
 		camera: {
@@ -249,7 +255,9 @@ export function initializeArea() {
 	setCell(32, 50, 0, {
 		blocked: true,
 	});
+}
 
+function initAudio() {
 	setAmbienceFields([
 		{
 			mix: {
@@ -303,11 +311,9 @@ export function initializeArea() {
 			},
 		},
 	]);
-
-	populateArea();
 }
 
-function populateArea() {
+function initEntities() {
 	const id = "npc_player";
 	entities.set(id, {
 		...getEntityCharacterDefaults({ x: 32, y: 41, id }),
