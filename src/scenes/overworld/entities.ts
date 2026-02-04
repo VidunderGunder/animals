@@ -108,7 +108,6 @@ export function getEntityCharacterDefaults({
 		pathSegmentProgress: 0,
 		movingToTile: null,
 		movingToAnimation: null,
-		// AI defaults:
 		brain: null,
 		moveMode: "walk",
 		intentDir: null,
