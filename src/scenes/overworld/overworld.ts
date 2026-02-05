@@ -32,7 +32,6 @@ import { camera, updateCamera } from "./camera";
 import {
 	getCell,
 	getEdge,
-	setCell,
 	setTilesCountsAndSetWorldBounds,
 	worldBounds,
 	worldImageLayers,
