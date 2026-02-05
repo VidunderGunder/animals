@@ -34,7 +34,7 @@ import { getCell, getEdge, setCell } from "./cells";
 import { initializeArea as initializeStartArea } from "./data/start";
 import { renderDialogs } from "./dialog";
 import { type Entity, entities } from "./entities";
-import { occupy, vacate } from "./occupancy";
+import { getOccupant, occupy, vacate } from "./occupancy";
 import { getPathValues, type Transition } from "./transition/transition";
 
 initializeStartArea();
@@ -89,10 +89,8 @@ function getPlayerAnimation(): AnimationID {
 }
 
 function getEntityAnimation(entity: Entity): AnimationID {
-	// If a transition is forcing an animation, keep it
 	if (entity.movingToAnimation) return entity.movingToAnimation;
 
-	// If currently moving (or about to move this tick), pick walk/run
 	const isTryingToMove = entity.isMoving || !!entity.intentDir;
 	if (isTryingToMove) {
 		return entity.moveMode === "run" ? "run" : "walk";
@@ -230,8 +228,7 @@ function startSegment(
 	entity.pathSegmentProgress = 0;
 	entity.pathSegmentDuration = duration;
 
-	/* Occupancy: vacate tile at movement start so others can path through */
-	vacate(entity.x, entity.y, entity.z, entity.id);
+	vacate(entity);
 }
 
 function setCurrentSegment(entity: Entity): boolean {
@@ -255,17 +252,27 @@ function tryPlanMove(desired: Direction, entity: Entity): Transition | null {
 	const edge = getEdge(entity.x, entity.y, entity.z, desired);
 	if (edge?.blocked) return null;
 
+	// --- transitions ---
 	if (edge?.transition) {
 		const transitions = Array.isArray(edge.transition)
 			? edge.transition
 			: [edge.transition];
+
 		for (const transition of transitions) {
-			if (transition.condition === undefined) return transition;
-			if (transition.condition(entity)) return transition;
+			if (transition.condition && !transition.condition(entity)) continue;
+
+			// Block if destination is occupied by someone else
+			const end = transition.end;
+			const occupant = getOccupant(end.x, end.y, end.z);
+			if (occupant && occupant !== entity.id) return null;
+
+			return transition;
 		}
+
 		return null;
 	}
 
+	// --- simple step ---
 	const { dx, dy } = dirToDxDy(desired);
 	const nx = entity.x + dx;
 	const ny = entity.y + dy;
@@ -274,8 +281,11 @@ function tryPlanMove(desired: Direction, entity: Entity): Transition | null {
 	if (nx < 0 || ny < 0 || nx >= tilesXCount || ny >= tilesYCount) return null;
 
 	const destination = getCell(nx, ny, nz);
-
 	if (destination?.blocked) return null;
+
+	// Block if destination is occupied by someone else
+	const occupant = getOccupant(nx, ny, nz);
+	if (occupant && occupant !== entity.id) return null;
 
 	return {
 		path: [{ xPx: nx * TILE_SIZE_PX, yPx: ny * TILE_SIZE_PX, z: nz }],
@@ -295,11 +305,10 @@ function updatePlayer(dt: number) {
 
 	const desired = gameState.disabled ? null : movementIntent;
 
-	// 2) Speed based on run/walk
+	// Speed based on run/walk
 	entity.speed = movementSpeeds[entity.moveMode ?? "walk"];
 
-	// 2.5) Interaction: activate on current tile (placeholder)
-	// Replace "a" with your actual action name if different.
+	// Interaction: activate on current tile (placeholder)
 	if (!gameState.disabled && activeActions.has("a") && !entity.isMoving) {
 		const activationCell = {
 			x: entity.x,
@@ -337,19 +346,14 @@ function updatePlayer(dt: number) {
 		desiredAnimation: getPlayerAnimation(),
 	});
 }
+
 /** Update NPC */
 async function updateEntity(dt: number, entity: Entity) {
 	if (gameState.paused) return;
 
-	/* AI integration:
-	 * - If entity has a brain.runner, let it tick. It may set entity.intentDir (a single-tick request).
-	 * - Provide brain context including tryPlanMove and rsvp.
-	 */
 	if (entity.brain) {
-		// tick the runner (async-safe)
 		await entity.brain.runner.tick(entity, dt);
 
-		// optional routine enqueues commands when runner is idle
 		if (entity.brain.runner.isIdle() && entity.brain.routine) {
 			entity.brain.routine(entity, dt);
 		}
@@ -361,7 +365,7 @@ async function updateEntity(dt: number, entity: Entity) {
 		desiredDirection: entity.intentDir ?? null,
 		desiredAnimation: getEntityAnimation(entity),
 	});
-	// clear intentDir each tick so commands must re-request if they need it again
+
 	entity.intentDir = null;
 }
 
@@ -376,31 +380,38 @@ function updateEntityAndPlayer({
 	desiredDirection: Direction | null;
 	desiredAnimation?: AnimationID;
 }) {
-	// 2) Speed based on run/walk
+	// Speed based on run/walk
 	entity.speed = movementSpeeds[entity.moveMode ?? "walk"];
 
-	// 3) Movement start
+	// Movement start
 	if (!entity.isMoving) {
+		// Ensure idle entities keep occupying their standing tile
+		occupy(entity);
+
 		if (desiredDirection) {
 			entity.direction = desiredDirection;
 
 			const planned = tryPlanMove(desiredDirection, entity);
 			if (planned) {
-				entity.isMoving = true;
+				// Reserve destination BEFORE starting the move
+				const ok = occupy({ ...planned.end, id: entity.id });
+				if (!ok) {
+					// Someone else got there first; stay idle this tick
+				} else {
+					entity.isMoving = true;
 
-				entity.movingToTile = planned.end;
-				entity.movingToAnimation = planned.animation ?? null;
+					entity.movingToTile = planned.end;
+					entity.movingToAnimation = planned.animation ?? null;
 
-				entity.path = planned.path.map((p) => ({
-					...p,
-				}));
+					entity.path = planned.path.map((p) => ({ ...p }));
 
-				setCurrentSegment(entity);
+					setCurrentSegment(entity);
+				}
 			}
 		}
 	}
 
-	// 4) Movement tween (pixel-based segments)
+	// Movement tween (pixel-based segments)
 	if (entity.isMoving) {
 		const dx = entity.xPxf - entity.xPxi;
 		const dy = entity.yPxf - entity.yPxi;
@@ -408,7 +419,6 @@ function updateEntityAndPlayer({
 		const distancePx = dx === 0 && dy === 0 ? 0 : Math.hypot(dx, dy);
 
 		const currentPathSegment = entity.path[0];
-		// On segment start
 		if (!entity.pathSegmentProgress && currentPathSegment) {
 			currentPathSegment.onSegmentStart?.(entity);
 		}
@@ -418,11 +428,9 @@ function updateEntityAndPlayer({
 
 		entity.pathSegmentProgress += moveDuration === 0 ? 1 : dt / moveDuration;
 
-		// On segment update
 		currentPathSegment?.onSegment?.(entity);
 
 		if (entity.pathSegmentProgress >= 1 && currentPathSegment) {
-			// previously: setCell(..., { blocked: false })
 			currentPathSegment.onSegmentEnd?.(entity);
 		}
 
@@ -434,7 +442,6 @@ function updateEntityAndPlayer({
 
 			const hasMore = setCurrentSegment(entity);
 			if (!hasMore) {
-				// Movement fully finished: snap logical state
 				if (!entity.movingToTile) {
 					throw new Error(
 						"Invariant: movement finished but pendingEnd is null",
@@ -449,8 +456,8 @@ function updateEntityAndPlayer({
 				entity.movingToTile = null;
 				entity.movingToAnimation = null;
 
-				/* Occupancy: now occupy the destination tile for this entity */
-				occupy(entity.x, entity.y, entity.z, entity.id);
+				// Destination was reserved earlier; this is idempotent.
+				occupy(entity);
 			}
 		} else {
 			const t = entity.pathSegmentProgress;
@@ -461,22 +468,18 @@ function updateEntityAndPlayer({
 
 	desiredAnimation ??= entity.animationCurrent;
 
-	// 5) Anim AFTER we've updated movement
+	// Anim AFTER movement update
 	updateEntityAnimation(dt, entity, desiredAnimation);
 
 	const cell = getCell(entity.x, entity.y, entity.z);
-	/* Occupancy changes:
-	 * Previously you set cell.blocked to mark an entity standing on a tile.
-	 * Now we use the occupancy map. Whenever an entity is not moving we ensure
-	 * it occupies its tile (this is idempotent).
-	 */
+
+	// Keep onActivate wiring behavior
 	if (!entity.isMoving) {
-		occupy(entity.x, entity.y, entity.z, entity.id);
-		// keep existing onActivate behavior by wiring getCell(...).onActivate to call entity.onActivate
+		occupy(entity);
+
 		if (!cell?.onActivate && entity.onActivate) {
 			setCell(entity.x, entity.y, entity.z, {
 				...cell,
-				// preserve any existing camera override; only attach onActivate wrapper
 				onActivate({ activator }) {
 					return entity.onActivate?.({ activator, activated: entity });
 				},
@@ -491,12 +494,8 @@ function update(dt: number) {
 
 	setTilesCountsIfNotSet();
 
-	// Update NPCs first (their brains may set intentDir)
 	for (const [id, entity] of entities.entries()) {
 		if (id === "player") continue;
-		// run asynchronously but we don't await here to avoid blocking - runner.tick is usually fast
-		// however we've implemented updateEntity to await the tick, so call it async and let it run
-		// Note: if your environment needs strict sync, you can await these, but that may stall frames.
 		void updateEntity(dt, entity);
 	}
 
@@ -520,12 +519,9 @@ function draw(dt: number) {
 	const endX = Math.min(tilesXCount - 1, maxTileX);
 	const endY = Math.min(tilesYCount - 1, maxTileY);
 
-	// TODO: Optimize by only calculating this once per frame
 	const entitiesRenderZ: [number, Entity][] = Array.from(entities.values()).map(
 		(entity) => [getEntitiesRenderZ(entity), entity],
 	);
-
-	// Row used for depth sorting: approximate “feet row”
 
 	for (const layer of worldImageLayers) {
 		for (let ty = startY; ty <= endY; ty++) {

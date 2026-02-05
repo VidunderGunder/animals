@@ -21,47 +21,92 @@ function face(dir: Direction): Command {
 	return {
 		tick({ entity }) {
 			entity.direction = dir;
-			// immediate
 			return true;
 		},
 	};
 }
 
+function leftOf(d: Direction): Direction {
+	switch (d) {
+		case "up":
+			return "left";
+		case "left":
+			return "down";
+		case "down":
+			return "right";
+		case "right":
+			return "up";
+	}
+}
+function rightOf(d: Direction): Direction {
+	switch (d) {
+		case "up":
+			return "right";
+		case "right":
+			return "down";
+		case "down":
+			return "left";
+		case "left":
+			return "up";
+	}
+}
+function backOf(d: Direction): Direction {
+	switch (d) {
+		case "up":
+			return "down";
+		case "down":
+			return "up";
+		case "left":
+			return "right";
+		case "right":
+			return "left";
+	}
+}
+
 /**
- * stepCmd: requests a one-tile step in given direction.
+ * stepCmd: requests a one-tile step-ish.
  *
- * Behavior:
- * - On first tick it attempts to plan the move (via tryPlanMove).
- * - It sets entity.intentDir for that tick (so overworld can call tryPlanMove and start movement).
- * - It completes only after the movement has started AND finished.
+ * New behavior:
+ * - It does NOT complete if blocked.
+ * - It tries dir, then left, right, back as fallbacks.
+ * - Once movement starts, it waits until movement finishes, then completes.
  */
 function step(dir: Direction): Command {
-	let state: "init" | "started" | "waitingFinish" = "init";
+	let phase: "requesting" | "moving" = "requesting";
+	let attemptIndex = 0;
+	let retryCooldownMs = 0;
+
+	const tries: Direction[] = [dir, leftOf(dir), rightOf(dir), backOf(dir)];
+
 	return {
-		tick({ entity }) {
-			if (state === "init") {
-				// Request the direction for this tick
-				entity.intentDir = dir;
-				// mark as requested; the overworld will call tryPlanMove and start the move if possible.
-				state = "started";
+		tick({ entity, dt }) {
+			// If we started moving, wait for finish.
+			if (phase === "moving") {
+				return !entity.isMoving;
+			}
+
+			// Overworld may have started movement already.
+			if (entity.isMoving) {
+				phase = "moving";
 				return false;
 			}
 
-			// Once movement actually started, wait until it's finished.
-			if (state === "started") {
-				if (entity.isMoving) {
-					state = "waitingFinish";
-					return false;
-				} else {
-					// Movement did not start (blocked) -> treat as done to avoid deadlock
-					return true;
-				}
+			// tiny cooldown so we don't spam direction flips every frame
+			if (retryCooldownMs > 0) {
+				retryCooldownMs -= dt;
+				return false;
 			}
 
-			// waitingFinish
-			if (!entity.isMoving) {
-				return true;
-			}
+			const nextDir = tries[attemptIndex] ?? dir;
+			entity.intentDir = nextDir;
+
+			// next attempt next tick
+			attemptIndex = (attemptIndex + 1) % tries.length;
+
+			// after a full cycle, pause a bit more to avoid jitter
+			if (attemptIndex === 0) retryCooldownMs = 120;
+			else retryCooldownMs = 40;
+
 			return false;
 		},
 	};

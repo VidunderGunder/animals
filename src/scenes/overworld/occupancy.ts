@@ -1,6 +1,6 @@
 import { cellKey } from "./cells";
 
-const occupied = new Map<number, string>(); // cellKey -> entityId
+export const occupied = new Map<number, string>(); // cellKey -> entityId
 
 export function getOccupant(
 	x: number,
@@ -19,12 +19,16 @@ export function isOccupied(x: number, y: number, z: number): boolean {
  * If different entity already occupies it, returns false and does nothing.
  * If same entity already occupies it, returns true.
  */
-export function occupy(
-	x: number,
-	y: number,
-	z: number,
-	entityId: string,
-): boolean {
+export function occupy(props: {
+	x: number;
+	y: number;
+	z: number;
+	/**
+	 * Entity ID attempting to occupy the tile
+	 */
+	id: string;
+}): boolean {
+	const { x, y, z, id: entityId } = props;
 	const k = cellKey(x, y, z);
 	const curr = occupied.get(k);
 	if (curr === undefined || curr === entityId) {
@@ -36,11 +40,29 @@ export function occupy(
 
 /** Vacate a tile if the given entity occupies it. */
 export function vacate(
-	x: number,
-	y: number,
-	z: number,
-	entityId?: string,
+	props:
+		| {
+				x: number;
+				y: number;
+				z: number;
+				/**
+				 * Entity ID attempting to vacate the tile (omit x/y/z to vacate by ID)
+				 */
+				id?: string;
+		  }
+		| {
+				/**
+				 * Entity ID attempting to vacate the tile (omit x/y/z to vacate by ID)
+				 */
+				id: string;
+		  },
 ): void {
+	if (!("x" in props)) {
+		vacateByEntityId(props.id);
+		return;
+	}
+
+	const { x, y, z, id: entityId } = props;
 	const k = cellKey(x, y, z);
 	if (!occupied.has(k)) return;
 	if (!entityId) {
@@ -52,7 +74,7 @@ export function vacate(
 }
 
 /** Remove any occupancy belonging to this entity (useful on teleport / removal) */
-export function vacateByEntityId(entityId: string): void {
+function vacateByEntityId(entityId: string): void {
 	for (const [k, id] of occupied.entries()) {
 		if (id === entityId) occupied.delete(k);
 	}
