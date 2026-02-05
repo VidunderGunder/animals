@@ -70,25 +70,20 @@ function getPlayerIsMoving(): boolean {
 	return !!entity.isMoving || !!movementIntent;
 }
 
-function getIsPlayerMovingFaster(): boolean {
+function getIsPlayerMoveMode(): Entity["moveMode"] {
 	const isMoving = getPlayerIsMoving();
-	if (!isMoving) return false;
+	if (!isMoving) return undefined;
 	const bPressed = activeActions.has("b");
-	return DEFAULT_MOVEMENT === "run" ? !bPressed : bPressed;
+	const isRun = DEFAULT_MOVEMENT === "run" ? !bPressed : bPressed;
+	return isRun ? "run" : "walk";
 }
 
 function getPlayerAnimation(): AnimationID {
 	const entity = player;
 
-	// If a transition is forcing an animation, keep it
-	if (entity.movingToAnimation === "jump") return "jump";
-	if (entity.movingToAnimation === "hop") return "hop";
-
-	const isMovingFaster = getIsPlayerMovingFaster();
-	if (isMovingFaster) return "run";
-
-	const isMoving = getPlayerIsMoving();
-	if (isMoving) return "walk";
+	if (entity.movingToAnimation) return entity.movingToAnimation;
+	if (entity.moveMode === "run") return "run";
+	if (entity.moveMode === "walk") return "walk";
 
 	return "idle";
 }
@@ -295,6 +290,8 @@ function updatePlayer(dt: number) {
 	if (gameState.paused) return;
 
 	if (!gameState.disabled && activeActions.has("start")) openMenu();
+
+	entity.moveMode = getIsPlayerMoveMode();
 
 	const desired = gameState.disabled ? null : movementIntent;
 
@@ -583,7 +580,8 @@ function draw(dt: number) {
 			`move to tile: ${player.movingToTile?.x ?? "x"}, ${player.movingToTile?.y ?? "y"}, ${player.movingToTile?.z ?? "z"}`,
 			`facing: ${player.direction}`,
 			`moving: ${player.isMoving}`,
-			`faster: ${getIsPlayerMovingFaster()}`,
+			`move mode: ${player.moveMode}`,
+			`faster: ${getIsPlayerMoveMode()}`,
 			`transition animation: ${player.movingToAnimation ?? "-"}`,
 		].forEach((line, index) => {
 			ctx.fillText(line, 4, 2 + index * 8);

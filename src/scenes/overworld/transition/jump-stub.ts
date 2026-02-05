@@ -68,7 +68,6 @@ function setStubJumpTransitionsSingle(
 	setEdge(x + 1, y, z, "left", {
 		transition: {
 			end: { x, y, z },
-			animation: "walk",
 			path: pathWithEndPause([
 				{
 					onSegmentStart: playJumpSfx,
@@ -94,7 +93,6 @@ function setStubJumpTransitionsSingle(
 	setEdge(x, y, z, "right", {
 		transition: {
 			end: { x: x + 1, y, z },
-			animation: "walk",
 			path: pathWithEndPause([
 				{
 					onSegmentStart: playJumpSfx,
@@ -122,7 +120,6 @@ function setStubJumpTransitionsSingle(
 		setEdge(x - 1, y, z, "right", {
 			transition: {
 				end: { x, y, z },
-				animation: "walk",
 				path: pathWithEndPause([
 					{
 						onSegmentStart: playJumpSfx,
@@ -144,7 +141,6 @@ function setStubJumpTransitionsSingle(
 		setEdge(x, y, z, "left", {
 			transition: {
 				end: { x: x - 1, y, z },
-				animation: "walk",
 				path: pathWithEndPause([
 					{
 						onSegmentStart: playJumpSfx,
@@ -175,7 +171,6 @@ function setStubJumpTransitionsSingle(
 	setEdge(x, y + 1, z, "up", {
 		transition: {
 			end: { x, y, z },
-			animation: "walk",
 			path: pathWithEndPause([
 				{
 					onSegmentStart: playJumpSfx,
@@ -204,7 +199,6 @@ function setStubJumpTransitionsSingle(
 	setEdge(x, y, z, "down", {
 		transition: {
 			end: { x, y: y + 1, z },
-			animation: "walk",
 			path: pathWithEndPause([
 				{
 					onSegmentStart: playJumpSfx,
@@ -235,7 +229,6 @@ function setStubJumpTransitionsSingle(
 		setEdge(x, y - 1, z, "down", {
 			transition: {
 				end: { x, y, z },
-				animation: "walk",
 				path: pathWithEndPause([
 					{
 						onSegmentStart: playJumpSfx,
@@ -261,7 +254,6 @@ function setStubJumpTransitionsSingle(
 		setEdge(x, y, z, "up", {
 			transition: {
 				end: { x, y: y - 1, z },
-				animation: "walk",
 				path: pathWithEndPause([
 					{
 						onSegmentStart: playJumpSfx,
