@@ -11,7 +11,7 @@ import {
 	setEdge,
 	setWorldImageLayers,
 } from "../cells";
-import { rsvp } from "../dialog";
+import { bubble, bubbles } from "../dialog";
 import {
 	type Entity,
 	entities,
@@ -95,7 +95,7 @@ function initCellsAndEdges() {
 	setCell(30, 36, 0, {
 		onActivate: () => {
 			const sentence = "The clouds look like cotton candy";
-			rsvp("dock_lookout", sentence);
+			bubble("dock_lookout", sentence);
 		},
 		blocked: true,
 	});
@@ -139,7 +139,7 @@ function initCellsAndEdges() {
 				id: `jumpable_platform`,
 				onActivate: () => {
 					const sentence = "I could jump down with some speed!";
-					rsvp("jumpable_platform", sentence);
+					bubble("jumpable_platform", sentence);
 				},
 			},
 		});
@@ -155,7 +155,7 @@ function initCellsAndEdges() {
 			blocked: true,
 			onActivate: () => {
 				const sentence = "Mushrooms! ... ... Let's leave them alone ❤";
-				rsvp("pretty_mushrooms", sentence);
+				bubble("pretty_mushrooms", sentence);
 			},
 		});
 	});
@@ -173,7 +173,7 @@ function initCellsAndEdges() {
 			id: "ladder_up",
 			onActivate: () => {
 				const sentence = "I could climb this";
-				rsvp("ladder_up", sentence);
+				bubble("ladder_up", sentence);
 			},
 		},
 	});
@@ -364,17 +364,19 @@ function initEntities() {
 	entities.set(id, {
 		...getEntityCharacterDefaults({ x: 30, y: 44, id }),
 		onActivate: ({ activator, activated }) => {
+			const bubbleId = "npc_interact";
+			if (bubbles.has(bubbleId)) return;
 			if (activated.interactionLock) return;
 			if (!activated.brain) return;
 
 			activated.interactionLock = true;
 
 			// Preempt whatever it was doing, then continue its queued routine.
-			activated.brain?.runner.pushFront([
+			activated.brain?.runner.interrupt([
 				cmd.waitUntilStopped(),
 				cmd.goToTile(getEntityFacingTile(activator)),
 				cmd.face(activator),
-				cmd.say("npc_interact", "Hello!", activated),
+				() => bubble(bubbleId, "Hello!", activated),
 				cmd.wait(1000),
 				{
 					onTick: ({ entity }) => {
@@ -402,17 +404,17 @@ function initEntities() {
 					{ x: 30, y: 44, z: 0, moveMode: "walk" },
 				] as const;
 
-				for (const wp of route) {
-					if (wp.moveMode) {
-						entity.brain.runner.push({
-							onTick({ entity }) {
-								entity.moveMode = wp.moveMode;
-								return true;
-							},
-						});
-					}
+				for (const point of route) {
+					entity.brain.runner.push({
+						onTick({ entity }) {
+							if (entity.moveMode !== point.moveMode) {
+								entity.moveMode = point.moveMode;
+							}
+							return true;
+						},
+					});
 					entity.brain.runner.push(
-						cmd.goToTile(wp, { stopAdjacentIfTargetBlocked: true }),
+						cmd.goToTile(point, { stopAdjacentIfTargetBlocked: true }),
 					);
 				}
 			},

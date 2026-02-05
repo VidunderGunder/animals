@@ -6,13 +6,13 @@ import type { Vec2Px } from "../../types";
 import { camera } from "./camera";
 import type { Entity } from "./entities";
 
-type RSVPTok =
+type BubbleTok =
 	| { kind: "word"; text: string; ms: number; emphasis: number }
 	| { kind: "pause"; ms: number };
 
-type RSVPContent = string | readonly RSVPTok[];
+type BubbleContent = string | readonly BubbleTok[];
 
-type RSVPOptions = {
+type BubbleOptions = {
 	/** Default ms for a normal word (before punctuation/emphasis modifiers) */
 	baseWordMs?: number;
 	/** Random jitter added/subtracted to word ms (human feel) */
@@ -53,7 +53,7 @@ type BubbleState = {
 
 	// identity + invalidation
 	contentKey: number;
-	tokens: RSVPTok[];
+	tokens: BubbleTok[];
 	getPosition?: () => Vec2Px;
 
 	// timing
@@ -70,10 +70,10 @@ type BubbleState = {
 
 	// presentation
 	pos: Vec2Px;
-	opts: Required<RSVPOptions>;
+	opts: Required<BubbleOptions>;
 };
 
-const DEFAULT_OPTS: Required<RSVPOptions> = {
+const DEFAULT_OPTS: Required<BubbleOptions> = {
 	baseWordMs: 200,
 	jitterMs: 25,
 	firstTokenExtraMs: 250,
@@ -102,14 +102,14 @@ const DEFAULT_OPTS: Required<RSVPOptions> = {
 	paddingY: 3,
 };
 
-function getPlayerRSVPPosition(): Vec2Px {
+function getPlayerBubblePosition(): Vec2Px {
 	return {
 		xPx: player.xPx - camera.xPx + player.width / 2,
 		yPx: player.yPx - camera.yPx,
 	};
 }
 
-const bubbles = new Map<string, BubbleState>();
+export const bubbles = new Map<string, BubbleState>();
 
 // Internal clock (no dt passed around)
 let lastNowMs = typeof performance !== "undefined" ? performance.now() : 0;
@@ -136,39 +136,38 @@ function isVec2PxWidth(obj: unknown): obj is Vec2PxWidth {
  * Call this from anywhere (world build, interact callbacks, cutscenes).
  * Rendering + advancement is handled by `renderDialogs()` once per frame.
  */
-export function rsvp(
+export function bubble(
 	id: string,
-	content: RSVPContent,
+	content: BubbleContent,
 	position?: Vec2PxWidth | (() => Vec2Px),
-	options: RSVPOptions = {},
+	options: BubbleOptions = {},
 ) {
 	const now = getNowMs();
-	const opts: Required<RSVPOptions> = { ...DEFAULT_OPTS, ...options };
+	const opts: Required<BubbleOptions> = { ...DEFAULT_OPTS, ...options };
 	const key = computeContentKey(content);
 
 	let getPosition = position instanceof Function ? position : undefined;
 
 	const vec2PxWidth = isVec2PxWidth(position) ? position : null;
 	if (vec2PxWidth) {
-		const { xPx, yPx, width } = vec2PxWidth;
 		getPosition = () => ({
-			xPx: xPx - camera.xPx + width / 2,
-			yPx: yPx - camera.yPx,
+			xPx: vec2PxWidth.xPx - camera.xPx + vec2PxWidth.width / 2,
+			yPx: vec2PxWidth.yPx - camera.yPx,
 		});
 	}
 
-	let bubble = bubbles.get(id);
+	let bub = bubbles.get(id);
 
 	// create or reset if content changed
-	if (!bubble || bubble.contentKey !== key) {
+	if (!bub || bub.contentKey !== key) {
 		const tokens = compileTokens(content, opts);
 
-		bubble = {
+		bub = {
 			id,
 			contentKey: key,
 			tokens,
 			getPosition() {
-				return getPosition?.() ?? getPlayerRSVPPosition();
+				return getPosition?.() ?? getPlayerBubblePosition();
 			},
 
 			tMs: 0,
@@ -185,10 +184,10 @@ export function rsvp(
 			opts,
 		};
 
-		bubbles.set(id, bubble);
+		bubbles.set(id, bub);
 
 		// Speak first visible word immediately
-		const first = bubble.tokens[0];
+		const first = bub.tokens[0];
 		if (first?.kind === "word") {
 			speak(first.text);
 		}
@@ -199,17 +198,9 @@ export function rsvp(
 	}
 
 	// Update existing bubble “freshness” and presentation
-	bubble.lastTouchedAtMs = now;
-	bubble.getPosition ??= getPosition;
-	bubble.opts = opts;
-
-	// If you want “calling rsvp again” to restart the bubble, uncomment:
-	// bubble.tMs = 0;
-	// bubble.finishedAtMs = null;
-	// bubble.tokenIndex = 0;
-	// bubble.tokenRemainingMs = bubble.tokens[0]?.ms ?? 0;
-	// bubble.lastWordText = null;
-	// bubble.lastWordEmphasis = 1;
+	bub.lastTouchedAtMs = now;
+	bub.getPosition ??= getPosition;
+	bub.opts = opts;
 }
 
 /**
@@ -242,7 +233,7 @@ export function renderDialogs() {
 	// Advance + render
 	for (const b of bubbles.values()) {
 		// update position live (camera/player moves)
-		b.pos = b.getPosition?.() ?? getPlayerRSVPPosition();
+		b.pos = b.getPosition?.() ?? getPlayerBubblePosition();
 		advanceBubble(b, dtMs);
 		renderBubble(b);
 	}
@@ -373,7 +364,7 @@ function renderBubble(b: BubbleState) {
 function drawTextWithBubble(
 	text: string,
 	{ xPx, yPx }: Vec2Px,
-	opts: Required<RSVPOptions>,
+	opts: Required<BubbleOptions>,
 	alpha: number,
 	emphasis: number = 1,
 ) {
@@ -476,15 +467,15 @@ function wrapText(text: string, maxWidthPx: number): string[] {
 // -----------------------
 
 function compileTokens(
-	content: RSVPContent,
-	opts: Required<RSVPOptions>,
-): RSVPTok[] {
-	if (typeof content !== "string") return content.slice() as RSVPTok[];
+	content: BubbleContent,
+	opts: Required<BubbleOptions>,
+): BubbleTok[] {
+	if (typeof content !== "string") return content.slice() as BubbleTok[];
 
 	const raw = content.trim();
 	if (!raw) return [];
 
-	const out: RSVPTok[] = [];
+	const out: BubbleTok[] = [];
 
 	if (opts.firstTokenExtraMs > 0) {
 		out.push({ kind: "pause", ms: opts.firstTokenExtraMs });
@@ -512,7 +503,7 @@ function compileTokens(
 	return out;
 }
 
-function tokenizeMarkup(text: string, opts: Required<RSVPOptions>) {
+function tokenizeMarkup(text: string, opts: Required<BubbleOptions>) {
 	const chunks = text.replace(/\s+/g, " ").split(" ");
 
 	const out: (
@@ -584,7 +575,7 @@ function randJitter(jitterMs: number) {
 	return Math.round((Math.random() * 2 - 1) * jitterMs);
 }
 
-function computeContentKey(content: RSVPContent) {
+function computeContentKey(content: BubbleContent) {
 	if (typeof content === "string") return hashText(content);
 	let h = 5381;
 	for (const t of content) {

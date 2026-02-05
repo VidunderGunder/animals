@@ -1,6 +1,5 @@
 // src/scenes/overworld/ai/commands.ts
 import type { Direction } from "../../../input/input";
-import { rsvp } from "../dialog";
 import type { Entity } from "../entities";
 import { getOccupant } from "../occupancy";
 import { findPathDirections } from "./pathfinding";
@@ -168,6 +167,9 @@ function goToTile(
 	let lastAt: { x: number; y: number; z: number } | null = null;
 	let stuckMs = 0;
 
+	// NEW: detect when something else (eg. interaction) changed facing
+	let lastIssued: Direction | null = null;
+
 	function dirToDxDy(dir: Direction): { dx: number; dy: number } {
 		switch (dir) {
 			case "up":
@@ -191,7 +193,19 @@ function goToTile(
 				return true;
 			}
 
+			// While moving, we don't issue new intents.
 			if (entity.isMoving) return false;
+
+			// NEW: if our last-issued direction doesn't match current facing,
+			// something external likely rotated the NPC (eg. face(player)).
+			// Drop cached plan so we don't take a "stale" first step.
+			if (lastIssued && entity.direction !== lastIssued) {
+				cached = null;
+				repathCooldownMs = 0;
+				stuckMs = 0;
+				lastAt = null;
+				lastIssued = null;
+			}
 
 			if (
 				lastAt &&
@@ -251,19 +265,11 @@ function goToTile(
 			}
 
 			entity.intentDir = next;
+			lastIssued = next; // NEW: remember what we asked for
+
 			cached?.shift();
 			repathCooldownMs = Math.min(repathCooldownMs, 90);
 			return false;
-		},
-	};
-}
-
-/** sayCmd: immediate RSVP (optionally anchored) and finish */
-function say(id: string, text: string, anchor?: Entity): Command {
-	return {
-		onTick() {
-			rsvp(id, text, anchor);
-			return true;
 		},
 	};
 }
@@ -274,5 +280,4 @@ export const cmd = {
 	face,
 	step,
 	goToTile,
-	say,
 };

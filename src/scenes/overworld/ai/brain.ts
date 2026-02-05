@@ -17,18 +17,45 @@ export class CommandRunner {
 		}
 	}
 
-	push(cmd: Command) {
+	push(cmd: Command | (() => void)) {
+		if (typeof cmd === "function") {
+			this.queue.push({
+				onTick: () => {
+					cmd();
+					return true;
+				},
+			});
+			return;
+		}
 		this.queue.push(cmd);
 	}
 
 	/** Push a command to the FRONT (preempt current plan). */
-	pushFront(cmd: Command | Command[]) {
+	interrupt(cmd: Command | (() => void) | (Command | (() => void))[]) {
 		if (Array.isArray(cmd)) {
 			// preserve order: first in array runs first
 			for (let i = cmd.length - 1; i >= 0; i--) {
 				const c = cmd[i];
+				if (typeof c === "function") {
+					this.queue.unshift({
+						onTick: () => {
+							c();
+							return true;
+						},
+					});
+					continue;
+				}
 				if (c) this.queue.unshift(c);
 			}
+			return;
+		}
+		if (typeof cmd === "function") {
+			this.queue.unshift({
+				onTick: () => {
+					cmd();
+					return true;
+				},
+			});
 			return;
 		}
 		this.queue.unshift(cmd);
