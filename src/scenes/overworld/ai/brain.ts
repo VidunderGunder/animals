@@ -21,6 +21,19 @@ export class CommandRunner {
 		this.queue.push(cmd);
 	}
 
+	/** Push a command to the FRONT (preempt current plan). */
+	pushFront(cmd: Command | Command[]) {
+		if (Array.isArray(cmd)) {
+			// preserve order: first in array runs first
+			for (let i = cmd.length - 1; i >= 0; i--) {
+				const c = cmd[i];
+				if (c) this.queue.unshift(c);
+			}
+			return;
+		}
+		this.queue.unshift(cmd);
+	}
+
 	clear() {
 		this.queue.length = 0;
 	}

@@ -22,9 +22,40 @@ function wait(ms: number): Command {
 	};
 }
 
-function face(dir: Direction): Command {
+/** Wait until entity is fully stopped (not mid-path segment). */
+function waitUntilStopped(): Command {
 	return {
 		onTick({ entity }) {
+			return !entity.isMoving;
+		},
+	};
+}
+
+function dirToward(
+	from: { x: number; y: number },
+	to: { x: number; y: number },
+) {
+	const dx = to.x - from.x;
+	const dy = to.y - from.y;
+
+	// Prefer the dominant axis so it feels intentional
+	if (Math.abs(dx) >= Math.abs(dy)) {
+		return dx >= 0 ? "right" : "left";
+	}
+	return dy >= 0 ? "down" : "up";
+}
+
+function face(
+	dir:
+		| Direction
+		| {
+				x: number;
+				y: number;
+		  },
+): Command {
+	return {
+		onTick({ entity }) {
+			if (typeof dir === "object") dir = dirToward(entity, dir);
 			entity.direction = dir;
 			return true;
 		},
@@ -130,6 +161,8 @@ function goToTile(
 		stopAdjacentIfTargetBlocked?: boolean;
 	},
 ): Command {
+	const stopAdjacentIfTargetBlocked = opts?.stopAdjacentIfTargetBlocked ?? true;
+
 	let cached: Direction[] | null = null;
 	let repathCooldownMs = 0;
 	let lastAt: { x: number; y: number; z: number } | null = null;
@@ -201,7 +234,7 @@ function goToTile(
 			const next = cached?.[0];
 			if (!next) return false;
 
-			if (opts?.stopAdjacentIfTargetBlocked && cached?.length === 1) {
+			if (stopAdjacentIfTargetBlocked && cached?.length === 1) {
 				const { dx, dy } = dirToDxDy(next);
 				const wouldEnter = { x: entity.x + dx, y: entity.y + dy, z: entity.z };
 
@@ -225,11 +258,11 @@ function goToTile(
 	};
 }
 
-/** sayCmd: immediate RSVP and finish */
-function say(id: string, text: string): Command {
+/** sayCmd: immediate RSVP (optionally anchored) and finish */
+function say(id: string, text: string, anchor?: Entity): Command {
 	return {
 		onTick() {
-			rsvp(id, text);
+			rsvp(id, text, anchor);
 			return true;
 		},
 	};
@@ -237,6 +270,7 @@ function say(id: string, text: string): Command {
 
 export const cmd = {
 	wait,
+	waitUntilStopped,
 	face,
 	step,
 	goToTile,

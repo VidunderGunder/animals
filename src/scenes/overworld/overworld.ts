@@ -265,7 +265,7 @@ function updatePlayer(dt: number) {
 	// Speed based on run/walk
 	entity.speed = movementSpeeds[entity.moveMode ?? "walk"];
 
-	// Interaction: activate on current tile (placeholder)
+	// Interaction: activate target in front of player
 	if (!gameState.disabled && activeActions.has("a") && !entity.isMoving) {
 		const activationCell = {
 			x: entity.x,
@@ -278,20 +278,34 @@ function updatePlayer(dt: number) {
 		if (entity.direction === "left") activationCell.x -= 1;
 		if (entity.direction === "up") activationCell.y -= 1;
 
-		getCell(activationCell.x, activationCell.y, activationCell.z)?.onActivate?.(
-			{
-				activator: entity,
-			},
+		// 1) Prefer entity currently OCCUPYING the tile
+		const occId = getOccupant(
+			activationCell.x,
+			activationCell.y,
+			activationCell.z,
 		);
+		if (occId) {
+			const target = entities.get(occId);
+			target?.onActivate?.({ activator: entity, activated: target });
+		} else {
+			// 2) Otherwise, fallback to cell/edge interactions
+			getCell(
+				activationCell.x,
+				activationCell.y,
+				activationCell.z,
+			)?.onActivate?.({
+				activator: entity,
+			});
 
-		getEdge(
-			entity.x,
-			entity.y,
-			entity.z,
-			entity.direction,
-		)?.interact?.onActivate({
-			activator: entity,
-		});
+			getEdge(
+				entity.x,
+				entity.y,
+				entity.z,
+				entity.direction,
+			)?.interact?.onActivate({
+				activator: entity,
+			});
+		}
 
 		activeActions.delete("a");
 	}
@@ -438,22 +452,6 @@ function updateEntityAndPlayer({
 
 	// Anim AFTER movement update
 	updateEntityAnimation(dt, entity, desiredAnimation);
-
-	const cell = getCell(entity.x, entity.y, entity.z);
-
-	// Keep onActivate wiring behavior
-	if (!entity.isMoving) {
-		occupy(entity);
-
-		if (!cell?.onActivate && entity.onActivate) {
-			setCell(entity.x, entity.y, entity.z, {
-				...cell,
-				onActivate({ activator }) {
-					return entity.onActivate?.({ activator, activated: entity });
-				},
-			});
-		}
-	}
 }
 
 function update(dt: number) {

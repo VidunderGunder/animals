@@ -12,7 +12,12 @@ import {
 	setWorldImageLayers,
 } from "../cells";
 import { rsvp } from "../dialog";
-import { type Entity, entities, getEntityCharacterDefaults } from "../entities";
+import {
+	type Entity,
+	entities,
+	getEntityCharacterDefaults,
+	getEntityFacingTile,
+} from "../entities";
 import { getJumpDownTransition } from "../transition/jump-down";
 import { setStubJumpTransitions } from "../transition/jump-stub";
 
@@ -358,8 +363,26 @@ function initEntities() {
 	const id = "npc_player";
 	entities.set(id, {
 		...getEntityCharacterDefaults({ x: 30, y: 44, id }),
-		onActivate: ({ activated }) => {
-			rsvp("npc_interact", "Hello!", activated);
+		onActivate: ({ activator, activated }) => {
+			if (activated.interactionLock) return;
+			if (!activated.brain) return;
+
+			activated.interactionLock = true;
+
+			// Preempt whatever it was doing, then continue its queued routine.
+			activated.brain?.runner.pushFront([
+				cmd.waitUntilStopped(),
+				cmd.goToTile(getEntityFacingTile(activator)),
+				cmd.face(activator),
+				cmd.say("npc_interact", "Hello!", activated),
+				cmd.wait(1000),
+				{
+					onTick: ({ entity }) => {
+						entity.interactionLock = false;
+						return true;
+					},
+				},
+			]);
 		},
 		brain: {
 			runner: new CommandRunner(),
@@ -367,7 +390,6 @@ function initEntities() {
 				entity.moveMode = "run";
 				if (!entity.brain?.runner.isIdle()) return;
 
-				// A simple loop route (roughly your old “circle”)
 				const route = [
 					{ x: 26, y: 44, z: 0, moveMode: "walk" },
 					{ x: 26, y: 46, z: 0, moveMode: "walk" },
@@ -380,7 +402,6 @@ function initEntities() {
 					{ x: 30, y: 44, z: 0, moveMode: "walk" },
 				] as const;
 
-				// enqueue one full lap
 				for (const wp of route) {
 					if (wp.moveMode) {
 						entity.brain.runner.push({

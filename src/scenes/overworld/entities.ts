@@ -72,6 +72,8 @@ export type Entity = {
 	moveMode?: "walk" | "run";
 	/** Temporary desired direction set by brain for a single tick */
 	intentDir?: Direction | null;
+	/** Prevent activation spam while an interaction is running */
+	interactionLock: boolean;
 };
 export function getEntityCharacterDefaults({
 	id,
@@ -111,5 +113,23 @@ export function getEntityCharacterDefaults({
 		brain: null,
 		moveMode: "walk",
 		intentDir: null,
+		interactionLock: false,
 	};
+}
+
+export function getEntityFacingTile(entity: Entity): {
+	x: number;
+	y: number;
+	z: number;
+} {
+	switch (entity.direction) {
+		case "up":
+			return { x: entity.x, y: entity.y - 1, z: entity.z };
+		case "down":
+			return { x: entity.x, y: entity.y + 1, z: entity.z };
+		case "left":
+			return { x: entity.x - 1, y: entity.y, z: entity.z };
+		case "right":
+			return { x: entity.x + 1, y: entity.y, z: entity.z };
+	}
 }
