@@ -18,18 +18,14 @@ But you can use any tool you like, as long as the sound effects fit the style.
 
 ## TODO
 
-Entities
-
-- [ ] 💛 Movement/routines for entities
-
 Character Movement & Animation
 
-- [ ] 🤍 Camera control for transitions + Remove vertical camera motion for stub-to-stub-jumps
+- [ ] 💛 Tap to turn  
+  Enable turning by tapping direction (not in facing direction) when in slow mode (e.g., walk), yet still allow smooth direction changes when moving or in fast mode (e.g., run)
 - [ ] 🤍 Smoke effect for jumps, drops, tricks etc.
 - [ ] 🤍 Terrain dependant rendering 
+- [ ] 🤍 Camera control for transitions + Remove vertical camera motion for stub-to-stub-jumps
   Cut off lower part of sprite (dynamic height), add animated overlay (e.g., water, grass, mud)
-- [ ] 🤍 Tap to turn  
-  Enable turning by tapping direction (not in facing direction) when in slow mode (e.g., walk), yet still allow smooth direction changes when moving or in fast mode (e.g., run)
 - [ ] Additive position offsets for animation and transition  
   Transitions now override animation position offsets, but they should be combined (optionally maybe?)
 - [ ] Roll & flip animation
@@ -42,11 +38,12 @@ Controls
 
 Bugs (clearly defined issues)
 
+- [ ] 💛 Saving/loading is broken (due to entity movement refactor that uses classes and functions)  
+  We want to be able to save/load entity positions, states, routines, etc.
 - [ ] Looping ambience (forest definitely, beach maybe) has a small gap/pause when looping
 - [ ] Current ambience implementation hijacks audio on iOS, stopping music playback from other apps—we want to allow both to play simultaneously
 
 Spikes (investigation tasks)
 
-- [ ] Maybe we should properly pause the game (now animations still play, and the current transition continues—but we should probably freeze everything), but it could be fine the way it is for now?
-- [ ] Is it cleaner to only use `currentAnimation`, and not `movingToAnimation`?
-- [ ] Why is `movingToAnimation` only working for jumping off the platform, and not for anything with a default `walk` animation (e.g., moving up and down ladders and stairs)?
+- [ ] Is it cleaner to only use `animationCurrent`, and not `movingToAnimation`?
+- [ ] Maybe we should properly pause the game (now animations and sound still play, and the current transition continues—but we should probably freeze everything), but it could be fine the way it is for now?

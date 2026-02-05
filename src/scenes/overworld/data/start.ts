@@ -1,14 +1,23 @@
+import { createImageElement } from "../../../assets/image";
 import { setAmbienceFields } from "../../../audio/ambience";
 import { TILE_SIZE_PX } from "../../../config";
 import { CommandRunner } from "../ai/brain";
 import { cmd } from "../ai/commands";
-import { cellToPx, getCellsOutline, range, setCell, setEdge } from "../cells";
+import {
+	cellToPx,
+	getCellsOutline,
+	range,
+	setCell,
+	setEdge,
+	setWorldImageLayers,
+} from "../cells";
 import { rsvp } from "../dialog";
 import { type Entity, entities, getEntityCharacterDefaults } from "../entities";
 import { getJumpDownTransition } from "../transition/jump-down";
 import { setStubJumpTransitions } from "../transition/jump-stub";
 
 export function initializeArea() {
+	initWorldImageLayers();
 	initCellsAndEdges();
 	initAudio();
 	initEntities();
@@ -149,7 +158,6 @@ function initCellsAndEdges() {
 	// Ladder
 	setEdge(31, 46, 0, "right", {
 		transition: {
-			animation: "walk",
 			path: [
 				{ ...cellToPx(31, 45), z: 1 },
 				{ ...cellToPx(32, 45), z: 1 },
@@ -169,7 +177,6 @@ function initCellsAndEdges() {
 		transition: [
 			{
 				condition: (entity: Entity) => entity.moveMode === "walk",
-				animation: "walk",
 				path: [
 					{ ...cellToPx(31, 45), z: 1 },
 					{
@@ -223,14 +230,12 @@ function initCellsAndEdges() {
 	// Stairs
 	setEdge(33, 50, 0, "left", {
 		transition: {
-			animation: "walk",
 			path: [{ ...cellToPx(32, 49), z: 1 }],
 			end: { x: 32, y: 49, z: 1 },
 		},
 	});
 	setEdge(32, 49, 1, "right", {
 		transition: {
-			animation: "walk",
 			path: [{ ...cellToPx(33, 50), z: 0 }],
 			end: { x: 33, y: 50, z: 0 },
 		},
@@ -238,14 +243,12 @@ function initCellsAndEdges() {
 
 	setEdge(27, 50, 0, "right", {
 		transition: {
-			animation: "walk",
 			path: [{ ...cellToPx(28, 49), z: 1 }],
 			end: { x: 28, y: 49, z: 1 },
 		},
 	});
 	setEdge(28, 49, 1, "left", {
 		transition: {
-			animation: "walk",
 			path: [{ ...cellToPx(27, 50), z: 0 }],
 			end: { x: 27, y: 50, z: 0 },
 		},
@@ -315,6 +318,42 @@ function initAudio() {
 	]);
 }
 
+function initWorldImageLayers() {
+	setWorldImageLayers([
+		{
+			z: 0,
+			back: [
+				createImageElement("/world/start/scenery-frame-1.png"),
+				createImageElement("/world/start/scenery-frame-2.png"),
+			],
+		},
+		{
+			z: 0,
+			back: [
+				createImageElement("/world/start/obstacle-course/0-back-frame-1.png"),
+				createImageElement("/world/start/obstacle-course/0-back-frame-2.png"),
+			],
+			front: [
+				createImageElement(
+					"/world/start/obstacle-course/0-front-frame-1-2.png",
+				),
+			],
+		},
+		{
+			z: 1,
+			back: [
+				createImageElement("/world/start/obstacle-course/1-back-frame-1-2.png"),
+			],
+
+			front: [
+				createImageElement(
+					"/world/start/obstacle-course/1-front-frame-1-2.png",
+				),
+			],
+		},
+	]);
+}
+
 function initEntities() {
 	const id = "npc_player";
 	entities.set(id, {
@@ -322,26 +361,35 @@ function initEntities() {
 		brain: {
 			runner: new CommandRunner(),
 			routine(entity) {
-				if (entity.brain?.runner.isIdle()) {
-					[
-						cmd.step("left"),
-						cmd.wait(Math.random() * 1000),
-						cmd.step("left"),
-						cmd.step("left"),
-						cmd.step("left"),
-						cmd.step("down"),
-						cmd.wait(Math.random() * 1000),
-						cmd.step("down"),
-						cmd.step("right"),
-						cmd.wait(Math.random() * 1000),
-						cmd.step("right"),
-						cmd.step("right"),
-						cmd.step("right"),
-						cmd.step("up"),
-						cmd.step("up"),
-					].forEach((c) => {
-						entity.brain?.runner.push(c);
-					});
+				entity.moveMode = "run";
+				if (!entity.brain?.runner.isIdle()) return;
+
+				// A simple loop route (roughly your old “circle”)
+				const route = [
+					{ x: 26, y: 44, z: 0, moveMode: "walk" },
+					{ x: 26, y: 46, z: 0, moveMode: "walk" },
+					{ x: 30, y: 46, z: 0, moveMode: "walk" },
+					{ x: 35, y: 49, z: 1, moveMode: "walk" },
+					{ x: 30, y: 49, z: 1, moveMode: "run" },
+					{ x: 26, y: 50, z: 0, moveMode: "run" },
+					{ x: 26, y: 55, z: 0, moveMode: "run" },
+					{ x: 30, y: 55, z: 0, moveMode: "run" },
+					{ x: 30, y: 44, z: 0, moveMode: "walk" },
+				] as const;
+
+				// enqueue one full lap
+				for (const wp of route) {
+					if (wp.moveMode) {
+						entity.brain.runner.push({
+							tick({ entity }) {
+								entity.moveMode = wp.moveMode;
+								return true;
+							},
+						});
+					}
+					entity.brain.runner.push(
+						cmd.goToTile(wp, { stopAdjacentIfTargetBlocked: true }),
+					);
 				}
 			},
 		},

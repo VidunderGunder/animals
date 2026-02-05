@@ -4,7 +4,6 @@ import {
 	animations,
 	renderFrameLayer,
 } from "../../animations/animations";
-import { createImageElement } from "../../assets/image";
 import { updateAmbience } from "../../audio/ambience";
 import { updateMusic } from "../../audio/music";
 import {
@@ -30,7 +29,14 @@ import { gameState, player } from "../../state";
 import { saveEntitiesState } from "../../storage";
 import { menuState, openMenu } from "../menu/menu";
 import { camera, updateCamera } from "./camera";
-import { getCell, getEdge, setCell } from "./cells";
+import {
+	getCell,
+	getEdge,
+	setCell,
+	setTilesCountsAndSetWorldBounds,
+	worldBounds,
+	worldImageLayers,
+} from "./cells";
 import { initializeArea as initializeStartArea } from "./data/start";
 import { renderDialogs } from "./dialog";
 import { type Entity, entities } from "./entities";
@@ -149,54 +155,6 @@ function getVisibleTileRange() {
 
 const sublayers = ["back", "front"] as const;
 
-const worldImageLayers: {
-	z: number;
-	back?: HTMLImageElement[];
-	front?: HTMLImageElement[];
-}[] = [
-	{
-		z: 0,
-		back: [
-			createImageElement("/world/start/scenery-frame-1.png"),
-			createImageElement("/world/start/scenery-frame-2.png"),
-		],
-	},
-	{
-		z: 0,
-		back: [
-			createImageElement("/world/start/obstacle-course/0-back-frame-1.png"),
-			createImageElement("/world/start/obstacle-course/0-back-frame-2.png"),
-		],
-		front: [
-			createImageElement("/world/start/obstacle-course/0-front-frame-1-2.png"),
-		],
-	},
-	{
-		z: 1,
-		back: [
-			createImageElement("/world/start/obstacle-course/1-back-frame-1-2.png"),
-		],
-
-		front: [
-			createImageElement("/world/start/obstacle-course/1-front-frame-1-2.png"),
-		],
-	},
-] as const;
-
-let tilesYCount = 0;
-let tilesXCount = 0;
-
-function setTilesCountsIfNotSet() {
-	if (!tilesYCount || !tilesXCount) {
-		const firstImage =
-			worldImageLayers[0]?.back?.[0] || worldImageLayers[0]?.front?.[0];
-		if (!firstImage || !firstImage.complete || firstImage.naturalWidth === 0)
-			return;
-		tilesXCount = firstImage.naturalWidth / TILE_SIZE_PX;
-		tilesYCount = firstImage.naturalHeight / TILE_SIZE_PX;
-	}
-}
-
 function isWorldImagesReady() {
 	return worldImageLayers.every((layer) => {
 		const backReady = layer.back
@@ -278,7 +236,8 @@ function tryPlanMove(desired: Direction, entity: Entity): Transition | null {
 	const ny = entity.y + dy;
 	const nz = entity.z;
 
-	if (nx < 0 || ny < 0 || nx >= tilesXCount || ny >= tilesYCount) return null;
+	if (nx < 0 || ny < 0 || nx >= worldBounds.x || ny >= worldBounds.y)
+		return null;
 
 	const destination = getCell(nx, ny, nz);
 	if (destination?.blocked) return null;
@@ -492,7 +451,7 @@ function update(dt: number) {
 	const isReady = isWorldImagesReady();
 	if (!isReady) return;
 
-	setTilesCountsIfNotSet();
+	setTilesCountsAndSetWorldBounds();
 
 	for (const [id, entity] of entities.entries()) {
 		if (id === "player") continue;
@@ -509,19 +468,29 @@ function draw(dt: number) {
 	const isReady = isWorldImagesReady();
 	if (!isReady) return;
 
-	setTilesCountsIfNotSet();
 	clear();
 
 	const { minTileX, minTileY, maxTileX, maxTileY } = getVisibleTileRange();
 
 	const startX = Math.max(0, minTileX);
 	const startY = Math.max(0, minTileY);
-	const endX = Math.min(tilesXCount - 1, maxTileX);
-	const endY = Math.min(tilesYCount - 1, maxTileY);
+	const endX = Math.min(worldBounds?.x - 1, maxTileX);
+	const endY = Math.min(worldBounds?.y - 1, maxTileY);
 
-	const entitiesRenderZ: [number, Entity][] = Array.from(entities.values()).map(
-		(entity) => [getEntitiesRenderZ(entity), entity],
-	);
+	const drawList = Array.from(entities.values())
+		.map((entity) => {
+			const renderZ = getEntitiesRenderZ(entity);
+			const row = Math.floor((entity.yPx + TILE_SIZE_PX - 1) / TILE_SIZE_PX);
+			return { entity, renderZ, row };
+		})
+		.sort((a, b) => {
+			// draw lower things last (on top)
+			if (a.renderZ !== b.renderZ) return a.renderZ - b.renderZ;
+			if (a.row !== b.row) return a.row - b.row;
+			if (a.entity.yPx !== b.entity.yPx) return a.entity.yPx - b.entity.yPx;
+			if (a.entity.xPx !== b.entity.xPx) return a.entity.xPx - b.entity.xPx;
+			return a.entity.id.localeCompare(b.entity.id);
+		});
 
 	for (const layer of worldImageLayers) {
 		for (let ty = startY; ty <= endY; ty++) {
@@ -542,17 +511,12 @@ function draw(dt: number) {
 
 				if (!image) continue;
 
-				entitiesRenderZ.forEach(([renderZ, entity]) => {
-					const entityRow = Math.floor(
-						(entity.yPx + TILE_SIZE_PX - 1) / TILE_SIZE_PX,
-					);
-					const shouldDrawEntity =
-						sublayer === "front" && layer.z === renderZ && ty === entityRow;
-
-					if (shouldDrawEntity) {
-						drawEntity(entity);
-					}
-				});
+				for (const it of drawList) {
+					if (sublayer !== "front") continue;
+					if (layer.z !== it.renderZ) continue;
+					if (ty !== it.row) continue;
+					drawEntity(it.entity);
+				}
 
 				ctx.drawImage(image, sx, sy, w, TILE_SIZE_PX, dx, dy, w, TILE_SIZE_PX);
 			}

@@ -4,6 +4,30 @@ import type { Vec2Px } from "../../types";
 import type { Entity } from "./entities";
 import type { Transition } from "./transition/transition";
 
+type WorldImageLayer = {
+	z?: number;
+	back?: HTMLImageElement[];
+	front?: HTMLImageElement[];
+};
+
+export let worldImageLayers: WorldImageLayer[] = [];
+
+export function setWorldImageLayers(layers: WorldImageLayer[]) {
+	worldImageLayers = layers;
+}
+
+export function setTilesCountsAndSetWorldBounds(force = false) {
+	if (!force && worldBounds.x !== 0 && worldBounds.y !== 0) return;
+	const firstImage =
+		worldImageLayers[0]?.back?.[0] || worldImageLayers[0]?.front?.[0];
+	if (!firstImage || !firstImage.complete || firstImage.naturalWidth === 0)
+		return;
+	setWorldBounds(
+		firstImage.naturalWidth / TILE_SIZE_PX,
+		firstImage.naturalHeight / TILE_SIZE_PX,
+	);
+}
+
 export const cells = new Map<number, Cell>();
 export const edges = new Map<number, Edge>();
 
@@ -80,6 +104,14 @@ export function getEdge(
 export function clearCellsAndEdges() {
 	cells.clear();
 	edges.clear();
+}
+
+type WorldBounds = { x: number; y: number };
+
+export let worldBounds: WorldBounds = { x: 0, y: 0 };
+
+export function setWorldBounds(x: number, y: number) {
+	worldBounds = { x, y };
 }
 
 /** A single outline edge segment */

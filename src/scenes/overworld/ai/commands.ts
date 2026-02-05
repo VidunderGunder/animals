@@ -2,6 +2,8 @@
 import type { Direction } from "../../../input/input";
 import { rsvp } from "../dialog";
 import type { Entity } from "../entities";
+import { getOccupant } from "../occupancy";
+import { findPathDirections } from "./pathfinding";
 
 export type Command = {
 	tick: (props: { entity: Entity; dt: number }) => boolean | Promise<boolean>;
@@ -112,6 +114,114 @@ function step(dir: Direction): Command {
 	};
 }
 
+/**
+ * goToTile: A* to a target tile.
+ *
+ * - If blocked by dynamic occupancy (player/NPC), it will replan.
+ * - It only ever requests ONE step at a time through `entity.intentDir`.
+ * - It completes once the entity is snapped to the goal tile.
+ */
+function goToTile(
+	target: { x: number; y: number; z: number },
+	opts?: {
+		stopAdjacentIfTargetBlocked?: boolean;
+	},
+): Command {
+	let cached: Direction[] | null = null;
+	let repathCooldownMs = 0;
+	let lastAt: { x: number; y: number; z: number } | null = null;
+	let stuckMs = 0;
+
+	function dirToDxDy(dir: Direction): { dx: number; dy: number } {
+		switch (dir) {
+			case "up":
+				return { dx: 0, dy: -1 };
+			case "down":
+				return { dx: 0, dy: 1 };
+			case "left":
+				return { dx: -1, dy: 0 };
+			case "right":
+				return { dx: 1, dy: 0 };
+		}
+	}
+
+	return {
+		tick({ entity, dt }) {
+			if (
+				entity.x === target.x &&
+				entity.y === target.y &&
+				entity.z === target.z
+			) {
+				return true;
+			}
+
+			if (entity.isMoving) return false;
+
+			if (
+				lastAt &&
+				lastAt.x === entity.x &&
+				lastAt.y === entity.y &&
+				lastAt.z === entity.z
+			) {
+				stuckMs += dt;
+			} else {
+				stuckMs = 0;
+				lastAt = { x: entity.x, y: entity.y, z: entity.z };
+			}
+
+			repathCooldownMs -= dt;
+			if (repathCooldownMs < 0) repathCooldownMs = 0;
+
+			const shouldRepath =
+				!cached ||
+				cached.length === 0 ||
+				repathCooldownMs === 0 ||
+				stuckMs > 350;
+
+			if (shouldRepath) {
+				cached = findPathDirections(
+					entity,
+					{ x: entity.x, y: entity.y, z: entity.z },
+					target,
+					{ maxExpanded: 2500 },
+				);
+
+				if (!cached || cached.length === 0) {
+					repathCooldownMs = 200;
+					return false;
+				}
+
+				repathCooldownMs = 120;
+				stuckMs = 0;
+			}
+
+			const next = cached?.[0];
+			if (!next) return false;
+
+			if (opts?.stopAdjacentIfTargetBlocked && cached?.length === 1) {
+				const { dx, dy } = dirToDxDy(next);
+				const wouldEnter = { x: entity.x + dx, y: entity.y + dy, z: entity.z };
+
+				if (
+					wouldEnter.x === target.x &&
+					wouldEnter.y === target.y &&
+					wouldEnter.z === target.z
+				) {
+					const occ = getOccupant(target.x, target.y, target.z);
+					if (occ && occ !== entity.id) {
+						return true; // finish adjacent
+					}
+				}
+			}
+
+			entity.intentDir = next;
+			cached?.shift();
+			repathCooldownMs = Math.min(repathCooldownMs, 90);
+			return false;
+		},
+	};
+}
+
 /** sayCmd: immediate RSVP and finish */
 function say(id: string, text: string): Command {
 	return {
@@ -126,5 +236,6 @@ export const cmd = {
 	wait,
 	face,
 	step,
+	goToTile,
 	say,
 };
