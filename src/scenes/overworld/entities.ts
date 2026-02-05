@@ -73,7 +73,7 @@ export type Entity = {
 	/** Temporary desired direction set by brain for a single tick */
 	intentDir?: Direction | null;
 	/** Prevent activation spam while an interaction is running */
-	interactionLock: boolean;
+	interactionLock?: boolean;
 };
 export function getEntityCharacterDefaults({
 	id,
