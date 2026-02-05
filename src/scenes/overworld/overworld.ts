@@ -185,8 +185,6 @@ function startSegment(
 
 	entity.pathSegmentProgress = 0;
 	entity.pathSegmentDuration = duration;
-
-	vacate(entity);
 }
 
 function setCurrentSegment(entity: Entity): boolean {
@@ -351,6 +349,7 @@ function updateEntityAndPlayer({
 			entity.direction = desiredDirection;
 
 			const planned = tryPlanMove(desiredDirection, entity);
+
 			if (planned) {
 				// Reserve destination BEFORE starting the move
 				const ok = occupy({ ...planned.end, id: entity.id });
@@ -363,6 +362,16 @@ function updateEntityAndPlayer({
 					entity.movingToAnimation = planned.animation ?? null;
 
 					entity.path = planned.path.map((p) => ({ ...p }));
+
+					const first = entity.path[0];
+					if (first) {
+						const prev = first.onSegmentEnd;
+						first.onSegmentEnd = (e) => {
+							// Vacate start tile once the first segment ends
+							vacate(e);
+							prev?.(e);
+						};
+					}
 
 					setCurrentSegment(entity);
 				}

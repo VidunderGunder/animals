@@ -30,15 +30,11 @@ export class CommandRunner {
 	}
 
 	/** Run one tick. Returns true if still running (has commands), false if idle. */
-	async tick(entity: Entity, dt: number): Promise<boolean> {
+	tick(entity: Entity, dt: number): boolean {
 		while (this.queue.length) {
 			const cmd = this.queue[0];
-			const res = await cmd?.tick({ entity, dt });
-			if (!res) {
-				// command still running -> keep it for next frame
-				return true;
-			}
-			// command finished -> pop and continue to next command this frame
+			const res = cmd?.onTick({ entity, dt });
+			if (!res) return true;
 			this.queue.shift();
 		}
 		return false;

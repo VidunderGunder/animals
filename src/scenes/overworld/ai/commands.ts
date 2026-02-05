@@ -6,13 +6,16 @@ import { getOccupant } from "../occupancy";
 import { findPathDirections } from "./pathfinding";
 
 export type Command = {
-	tick: (props: { entity: Entity; dt: number }) => boolean | Promise<boolean>;
+	/**
+	 * Returns true if command is finished, false to continue next tick.
+	 */
+	onTick: (props: { entity: Entity; dt: number }) => boolean;
 };
 
 function wait(ms: number): Command {
 	let elapsed = 0;
 	return {
-		tick({ dt }) {
+		onTick({ dt }) {
 			elapsed += dt;
 			return elapsed >= ms;
 		},
@@ -21,7 +24,7 @@ function wait(ms: number): Command {
 
 function face(dir: Direction): Command {
 	return {
-		tick({ entity }) {
+		onTick({ entity }) {
 			entity.direction = dir;
 			return true;
 		},
@@ -81,7 +84,7 @@ function step(dir: Direction): Command {
 	const tries: Direction[] = [dir, leftOf(dir), rightOf(dir), backOf(dir)];
 
 	return {
-		tick({ entity, dt }) {
+		onTick({ entity, dt }) {
 			// If we started moving, wait for finish.
 			if (phase === "moving") {
 				return !entity.isMoving;
@@ -146,7 +149,7 @@ function goToTile(
 	}
 
 	return {
-		tick({ entity, dt }) {
+		onTick({ entity, dt }) {
 			if (
 				entity.x === target.x &&
 				entity.y === target.y &&
@@ -225,7 +228,7 @@ function goToTile(
 /** sayCmd: immediate RSVP and finish */
 function say(id: string, text: string): Command {
 	return {
-		tick() {
+		onTick() {
 			rsvp(id, text);
 			return true;
 		},

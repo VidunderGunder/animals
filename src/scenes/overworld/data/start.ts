@@ -358,6 +358,9 @@ function initEntities() {
 	const id = "npc_player";
 	entities.set(id, {
 		...getEntityCharacterDefaults({ x: 30, y: 44, id }),
+		onActivate: ({ activated }) => {
+			rsvp("npc_interact", "Hello!", activated);
+		},
 		brain: {
 			runner: new CommandRunner(),
 			routine(entity) {
@@ -381,7 +384,7 @@ function initEntities() {
 				for (const wp of route) {
 					if (wp.moveMode) {
 						entity.brain.runner.push({
-							tick({ entity }) {
+							onTick({ entity }) {
 								entity.moveMode = wp.moveMode;
 								return true;
 							},
