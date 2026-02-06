@@ -1,7 +1,7 @@
 // src/scenes/overworld/entities.ts
 import type {
+	AnimationEntityKey,
 	AnimationID,
-	AnimationVariant,
 } from "../../animations/animations";
 import {
 	CHARACTER_SPRITE_HEIGHT_PX,
@@ -18,7 +18,7 @@ export type Entities = typeof entities;
 
 export type Entity = {
 	id: StringWithSuggestions<"player">;
-	renderVariant: AnimationVariant;
+	renderVariant: AnimationEntityKey;
 
 	/* Tile position */
 	x: number;
@@ -86,7 +86,7 @@ export function getEntityCharacterDefaults({
 }): Entity {
 	return {
 		id,
-		renderVariant: "character",
+		renderVariant: "player",
 		x: x,
 		y: y,
 		xPx: x * TILE_SIZE_PX,

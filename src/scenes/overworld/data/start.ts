@@ -363,6 +363,7 @@ function initEntities() {
 	const id = "npc_player";
 	entities.set(id, {
 		...getEntityCharacterDefaults({ x: 30, y: 44, id }),
+		renderVariant: "npc1",
 		onActivate: ({ activator, activated }) => {
 			const bubbleId = "npc_interact";
 			if (bubbles.has(bubbleId)) return;

@@ -23,7 +23,7 @@ export const startLayerZ = 0;
 
 const playerDefault = {
 	id: "player",
-	renderVariant: "character",
+	renderVariant: "player",
 	x: startTileX,
 	y: startTileY,
 	z: startLayerZ,

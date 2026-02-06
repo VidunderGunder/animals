@@ -117,6 +117,7 @@ function updateEntityAnimation(
 	}
 
 	const entityAnimations = animations[entity.renderVariant];
+
 	const anim = entityAnimations[animation];
 	if (!anim) {
 		throw new Error(

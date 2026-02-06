@@ -117,7 +117,6 @@ export const animationIds = [
 	"rideSlow",
 	"rideFast",
 	"kickflip",
-	"hop",
 	"spin",
 ] as const;
 
@@ -129,7 +128,6 @@ export const runDurationDefault = 80;
 export const rideSlowDurationDefault = 500;
 export const rideFastDurationDefault = 700;
 export const jumpDurationDefault = 140;
-export const hopDurationDefault = 60;
 
 const playerSpriteSheet = createImageElement("/characters/player.png");
 const skateboardSpriteSheet = createImageElement("/characters/skateboard.png");
@@ -146,67 +144,32 @@ function layerFactory(sheet: HTMLImageElement) {
 	};
 }
 
-function moveUpWithShadow(props: OnRenderProps, height: number) {
-	const { x, y, h, w } = props;
-
-	ctx.fillStyle =
-		height < 4
-			? `rgba(0, 0, 0, ${(0.125 / 4) * height})`
-			: "rgba(0, 0, 0, 0.125)";
-	ctx.beginPath();
-
-	const center = x + w / 2;
-	const bottom = y + h - 4;
-
-	const rx = Math.max(w * 0.28 - height / 8, 0);
-	const ry = 2 * (1 - height / 14);
-	ctx.ellipse(center, bottom, rx, ry, 0, 0, Math.PI * 2);
-	ctx.fill();
-
-	ctx.translate(0, -height);
-}
-
 function getJumpFrames(sheet: HTMLImageElement = playerSpriteSheet) {
 	const layer = layerFactory(sheet);
 	return [
 		[
 			layer({
 				index: 1,
-				onBeforeRender(props) {
-					moveUpWithShadow(props, 9);
-				},
 			}),
 		],
 		[
 			layer({
 				index: 1,
-				onBeforeRender(props) {
-					moveUpWithShadow(props, 10);
-				},
 			}),
 		],
 		[
 			layer({
 				index: 2,
-				onBeforeRender(props) {
-					moveUpWithShadow(props, 7);
-				},
 			}),
 		],
 		[
 			layer({
 				index: 4,
-				onBeforeRender(props) {
-					moveUpWithShadow(props, 3);
-				},
 			}),
 		],
 		[
 			layer({
-				index: 8,
-				onBeforeRender(props) {
-					moveUpWithShadow(props, 1);
-				},
+				index: 1,
 			}),
 		],
 	] as const;
@@ -361,22 +324,6 @@ function getDefaultAnimations({
 			frameDuration: jumpDurationDefault,
 			loop: false,
 		},
-		hop: {
-			frames: [6, 7, 5, 1].map((height) => {
-				return [
-					{
-						sheet: characterSpriteSheet,
-						index: 2,
-						onBeforeRender(props) {
-							moveUpWithShadow(props, height);
-						},
-					},
-				];
-			}),
-
-			frameDuration: hopDurationDefault,
-			loop: false,
-		},
 		spin: {
 			frames: [
 				[layer({ index: 2 })],
@@ -392,21 +339,31 @@ function getDefaultAnimations({
 	};
 }
 
+const sheets = {
+	player: playerSpriteSheet,
+	npc1: createImageElement("/characters/npc-1.png"),
+};
+
 export const animations = {
-	character: {
+	player: {
 		...getDefaultAnimations({
 			characterSpriteSheet: playerSpriteSheet,
 		}),
 	},
+	npc1: {
+		...getDefaultAnimations({
+			characterSpriteSheet: sheets.npc1,
+		}),
+	},
 } as const satisfies Record<string, Animations>;
 
-export type AnimationVariant = keyof typeof animations;
-export const animationVariantKeys = Object.keys(
-	animations,
-) as AnimationVariant[];
+export type AnimationEntityKey = keyof typeof animations;
+export const animationEntityKeys = Object.freeze(
+	Object.keys(animations),
+) as readonly AnimationEntityKey[];
 
 // Crash early if dangerous empty frames are detected
-animationVariantKeys.forEach((key) => {
+animationEntityKeys.forEach((key) => {
 	Object.entries(animations[key]).forEach(([animationId, animation]) => {
 		if (animation.frames.length === 0) {
 			throw new Error(

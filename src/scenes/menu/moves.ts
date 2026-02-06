@@ -1,9 +1,9 @@
 import {
+	type AnimationEntityKey,
 	type AnimationID,
-	type AnimationVariant,
+	animationEntityKeys,
 	animationIds,
 	animations,
-	animationVariantKeys,
 	renderFrameLayers,
 } from "../../animations/animations";
 import {
@@ -18,7 +18,7 @@ import { type Direction, directions } from "../../input/input";
 import { menuHeight, menuWidth } from "./menu";
 
 export type EntitiesState = {
-	personId: AnimationVariant;
+	entityId: AnimationEntityKey;
 
 	/** Facing direction */
 	direction: Direction;
@@ -47,11 +47,11 @@ export const movesState: MovesState = {
 };
 
 export function initializeMovesState() {
-	animationVariantKeys.forEach((key) => {
+	animationEntityKeys.forEach((key) => {
 		animationIds.forEach((animationId) => {
 			directions.forEach((direction) => {
 				movesState.entities.push({
-					personId: key,
+					entityId: key,
 					direction,
 					animationCurrent: animationId,
 					animationFrameIndex: 0,
@@ -64,13 +64,13 @@ export function initializeMovesState() {
 
 function update(dt: number) {
 	movesState.entities.forEach((entity) => {
-		let animation = animations[entity.personId][entity.animationCurrent];
+		let animation = animations[entity.entityId][entity.animationCurrent];
 
 		if (!animation) {
 			console.warn(
-				`Character ${entity.personId} is missing animation ${entity.animationCurrent}, defaulting to walk`,
+				`Character ${entity.entityId} is missing animation ${entity.animationCurrent}, defaulting to walk`,
 			);
-			animation = animations[entity.personId].walk;
+			animation = animations[entity.entityId].walk;
 		}
 
 		entity.animationTimer += dt;
@@ -93,7 +93,7 @@ const marginY = 4;
 
 export function draw() {
 	movesState.entities.forEach((entity, i) => {
-		const animation = animations[entity.personId][entity.animationCurrent];
+		const animation = animations[entity.entityId][entity.animationCurrent];
 
 		const frameLayers = animation.frames[entity.animationFrameIndex];
 		if (frameLayers === undefined) {
@@ -134,7 +134,7 @@ export function draw() {
 		ctx.shadowOffsetY = 1;
 
 		if (i % 4 === 0) {
-			ctx.fillText(`${entity.personId} ${entity.animationCurrent}`, x + 2, y);
+			ctx.fillText(`${entity.entityId} ${entity.animationCurrent}`, x + 2, y);
 		}
 		ctx.restore();
 
