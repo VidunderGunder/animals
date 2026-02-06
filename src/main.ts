@@ -9,7 +9,6 @@ import { initVirtualGamepad } from "./input/touch";
 import { menu } from "./scenes/menu/menu";
 import { initializeArea as initializeStartArea } from "./scenes/overworld/data/start";
 import { overworld } from "./scenes/overworld/overworld";
-import { loadEntitiesState } from "./storage";
 
 initializeStartArea();
 initScreen();
@@ -79,5 +78,5 @@ window.addEventListener("pageshow", () => {
 	onShown();
 });
 
-await loadEntitiesState();
+// await loadEntitiesState();
 startGameLoop();
