@@ -22,6 +22,7 @@ export const startTileY = 37;
 export const startLayerZ = 0;
 
 const playerDefault = {
+	variant: "character",
 	id: "player",
 	sheet: "player",
 	x: startTileX,

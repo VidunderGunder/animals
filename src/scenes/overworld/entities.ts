@@ -18,7 +18,12 @@ import type { Transition } from "./transition/transition";
 export const entities = new Map<string, Entity>();
 export type Entities = typeof entities;
 
+export const entityVariants = ["character", "animal"] as const;
+export type EntityVariant = (typeof entityVariants)[number];
+
 export type Entity = {
+	variant: EntityVariant;
+
 	id: StringWithSuggestions<"player">;
 	sheet: AnimationEntityKey;
 
@@ -77,6 +82,7 @@ export type Entity = {
 	/** Prevent activation spam while an interaction is running */
 	interactionLock?: boolean;
 };
+
 export function getEntityCharacterDefaults({
 	id,
 	x,
@@ -87,6 +93,7 @@ export function getEntityCharacterDefaults({
 	y: number;
 }): Entity {
 	return {
+		variant: "character",
 		id,
 		sheet: "player",
 		x: x,
@@ -130,6 +137,7 @@ export function getEntityAnimalDefaults({
 }): Entity {
 	return {
 		...getEntityCharacterDefaults({ id, x, y }),
+		variant: "animal",
 		sheet: "fox",
 		width: ANIMAL_SPRITE_WIDTH_PX,
 		height: ANIMAL_SPRITE_HEIGHT_PX,

@@ -571,8 +571,10 @@ function drawEntity(entity: Entity) {
 	const entityScreenX = Math.round(entity.xPx - camera.xPx);
 	const entityScreenY = Math.round(entity.yPx - camera.yPx);
 
+	const animalOffsetY = entity.variant === "animal" ? 1 : 0;
+
 	const feetScreenX = entityScreenX + TILE_SIZE_PX / 2;
-	const feetScreenY = entityScreenY + TILE_SIZE_PX - 2;
+	const feetScreenY = entityScreenY + TILE_SIZE_PX - 2 + animalOffsetY;
 	ctx.save();
 	ctx.translate(feetScreenX, feetScreenY);
 
@@ -601,7 +603,7 @@ function drawEntity(entity: Entity) {
 	ctx.fillStyle = "#00000013";
 	ctx.beginPath();
 	const center = 0;
-	const bottom = -4;
+	const bottom = -4 - animalOffsetY;
 	const rx = 6;
 	const ry = 3;
 	ctx.ellipse(center, bottom, rx, ry, 0, 0, Math.PI * 2);
