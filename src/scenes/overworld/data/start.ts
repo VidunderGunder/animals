@@ -489,8 +489,9 @@ function initEntities() {
 	});
 
 	const foxId2 = "fox-2";
+	const foxPos = { x: 33, y: 43 };
 	entities.set(foxId2, {
-		...getEntityAnimalDefaults({ x: 33, y: 43, id: foxId2 }),
+		...getEntityAnimalDefaults({ ...foxPos, id: foxId2 }),
 		sheet: "fox",
 		onActivate: ({ activator, activated }) => {
 			const bubbleId = `${activated.id}_interact`;
@@ -529,8 +530,64 @@ function initEntities() {
 				entity.brain.runner.push(cmd.wait(pause));
 
 				const dest = {
-					x: 33 + randomOffset(),
-					y: 43 + randomOffset(),
+					x: foxPos.x + randomOffset(),
+					y: foxPos.y + randomOffset(),
+					z: 0,
+				};
+
+				entity.brain.runner.push(
+					cmd.goToTile(dest, { stopAdjacentIfTargetBlocked: true }),
+				);
+			},
+		},
+	});
+
+	const turtleId1 = "turtle-1";
+	const turtlePos = { x: 27, y: 42 };
+	entities.set(turtleId1, {
+		...getEntityAnimalDefaults({ ...turtlePos, id: turtleId1 }),
+		sheet: "turtle",
+		onActivate: ({ activator, activated }) => {
+			const bubbleId = `${activated.id}_interact`;
+			if (bubbles.has(bubbleId)) return;
+			if (activated.interactionLock) return;
+			if (!activated.brain) return;
+
+			activated.interactionLock = true;
+
+			activated.brain?.runner.interrupt([
+				cmd.waitUntilStopped(),
+				cmd.goToTile(getEntityFacingTile(activator)),
+				cmd.face(activator),
+				() =>
+					bubble(bubbleId, "Ah!", activated, {
+						pitch: 4.5,
+						tempo: 1.2,
+						intensity: 0.1,
+					}),
+				cmd.wait(1000),
+				{
+					onTick: ({ entity }) => {
+						entity.interactionLock = false;
+						return true;
+					},
+				},
+			]);
+		},
+		brain: {
+			runner: new CommandRunner(),
+			routine(entity) {
+				// Idle randomly around the same spot
+				if (!entity.brain?.runner.isIdle()) return;
+
+				const randomOffset = () => Math.floor(Math.random() * 3) - 1;
+				const pause = Math.floor(Math.random() * 2000) + 1000;
+
+				entity.brain.runner.push(cmd.wait(pause));
+
+				const dest = {
+					x: turtlePos.x + randomOffset(),
+					y: turtlePos.y + randomOffset(),
 					z: 0,
 				};
 

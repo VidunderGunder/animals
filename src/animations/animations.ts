@@ -387,6 +387,7 @@ const sheets = {
 	player: playerSpriteSheet,
 	"npc-1": createImageElement("/characters/npc-1.png"),
 	fox: createImageElement("/animals/fox.png"),
+	turtle: createImageElement("/animals/turtle.png"),
 };
 
 export const animations = {
@@ -403,6 +404,11 @@ export const animations = {
 	fox: {
 		...getDefaultAnimalAnimations({
 			spriteSheet: sheets.fox,
+		}),
+	},
+	turtle: {
+		...getDefaultAnimalAnimations({
+			spriteSheet: sheets.turtle,
 		}),
 	},
 } as const satisfies Record<string, Animations | AnimalAnimations>;
