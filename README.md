@@ -23,14 +23,13 @@ Character Movement & Animation
 - [ ] 💛 Tap to turn  
   Enable turning by tapping direction (not in facing direction) when in slow mode (e.g., walk), yet still allow smooth direction changes when moving or in fast mode (e.g., run)
 - [ ] 🤍 Smoke effect for jumps, drops, tricks etc.
-- [ ] 🤍 Terrain dependant rendering 
-- [ ] 🤍 Camera control for transitions + Remove vertical camera motion for stub-to-stub-jumps
+- [ ] 🤍 Terrain dependant rendering
   Cut off lower part of sprite (dynamic height), add animated overlay (e.g., water, grass, mud)
-- [ ] Additive position offsets for animation and transition  
-  Transitions now override animation position offsets, but they should be combined (optionally maybe?)
+- [ ] 🤍 Camera control for transitions (e.g., remove vertical camera motion for stub-to-stub-jumps)
+- [ ] Ensure animation rotation, position offsets and other effects work in the overworld (only works in the menu as of now)
 - [ ] Roll & flip animation
   - [ ] Roll on activate (A button) when running
-  - [ ] Crash animation on collision or any non-rollable transition
+  - [ ] Crash animation on collision or any non-rollable transition (e.g., blocked cells or ladder transitions)
 
 Controls
 
@@ -38,10 +37,11 @@ Controls
 
 Bugs (clearly defined issues)
 
-- [ ] 💛 Saving/loading is broken (due to entity movement refactor that uses classes and functions)  
+- [ ] 💛 Saving/loading is broken (due to entity brains that uses classes and functions)  
   We want to be able to save/load entity positions, states, routines, etc.
 - [ ] Looping ambience (forest definitely, beach maybe) has a small gap/pause when looping
 - [ ] Current ambience implementation hijacks audio on iOS, stopping music playback from other apps—we want to allow both to play simultaneously
+- [ ] Getting stuck in a zoom-in on iOS Safari is still happening occasionally when using the touch controller (primarily on the d-pad)
 
 Spikes (investigation tasks)
 
