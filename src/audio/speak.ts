@@ -49,7 +49,7 @@ function isVowel(char: string): char is Vowel {
 	return vowels.includes(char as Vowel);
 }
 
-type SpeechOptions = {
+export type SpeechOptions = {
 	pitch?: number;
 	tempo?: number;
 	intensity?: number;

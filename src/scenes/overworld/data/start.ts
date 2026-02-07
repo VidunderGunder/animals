@@ -15,6 +15,7 @@ import { bubble, bubbles } from "../dialog";
 import {
 	type Entity,
 	entities,
+	getEntityAnimalDefaults,
 	getEntityCharacterDefaults,
 	getEntityFacingTile,
 } from "../entities";
@@ -360,12 +361,12 @@ function initWorldImageLayers() {
 }
 
 function initEntities() {
-	const id = "npc_player";
-	entities.set(id, {
-		...getEntityCharacterDefaults({ x: 30, y: 44, id }),
-		renderVariant: "npc1",
+	const npcId = "npc-1";
+	entities.set(npcId, {
+		...getEntityCharacterDefaults({ x: 30, y: 44, id: npcId }),
+		sheet: "npc-1",
 		onActivate: ({ activator, activated }) => {
-			const bubbleId = "npc_interact";
+			const bubbleId = `${activated.id}_interact`;
 			if (bubbles.has(bubbleId)) return;
 			if (activated.interactionLock) return;
 			if (!activated.brain) return;
@@ -378,6 +379,71 @@ function initEntities() {
 				cmd.goToTile(getEntityFacingTile(activator)),
 				cmd.face(activator),
 				() => bubble(bubbleId, "Hello!", activated),
+				cmd.wait(1000),
+				{
+					onTick: ({ entity }) => {
+						entity.interactionLock = false;
+						return true;
+					},
+				},
+			]);
+		},
+		brain: {
+			runner: new CommandRunner(),
+			routine(entity) {
+				entity.moveMode = "run";
+				if (!entity.brain?.runner.isIdle()) return;
+
+				const route = [
+					{ x: 26, y: 44, z: 0, moveMode: "walk" },
+					{ x: 26, y: 46, z: 0, moveMode: "walk" },
+					{ x: 30, y: 46, z: 0, moveMode: "walk" },
+					{ x: 35, y: 49, z: 1, moveMode: "walk" },
+					{ x: 30, y: 49, z: 1, moveMode: "run" },
+					{ x: 26, y: 50, z: 0, moveMode: "run" },
+					{ x: 26, y: 55, z: 0, moveMode: "run" },
+					{ x: 30, y: 55, z: 0, moveMode: "run" },
+					{ x: 30, y: 44, z: 0, moveMode: "walk" },
+				] as const;
+
+				for (const point of route) {
+					entity.brain.runner.push({
+						onTick({ entity }) {
+							if (entity.moveMode !== point.moveMode) {
+								entity.moveMode = point.moveMode;
+							}
+							return true;
+						},
+					});
+					entity.brain.runner.push(
+						cmd.goToTile(point, { stopAdjacentIfTargetBlocked: true }),
+					);
+				}
+			},
+		},
+	});
+
+	const foxId = "fox-1";
+	entities.set(foxId, {
+		...getEntityAnimalDefaults({ x: 30, y: 44, id: foxId }),
+		sheet: "fox",
+		onActivate: ({ activator, activated }) => {
+			const bubbleId = `${activated.id}_interact`;
+			if (bubbles.has(bubbleId)) return;
+			if (activated.interactionLock) return;
+			if (!activated.brain) return;
+
+			activated.interactionLock = true;
+
+			// Preempt whatever it was doing, then continue its queued routine.
+			activated.brain?.runner.interrupt([
+				cmd.waitUntilStopped(),
+				cmd.goToTile(getEntityFacingTile(activator)),
+				cmd.face(activator),
+				() =>
+					bubble(bubbleId, "Yip!", activated, {
+						pitch: 3.5,
+					}),
 				cmd.wait(1000),
 				{
 					onTick: ({ entity }) => {

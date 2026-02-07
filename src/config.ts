@@ -81,6 +81,9 @@ export const FPS_LIMIT = Infinity;
 export const CHARACTER_SPRITE_WIDTH_PX = 16;
 export const CHARACTER_SPRITE_HEIGHT_PX = 24;
 
+export const ANIMAL_SPRITE_WIDTH_PX = 32;
+export const ANIMAL_SPRITE_HEIGHT_PX = 32;
+
 export type MovementType = "walk" | "run";
 export const DEFAULT_MOVEMENT: MovementType = "walk";
 

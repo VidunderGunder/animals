@@ -1,5 +1,7 @@
 import { createImageElement } from "../assets/image";
 import {
+	ANIMAL_SPRITE_HEIGHT_PX,
+	ANIMAL_SPRITE_WIDTH_PX,
 	CHARACTER_SPRITE_HEIGHT_PX,
 	CHARACTER_SPRITE_WIDTH_PX,
 } from "../config";
@@ -107,6 +109,7 @@ export type Animation = {
 };
 
 type Animations = Record<AnimationID, Animation>;
+type AnimalAnimations = Record<AnimalAnimationID, Animation>;
 
 export const animationIds = [
 	"idle",
@@ -122,6 +125,10 @@ export const animationIds = [
 
 export type AnimationID = (typeof animationIds)[number];
 
+export const animalAnimationIds = ["walk"] as const satisfies AnimationID[];
+
+export type AnimalAnimationID = (typeof animalAnimationIds)[number];
+
 export const idleDurationDefault = 350;
 export const walkDurationDefault = 130;
 export const runDurationDefault = 80;
@@ -132,11 +139,19 @@ export const jumpDurationDefault = 140;
 const playerSpriteSheet = createImageElement("/characters/player.png");
 const skateboardSpriteSheet = createImageElement("/characters/skateboard.png");
 
-function layerFactory(sheet: HTMLImageElement) {
+function layerFactory(
+	sheet: HTMLImageElement,
+	options: {
+		w: number;
+		h: number;
+	} = {
+		w: CHARACTER_SPRITE_WIDTH_PX,
+		h: CHARACTER_SPRITE_HEIGHT_PX,
+	},
+) {
 	return function layer(frameLayer: Partial<FrameLayer>): FrameLayer {
 		return {
-			w: CHARACTER_SPRITE_WIDTH_PX,
-			h: CHARACTER_SPRITE_HEIGHT_PX,
+			...options,
 			...frameLayer,
 			sheet: frameLayer.sheet ?? sheet,
 			index: frameLayer.index ?? 0,
@@ -144,7 +159,7 @@ function layerFactory(sheet: HTMLImageElement) {
 	};
 }
 
-function getJumpFrames(sheet: HTMLImageElement = playerSpriteSheet) {
+function getCharacterJumpFrames(sheet: HTMLImageElement = playerSpriteSheet) {
 	const layer = layerFactory(sheet);
 	return [
 		[
@@ -175,13 +190,13 @@ function getJumpFrames(sheet: HTMLImageElement = playerSpriteSheet) {
 	] as const;
 }
 
-function getDefaultAnimations({
+function getDefaultCharacterAnimations({
 	characterSpriteSheet = playerSpriteSheet,
 }: {
 	characterSpriteSheet?: HTMLImageElement;
-}): Animations {
+}) {
 	const layer = layerFactory(characterSpriteSheet);
-	const jumpFrames = getJumpFrames(characterSpriteSheet);
+	const jumpFrames = getCharacterJumpFrames(characterSpriteSheet);
 
 	return {
 		idle: {
@@ -336,26 +351,61 @@ function getDefaultAnimations({
 			frameDuration: 100,
 			loop: true,
 		},
-	};
+	} satisfies Animations;
+}
+
+function getDefaultAnimalAnimations({
+	spriteSheet,
+}: {
+	spriteSheet: HTMLImageElement;
+}) {
+	const layer = layerFactory(spriteSheet, {
+		w: ANIMAL_SPRITE_WIDTH_PX,
+		h: ANIMAL_SPRITE_HEIGHT_PX,
+	});
+
+	const walkAnimation = {
+		frames: [[layer({ index: 1 })], [layer({ index: 2 })]],
+		frameDuration: walkDurationDefault,
+		loop: true,
+	} as const satisfies Animation;
+
+	return {
+		walk: walkAnimation,
+		idle: { ...walkAnimation, frameDuration: idleDurationDefault },
+		jump: walkAnimation,
+		kickflip: walkAnimation,
+		rideFast: walkAnimation,
+		rideIdle: walkAnimation,
+		rideSlow: walkAnimation,
+		run: { ...walkAnimation, frameDuration: runDurationDefault },
+		spin: walkAnimation,
+	} satisfies Animations;
 }
 
 const sheets = {
 	player: playerSpriteSheet,
-	npc1: createImageElement("/characters/npc-1.png"),
+	"npc-1": createImageElement("/characters/npc-1.png"),
+	fox: createImageElement("/animals/fox.png"),
 };
 
 export const animations = {
 	player: {
-		...getDefaultAnimations({
+		...getDefaultCharacterAnimations({
 			characterSpriteSheet: playerSpriteSheet,
 		}),
 	},
-	npc1: {
-		...getDefaultAnimations({
-			characterSpriteSheet: sheets.npc1,
+	"npc-1": {
+		...getDefaultCharacterAnimations({
+			characterSpriteSheet: sheets["npc-1"],
 		}),
 	},
-} as const satisfies Record<string, Animations>;
+	fox: {
+		...getDefaultAnimalAnimations({
+			spriteSheet: sheets.fox,
+		}),
+	},
+} as const satisfies Record<string, Animations | AnimalAnimations>;
 
 export type AnimationEntityKey = keyof typeof animations;
 export const animationEntityKeys = Object.freeze(

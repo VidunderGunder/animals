@@ -1,4 +1,5 @@
-import { speak } from "../../audio/speak";
+import { type SpeechOptions, speak } from "../../audio/speak";
+import { TILE_SIZE_PX } from "../../config";
 import { clamp } from "../../functions/general";
 import { ctx } from "../../gfx/canvas";
 import { player } from "../../state";
@@ -70,7 +71,7 @@ type BubbleState = {
 
 	// presentation
 	pos: Vec2Px;
-	opts: Required<BubbleOptions>;
+	opts: Required<BubbleOptions> & SpeechOptions;
 };
 
 const DEFAULT_OPTS: Required<BubbleOptions> = {
@@ -104,7 +105,7 @@ const DEFAULT_OPTS: Required<BubbleOptions> = {
 
 function getPlayerBubblePosition(): Vec2Px {
 	return {
-		xPx: player.xPx - camera.xPx + player.width / 2,
+		xPx: player.xPx - camera.xPx + TILE_SIZE_PX / 2,
 		yPx: player.yPx - camera.yPx,
 	};
 }
@@ -140,10 +141,13 @@ export function bubble(
 	id: string,
 	content: BubbleContent,
 	position?: Vec2PxWidth | (() => Vec2Px),
-	options: BubbleOptions = {},
+	options: BubbleOptions & SpeechOptions = {},
 ) {
 	const now = getNowMs();
-	const opts: Required<BubbleOptions> = { ...DEFAULT_OPTS, ...options };
+	const opts: Required<BubbleOptions> & SpeechOptions = {
+		...DEFAULT_OPTS,
+		...options,
+	};
 	const key = computeContentKey(content);
 
 	let getPosition = position instanceof Function ? position : undefined;
@@ -151,7 +155,7 @@ export function bubble(
 	const vec2PxWidth = isVec2PxWidth(position) ? position : null;
 	if (vec2PxWidth) {
 		getPosition = () => ({
-			xPx: vec2PxWidth.xPx - camera.xPx + vec2PxWidth.width / 2,
+			xPx: vec2PxWidth.xPx - camera.xPx + TILE_SIZE_PX / 2,
 			yPx: vec2PxWidth.yPx - camera.yPx,
 		});
 	}
@@ -189,7 +193,7 @@ export function bubble(
 		// Speak first visible word immediately
 		const first = bub.tokens[0];
 		if (first?.kind === "word") {
-			speak(first.text);
+			speak(first.text, opts);
 		}
 
 		// Optional: speak immediately on first word if you want “instant” feel.
@@ -287,7 +291,7 @@ function advanceToken(b: BubbleState): boolean {
 	b.tokenRemainingMs = token.ms;
 
 	if (token.kind === "word") {
-		speak(token.text);
+		speak(token.text, b.opts);
 	}
 
 	return true;
@@ -317,11 +321,15 @@ function renderBubble(b: BubbleState) {
 	const alpha = getAlpha(b);
 	if (alpha <= 0) return;
 
+	// Use the cached position sampled once per frame in renderDialogs()
+	const anchor = b.pos;
+
 	// finished: keep showing last word
 	if (b.finishedAtMs !== null) {
 		if (!b.lastWordText) return;
-		const x = Math.round(b.getPosition?.().xPx ?? 0);
-		const y = Math.round((b.getPosition?.().yPx ?? 0) + b.opts.offsetYPx);
+		const x = Math.round(anchor.xPx);
+		const y = Math.round(anchor.yPx + b.opts.offsetYPx);
+
 		drawTextWithBubble(
 			b.lastWordText,
 			{ xPx: x, yPx: y },
@@ -337,8 +345,8 @@ function renderBubble(b: BubbleState) {
 
 	// pause token: keep showing last word
 	if (tok.kind === "pause") {
-		const x = Math.round(b.getPosition?.().xPx ?? 0);
-		const y = Math.round((b.getPosition?.().yPx ?? 0) + b.opts.offsetYPx);
+		const x = Math.round(anchor.xPx);
+		const y = Math.round(anchor.yPx + b.opts.offsetYPx);
 
 		drawTextWithBubble(
 			b.lastWordText ?? "...", // empty bubble if nothing yet
@@ -355,8 +363,8 @@ function renderBubble(b: BubbleState) {
 	b.lastWordText = tok.text;
 	b.lastWordEmphasis = tok.emphasis;
 
-	const x = Math.round(b.getPosition?.().xPx ?? 0);
-	const y = Math.round((b.getPosition?.().yPx ?? 0) + b.opts.offsetYPx);
+	const x = Math.round(anchor.xPx);
+	const y = Math.round(anchor.yPx + b.opts.offsetYPx);
 
 	drawTextWithBubble(tok.text, { xPx: x, yPx: y }, b.opts, alpha, tok.emphasis);
 }

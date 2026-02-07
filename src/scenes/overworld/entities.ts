@@ -4,6 +4,8 @@ import type {
 	AnimationID,
 } from "../../animations/animations";
 import {
+	ANIMAL_SPRITE_HEIGHT_PX,
+	ANIMAL_SPRITE_WIDTH_PX,
 	CHARACTER_SPRITE_HEIGHT_PX,
 	CHARACTER_SPRITE_WIDTH_PX,
 	TILE_SIZE_PX,
@@ -18,7 +20,7 @@ export type Entities = typeof entities;
 
 export type Entity = {
 	id: StringWithSuggestions<"player">;
-	renderVariant: AnimationEntityKey;
+	sheet: AnimationEntityKey;
 
 	/* Tile position */
 	x: number;
@@ -86,7 +88,7 @@ export function getEntityCharacterDefaults({
 }): Entity {
 	return {
 		id,
-		renderVariant: "player",
+		sheet: "player",
 		x: x,
 		y: y,
 		xPx: x * TILE_SIZE_PX,
@@ -114,6 +116,23 @@ export function getEntityCharacterDefaults({
 		moveMode: "walk",
 		intentDir: null,
 		interactionLock: false,
+	};
+}
+
+export function getEntityAnimalDefaults({
+	id,
+	x,
+	y,
+}: {
+	id: string;
+	x: number;
+	y: number;
+}): Entity {
+	return {
+		...getEntityCharacterDefaults({ id, x, y }),
+		sheet: "fox",
+		width: ANIMAL_SPRITE_WIDTH_PX,
+		height: ANIMAL_SPRITE_HEIGHT_PX,
 	};
 }
 

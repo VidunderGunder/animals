@@ -116,12 +116,12 @@ function updateEntityAnimation(
 		return;
 	}
 
-	const entityAnimations = animations[entity.renderVariant];
+	const entityAnimations = animations[entity.sheet];
 
 	const anim = entityAnimations[animation];
 	if (!anim) {
 		throw new Error(
-			`Character ${entity.renderVariant} is missing animation ${animation}`,
+			`Character ${entity.sheet} is missing animation ${animation}`,
 		);
 	}
 
@@ -577,12 +577,12 @@ function drawEntity(entity: Entity) {
 	ctx.translate(feetScreenX, feetScreenY);
 
 	const animName = entity.animationCurrent;
-	const entityAnimations = animations[entity.renderVariant];
+	const entityAnimations = animations[entity.sheet];
 	const anim = entityAnimations[animName];
 
 	if (!anim) {
 		throw new Error(
-			`Character ${entity.renderVariant} is missing animation ${animName}`,
+			`Character ${entity.sheet} is missing animation ${animName}`,
 		);
 	}
 
@@ -613,6 +613,8 @@ function drawEntity(entity: Entity) {
 		direction: entity.direction,
 		x: -dw / 2,
 		y: -dh,
+		w: entity.width,
+		h: entity.height,
 	});
 
 	ctx.restore();
