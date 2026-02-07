@@ -423,9 +423,9 @@ function initEntities() {
 		},
 	});
 
-	const foxId = "fox-1";
-	entities.set(foxId, {
-		...getEntityAnimalDefaults({ x: 30, y: 44, id: foxId }),
+	const foxId1 = "fox-1";
+	entities.set(foxId1, {
+		...getEntityAnimalDefaults({ x: 30, y: 44, id: foxId1 }),
 		sheet: "fox",
 		onActivate: ({ activator, activated }) => {
 			const bubbleId = `${activated.id}_interact`;
@@ -484,6 +484,59 @@ function initEntities() {
 						cmd.goToTile(point, { stopAdjacentIfTargetBlocked: true }),
 					);
 				}
+			},
+		},
+	});
+
+	const foxId2 = "fox-2";
+	entities.set(foxId2, {
+		...getEntityAnimalDefaults({ x: 33, y: 43, id: foxId2 }),
+		sheet: "fox",
+		onActivate: ({ activator, activated }) => {
+			const bubbleId = `${activated.id}_interact`;
+			if (bubbles.has(bubbleId)) return;
+			if (activated.interactionLock) return;
+			if (!activated.brain) return;
+
+			activated.interactionLock = true;
+
+			activated.brain?.runner.interrupt([
+				cmd.waitUntilStopped(),
+				cmd.goToTile(getEntityFacingTile(activator)),
+				cmd.face(activator),
+				() =>
+					bubble(bubbleId, "Yip!", activated, {
+						pitch: 3.5,
+					}),
+				cmd.wait(1000),
+				{
+					onTick: ({ entity }) => {
+						entity.interactionLock = false;
+						return true;
+					},
+				},
+			]);
+		},
+		brain: {
+			runner: new CommandRunner(),
+			routine(entity) {
+				// Idle randomly around the same spot
+				if (!entity.brain?.runner.isIdle()) return;
+
+				const randomOffset = () => Math.floor(Math.random() * 3) - 1;
+				const pause = Math.floor(Math.random() * 2000) + 1000;
+
+				entity.brain.runner.push(cmd.wait(pause));
+
+				const dest = {
+					x: 33 + randomOffset(),
+					y: 43 + randomOffset(),
+					z: 0,
+				};
+
+				entity.brain.runner.push(
+					cmd.goToTile(dest, { stopAdjacentIfTargetBlocked: true }),
+				);
 			},
 		},
 	});
