@@ -562,10 +562,10 @@ function initEntities() {
 				cmd.goToTile(getEntityFacingTile(activator)),
 				cmd.face(activator),
 				() =>
-					bubble(bubbleId, "Ah!", activated, {
-						pitch: 4,
-						tempo: 1.3,
-						intensity: 0.1,
+					bubble(bubbleId, "Ah", activated, {
+						pitch: 0.4,
+						tempo: 1.5,
+						intensity: 1,
 					}),
 				cmd.wait(1000),
 				{

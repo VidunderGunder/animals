@@ -1,7 +1,7 @@
 import { createImageElement } from "../../assets/image";
 import { GAME_HEIGHT_PX, GAME_WIDTH_PX } from "../../config";
 import { ctx } from "../../gfx/canvas";
-import { activeActions, activeActionsOnDown } from "../../input/input";
+import { activeActionsOnDown } from "../../input/input";
 import { gameState } from "../../state";
 import { returnToOverworld } from "../overworld/overworld";
 import { moves } from "./moves";

@@ -7,8 +7,7 @@ import {
 import { updateAmbience } from "../../audio/ambience";
 import { updateMusic } from "../../audio/music";
 import {
-	ASPECT_RATIO_X,
-	ASPECT_RATIO_Y,
+	ASPECT_RATIO,
 	DEBUG_OVERLAY,
 	DEFAULT_MOVEMENT,
 	GAME_HEIGHT_PX,
@@ -543,7 +542,9 @@ function draw(dt: number) {
 		ctx.shadowBlur = 0;
 		[
 			`fps: ${Math.round(1000 / dt)}`,
-			`res: ${GAME_WIDTH_PX}x${GAME_HEIGHT_PX} (${SCALE}x, ${ASPECT_RATIO_X}:${ASPECT_RATIO_Y})`,
+			`res: ${GAME_WIDTH_PX}x${GAME_HEIGHT_PX} (${SCALE}x, ${ASPECT_RATIO.toFixed(
+				2,
+			)}:${1})`,
 			`current tile: ${player.x}, ${player.y}, ${player.z}`,
 			`move to tile: ${player.movingToTile?.x ?? "x"}, ${player.movingToTile?.y ?? "y"}, ${player.movingToTile?.z ?? "z"}`,
 			`facing: ${player.direction}`,
@@ -627,7 +628,5 @@ export function overworld(dt: number) {
 	update(dt);
 	draw(dt);
 	renderDialogs();
-
-	// Autosave on step end
 	saveEntitiesState();
 }
