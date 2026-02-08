@@ -45,7 +45,6 @@ initializeStartArea();
 
 export function returnToOverworld() {
 	menuState.show = false;
-
 	gameState.paused = false;
 	gameState.disabled = false;
 }
@@ -80,6 +79,9 @@ function getPlayerAnimation(): AnimationID {
 	const entity = player;
 
 	if (entity.movingToAnimation) return entity.movingToAnimation;
+
+	if (menuState.show) return "idle";
+
 	if (entity.moveMode === "run") return "run";
 	if (entity.moveMode === "walk") return "walk";
 
@@ -249,7 +251,13 @@ function updatePlayer(dt: number) {
 
 	if (gameState.paused) return;
 
-	if (!gameState.disabled && activeActionsOnDown.has("start")) openMenu();
+	if (
+		!gameState.disabled &&
+		!menuState.show &&
+		activeActionsOnDown.has("start")
+	) {
+		openMenu();
+	}
 
 	entity.moveMode = getIsPlayerMoveMode();
 

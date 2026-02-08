@@ -7,6 +7,7 @@ import { returnToOverworld } from "../overworld/overworld";
 import { moves } from "./moves";
 
 export function openMenu() {
+	activeActionsOnDown.delete("start");
 	gameState.disabled = true;
 	menuState.show = true;
 }
@@ -56,17 +57,13 @@ export function menu(dt: number) {
 			menuHeight,
 		);
 
-	if (activeActionsOnDown.has("start")) {
+	if (activeActionsOnDown.has("start") || activeActionsOnDown.has("b")) {
 		returnToOverworld();
 	}
 
 	if (activeActionsOnDown.has("select")) {
 		activeActionsOnDown.delete("select");
 		nextMode();
-	}
-
-	if (activeActions.has("b")) {
-		returnToOverworld();
 	}
 
 	if (menuState.mode === "moves") moves(dt);
