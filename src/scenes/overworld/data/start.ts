@@ -488,10 +488,10 @@ function initEntities() {
 		},
 	});
 
-	const foxId2 = "fox-2";
-	const foxPos = { x: 33, y: 43 };
-	entities.set(foxId2, {
-		...getEntityAnimalDefaults({ ...foxPos, id: foxId2 }),
+	const kitsuneId1 = "kitsune-1";
+	const kitsunePos = { x: 33, y: 43 };
+	entities.set(kitsuneId1, {
+		...getEntityAnimalDefaults({ ...kitsunePos, id: kitsuneId1 }),
 		sheet: "kitsune",
 		onActivate: ({ activator, activated }) => {
 			const bubbleId = `${activated.id}_interact`;
@@ -506,8 +506,10 @@ function initEntities() {
 				cmd.goToTile(getEntityFacingTile(activator)),
 				cmd.face(activator),
 				() =>
-					bubble(bubbleId, "Yip!", activated, {
-						pitch: 3.5,
+					bubble(bubbleId, "♫", activated, {
+						pitch: 4,
+						tempo: 0.4,
+						intensity: 0.5,
 					}),
 				cmd.wait(1000),
 				{
@@ -530,8 +532,8 @@ function initEntities() {
 				entity.brain.runner.push(cmd.wait(pause));
 
 				const dest = {
-					x: foxPos.x + randomOffset(),
-					y: foxPos.y + randomOffset(),
+					x: kitsunePos.x + randomOffset(),
+					y: kitsunePos.y + randomOffset(),
 					z: 0,
 				};
 
@@ -561,8 +563,8 @@ function initEntities() {
 				cmd.face(activator),
 				() =>
 					bubble(bubbleId, "Ah!", activated, {
-						pitch: 4.5,
-						tempo: 1.2,
+						pitch: 4,
+						tempo: 1.3,
 						intensity: 0.1,
 					}),
 				cmd.wait(1000),
