@@ -24,6 +24,7 @@ export type EntityVariant = (typeof entityVariants)[number];
 export type Entity = {
 	variant: EntityVariant;
 	radius: number;
+	renderPriority: number;
 
 	id: StringWithSuggestions<"player">;
 	sheet: AnimationEntityKey;
@@ -94,6 +95,7 @@ export function getEntityCharacterDefaults({
 	y: number;
 }): Entity {
 	return {
+		renderPriority: 0,
 		variant: "character",
 		radius: 6,
 		id,

@@ -491,12 +491,10 @@ function draw(dt: number) {
 			return { entity, renderZ, row };
 		})
 		.sort((a, b) => {
-			const aIsPlayer = a.entity.id === "player";
-			const bIsPlayer = b.entity.id === "player";
-			if (aIsPlayer !== bIsPlayer) return aIsPlayer ? 1 : -1;
-
-			// draw lower things last (on top)
 			if (a.renderZ !== b.renderZ) return a.renderZ - b.renderZ;
+			if (a.entity.renderPriority !== b.entity.renderPriority) {
+				return a.entity.renderPriority - b.entity.renderPriority;
+			}
 			if (a.row !== b.row) return a.row - b.row;
 			if (a.entity.yPx !== b.entity.yPx) return a.entity.yPx - b.entity.yPx;
 			if (a.entity.xPx !== b.entity.xPx) return a.entity.xPx - b.entity.xPx;

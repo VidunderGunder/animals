@@ -28,6 +28,7 @@ const playerDefault = {
 	y: startTileY,
 	z: startLayerZ,
 	direction: "up",
+	renderPriority: 1,
 } as const satisfies Entity;
 
 export const player: Entity = {
