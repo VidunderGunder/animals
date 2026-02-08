@@ -129,7 +129,7 @@ export const animalAnimationIds = ["walk"] as const satisfies AnimationID[];
 
 export type AnimalAnimationID = (typeof animalAnimationIds)[number];
 
-export const idleDurationDefault = 350;
+export const idleDurationDefault = 500;
 export const walkDurationDefault = 130;
 export const runDurationDefault = 80;
 export const rideSlowDurationDefault = 500;
@@ -389,6 +389,7 @@ const sheets = {
 	fox: createImageElement("/animals/fox.png"),
 	kitsune: createImageElement("/animals/kitsune.png"),
 	turtle: createImageElement("/animals/turtle.png"),
+	tarasque: createImageElement("/animals/tarasque.png"),
 };
 
 export const animations = {
@@ -415,6 +416,11 @@ export const animations = {
 	turtle: {
 		...getDefaultAnimalAnimations({
 			spriteSheet: sheets.turtle,
+		}),
+	},
+	tarasque: {
+		...getDefaultAnimalAnimations({
+			spriteSheet: sheets.tarasque,
 		}),
 	},
 } as const satisfies Record<string, Animations | AnimalAnimations>;

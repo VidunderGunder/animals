@@ -125,4 +125,4 @@ export const movementSpeeds = {
 	run: 0.12,
 } as const satisfies Record<MovementType, number>;
 
-export const DEBUG_OVERLAY = false && import.meta.env.DEV;
+export const DEBUG_OVERLAY = import.meta.env.DEV;

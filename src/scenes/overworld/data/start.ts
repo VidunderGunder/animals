@@ -599,4 +599,22 @@ function initEntities() {
 			},
 		},
 	});
+
+	const tarasqueId1 = "tarasque-1";
+	const tarasquePos = { x: 26, y: 42 };
+	entities.set(tarasqueId1, {
+		...getEntityAnimalDefaults({ ...tarasquePos, id: tarasqueId1 }),
+		radius: 11,
+		sheet: "tarasque",
+		onActivate: ({ activated }) => {
+			const bubbleId = `${activated.id}_interact`;
+			if (bubbles.has(bubbleId)) return;
+
+			bubble(bubbleId, "Growl", activated, {
+				pitch: 0.4,
+				tempo: 0.5,
+				intensity: 20,
+			});
+		},
+	});
 }

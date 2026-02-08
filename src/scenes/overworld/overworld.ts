@@ -491,6 +491,10 @@ function draw(dt: number) {
 			return { entity, renderZ, row };
 		})
 		.sort((a, b) => {
+			const aIsPlayer = a.entity.id === "player";
+			const bIsPlayer = b.entity.id === "player";
+			if (aIsPlayer !== bIsPlayer) return aIsPlayer ? 1 : -1;
+
 			// draw lower things last (on top)
 			if (a.renderZ !== b.renderZ) return a.renderZ - b.renderZ;
 			if (a.row !== b.row) return a.row - b.row;
@@ -606,8 +610,8 @@ function drawEntity(entity: Entity) {
 	ctx.beginPath();
 	const center = 0;
 	const bottom = -4 - animalOffsetY;
-	const rx = 6;
-	const ry = 3;
+	const rx = entity.radius;
+	const ry = entity.radius / 2;
 	ctx.ellipse(center, bottom, rx, ry, 0, 0, Math.PI * 2);
 	ctx.fill();
 
