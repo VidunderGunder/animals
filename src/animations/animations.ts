@@ -387,6 +387,7 @@ const sheets = {
 	player: playerSpriteSheet,
 	"npc-1": createImageElement("/characters/npc-1.png"),
 	fox: createImageElement("/animals/fox.png"),
+	kitsune: createImageElement("/animals/kitsune.png"),
 	turtle: createImageElement("/animals/turtle.png"),
 };
 
@@ -404,6 +405,11 @@ export const animations = {
 	fox: {
 		...getDefaultAnimalAnimations({
 			spriteSheet: sheets.fox,
+		}),
+	},
+	kitsune: {
+		...getDefaultAnimalAnimations({
+			spriteSheet: sheets.kitsune,
 		}),
 	},
 	turtle: {

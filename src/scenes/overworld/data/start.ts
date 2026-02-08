@@ -492,7 +492,7 @@ function initEntities() {
 	const foxPos = { x: 33, y: 43 };
 	entities.set(foxId2, {
 		...getEntityAnimalDefaults({ ...foxPos, id: foxId2 }),
-		sheet: "fox",
+		sheet: "kitsune",
 		onActivate: ({ activator, activated }) => {
 			const bubbleId = `${activated.id}_interact`;
 			if (bubbles.has(bubbleId)) return;
