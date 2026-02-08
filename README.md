@@ -18,6 +18,11 @@ But you can use any tool you like, as long as the sound effects fit the style.
 
 ## TODO
 
+Priority
+
+- [ ] 💛 Fix start/select behavior (inconsistent toggling after gamepad refactor)
+- [ ] 💛 Design beastiary
+
 Character Movement & Animation
 
 - [ ] 💛 Tap to turn  
@@ -30,10 +35,6 @@ Character Movement & Animation
 - [ ] Roll & flip animation
   - [ ] Roll on activate (A button) when running
   - [ ] Crash animation on collision or any non-rollable transition (e.g., blocked cells or ladder transitions)
-
-Controls
-
-- [ ] Fix start/select behavior (inconsistent toggling after gamepad refactor)
 
 Bugs (clearly defined issues)
 
