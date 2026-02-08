@@ -37,6 +37,8 @@ export const allActions = [
 export type Action = (typeof allActions)[number];
 
 export const activeActions = new Set<Action>();
+export const activeActionsOnDown = new Set<Action>();
+export const activeActionsOnUp = new Set<Action>();
 
 export const pressedKeys = new Set<string>();
 export const activeGamepadActions = new Set<Action>();
