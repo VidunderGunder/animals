@@ -4,7 +4,7 @@ import "./css/reset.css";
 import { audio } from "./audio/audio-engine";
 import { FPS_LIMIT, initScreen } from "./config";
 import { initFullscreenSupport } from "./gfx/fullscreen";
-import { activeActions, initInput, input } from "./input/input";
+import { activeActions, initInput, input, inputCleanUp } from "./input/input";
 import { initVirtualGamepad } from "./input/touch";
 import { menu } from "./scenes/menu/menu";
 import { initializeArea as initializeStartArea } from "./scenes/overworld/data/start";
@@ -34,6 +34,7 @@ function loop(timestamp: number) {
 	input();
 	overworld(dt);
 	menu(dt);
+	inputCleanUp();
 
 	rafId = requestAnimationFrame(loop);
 }

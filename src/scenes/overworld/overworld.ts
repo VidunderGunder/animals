@@ -20,9 +20,8 @@ import {
 import { clear, ctx } from "../../gfx/canvas";
 import {
 	activeActions,
-	allActions,
+	activeActionsOnDown,
 	type Direction,
-	directions,
 	movementIntent,
 } from "../../input/input";
 import { gameState, player } from "../../state";
@@ -45,12 +44,6 @@ import { getPathValues, type Transition } from "./transition/transition";
 initializeStartArea();
 
 export function returnToOverworld() {
-	allActions
-		.filter((e) => !directions.some((d) => d === e))
-		.forEach((e) => {
-			activeActions.delete(e);
-		});
-
 	menuState.show = false;
 
 	gameState.paused = false;
@@ -256,7 +249,7 @@ function updatePlayer(dt: number) {
 
 	if (gameState.paused) return;
 
-	if (!gameState.disabled && activeActions.has("start")) openMenu();
+	if (!gameState.disabled && activeActionsOnDown.has("start")) openMenu();
 
 	entity.moveMode = getIsPlayerMoveMode();
 

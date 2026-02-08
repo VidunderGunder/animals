@@ -37,6 +37,8 @@ export const allActions = [
 export type Action = (typeof allActions)[number];
 
 export const activeActions = new Set<Action>();
+const nextActiveActions = new Set<Action>();
+
 export const activeActionsOnDown = new Set<Action>();
 export const activeActionsOnUp = new Set<Action>();
 
@@ -51,8 +53,13 @@ export function isMove(action: Action | undefined): action is Direction {
 	return directions.some((a) => a === action);
 }
 
+export function inputCleanUp() {
+	activeActionsOnDown.clear();
+	activeActionsOnUp.clear();
+}
+
 export function input() {
-	activeActions.clear();
+	nextActiveActions.clear();
 
 	const gamepad = navigator.getGamepads()[0];
 
@@ -70,7 +77,7 @@ export function input() {
 		});
 
 		for (const action of activeGamepadActions) {
-			activeActions.add(action);
+			nextActiveActions.add(action);
 		}
 
 		if (activeGamepadActions.size > 0) inputUI = getGamepadUI(gamepad.id);
@@ -82,21 +89,40 @@ export function input() {
 	for (const key of pressedKeys) {
 		const action = reverseKeyMap[key];
 		if (action) {
-			activeActions.add(action);
+			nextActiveActions.add(action);
 		}
 	}
 
 	if (activeTouchActions.size > 0) inputUI = "nintendo";
 	for (const action of activeTouchActions) {
-		activeActions.add(action);
+		nextActiveActions.add(action);
 	}
 
 	// Prioritize the last pressed direction for movement intent
-	const activeMoves = Array.from(activeActions).filter(isMove);
+	const activeMoves = Array.from(nextActiveActions).filter(isMove);
 	if (activeMoves.length > 0) {
 		const temp = activeMoves[activeMoves.length - 1];
 		if (isMove(temp)) movementIntent = temp;
 	} else {
 		movementIntent = null;
+	}
+
+	for (const action of activeActions) {
+		if (!nextActiveActions.has(action)) {
+			activeActions.delete(action);
+			activeActionsOnUp.add(action);
+		}
+	}
+
+	for (const action of nextActiveActions) {
+		if (!activeActions.has(action)) {
+			activeActions.add(action);
+			activeActionsOnDown.add(action);
+		}
+	}
+
+	activeActions.clear();
+	for (const action of nextActiveActions) {
+		activeActions.add(action);
 	}
 }

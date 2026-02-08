@@ -1,13 +1,12 @@
 import { createImageElement } from "../../assets/image";
 import { GAME_HEIGHT_PX, GAME_WIDTH_PX } from "../../config";
 import { ctx } from "../../gfx/canvas";
-import { activeActions } from "../../input/input";
+import { activeActions, activeActionsOnDown } from "../../input/input";
 import { gameState } from "../../state";
 import { returnToOverworld } from "../overworld/overworld";
 import { moves } from "./moves";
 
 export function openMenu() {
-	activeActions.delete("start");
 	gameState.disabled = true;
 	menuState.show = true;
 }
@@ -57,12 +56,16 @@ export function menu(dt: number) {
 			menuHeight,
 		);
 
-	if (activeActions.has("select")) {
-		activeActions.delete("select");
+	if (activeActionsOnDown.has("start")) {
+		returnToOverworld();
+	}
+
+	if (activeActionsOnDown.has("select")) {
+		activeActionsOnDown.delete("select");
 		nextMode();
 	}
 
-	if (activeActions.has("start") || activeActions.has("b")) {
+	if (activeActions.has("b")) {
 		returnToOverworld();
 	}
 
