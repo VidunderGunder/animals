@@ -18,7 +18,7 @@ export type User = {
 	createdAt: number;
 };
 
-export type Save = {
+export type SaveSlot = {
 	id: number;
 	userId: number;
 	name: string;
@@ -119,13 +119,13 @@ async function createSave(
 	userId: number,
 	name: string,
 	entitiesData: Entities,
-): Promise<Save> {
+): Promise<SaveSlot> {
 	const database = await openDB();
 	return new Promise((resolve, reject) => {
 		const tx = database.transaction(SAVES_STORE, "readwrite");
 		const store = tx.objectStore(SAVES_STORE);
 		const now = Date.now();
-		const save: Omit<Save, "id"> = {
+		const save: Omit<SaveSlot, "id"> = {
 			userId,
 			name,
 			entitiesData: serializeEntities(entitiesData),
@@ -140,7 +140,7 @@ async function createSave(
 	});
 }
 
-async function getSavesForUser(userId: number): Promise<Save[]> {
+async function getSavesForUser(userId: number): Promise<SaveSlot[]> {
 	const database = await openDB();
 	return new Promise((resolve, reject) => {
 		const tx = database.transaction(SAVES_STORE, "readonly");
@@ -152,7 +152,7 @@ async function getSavesForUser(userId: number): Promise<Save[]> {
 	});
 }
 
-async function getSave(id: number): Promise<Save | null> {
+async function getSave(id: number): Promise<SaveSlot | null> {
 	const database = await openDB();
 	return new Promise((resolve, reject) => {
 		const tx = database.transaction(SAVES_STORE, "readonly");
@@ -170,7 +170,7 @@ async function updateSave(id: number, entitiesData: Entities): Promise<void> {
 		const store = tx.objectStore(SAVES_STORE);
 		const getRequest = store.get(id);
 		getRequest.onsuccess = () => {
-			const save = getRequest.result as Save | undefined;
+			const save = getRequest.result as SaveSlot | undefined;
 			if (!save) {
 				reject(new Error(`Save with id ${id} not found`));
 				return;
@@ -192,7 +192,7 @@ async function updateSave(id: number, entitiesData: Entities): Promise<void> {
  * then select the first user and first save.
  * Returns the player data from the selected save, or null if new.
  */
-export async function initializeStorage(
+export async function selectOrCreateActiveSave(
 	defaultEntitiesData: Entities,
 ): Promise<Entities | null> {
 	await openDB();
@@ -228,25 +228,25 @@ export async function initializeStorage(
  * Save entities state to the current save slot.
  * Does nothing if no save is selected.
  */
-export async function saveEntitiesState(): Promise<void> {
+export async function save(): Promise<void> {
 	if (currentSaveId === null) return;
 	await updateSave(currentSaveId, entities);
 }
 
 /**
- * Load player state from the current save slot.
+ * Load entities state from the current save slot.
  * Returns null if no save is selected.
  */
-export async function getSavedEntitiesState(): Promise<Entities | null> {
+export async function readActiveSaveEntities(): Promise<Entities | null> {
 	if (currentSaveId === null) return null;
 	const save = await getSave(currentSaveId);
 	return save ? deserializeEntities(save.entitiesData) : null;
 }
 
-export async function loadEntitiesState() {
+export async function load() {
 	resetPlayer();
 
-	const savedEntities = await initializeStorage(entities);
+	const savedEntities = await selectOrCreateActiveSave(entities);
 	if (!savedEntities) return;
 
 	const p = savedEntities.get("player");

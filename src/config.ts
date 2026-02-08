@@ -6,47 +6,10 @@ const supportedAspectRatioRange = {
 	max: 16 / 9,
 } as const;
 
-function pickBaseHeightPx(opts: {
-	screenWidth: number;
-	screenHeight: number;
-	aspectRatio: number;
-}) {
-	const { screenWidth, screenHeight, aspectRatio } = opts;
-
-	const isPortrait = screenHeight >= screenWidth;
-
-	const isCoarsePointer = matchMedia?.("(pointer: coarse)")?.matches ?? false;
-
-	const cssCanvasHeightPx = Math.min(screenHeight, screenWidth / aspectRatio);
-
-	const PHONE_PORTRAIT_MAX_WIDTH_PX = 520;
-	const LARGE_DEVICE_MIN_DIM_PX = 800;
-
-	const minDim = Math.min(screenWidth, screenHeight);
-
-	if (
-		isCoarsePointer &&
-		isPortrait &&
-		screenWidth <= PHONE_PORTRAIT_MAX_WIDTH_PX
-	) {
-		return BASE_HEIGHT_PX_MIN;
-	}
-
-	if (minDim >= LARGE_DEVICE_MIN_DIM_PX) {
-		return BASE_HEIGHT_PX_MAX;
-	}
-	const CSS_CANVAS_HEIGHT_SMALL = 380;
-	const CSS_CANVAS_HEIGHT_LARGE = 720;
-
-	const t = clamp(
-		(cssCanvasHeightPx - CSS_CANVAS_HEIGHT_SMALL) /
-			(CSS_CANVAS_HEIGHT_LARGE - CSS_CANVAS_HEIGHT_SMALL),
-		0,
-		1,
-	);
-
-	return Math.round(lerp(BASE_HEIGHT_PX_MIN, BASE_HEIGHT_PX_MAX, t));
-}
+const PHONE_PORTRAIT_MAX_WIDTH_PX = 520;
+const LARGE_DEVICE_MIN_DIM_PX = 800;
+const CSS_CANVAS_HEIGHT_SMALL = 380;
+const CSS_CANVAS_HEIGHT_LARGE = 720;
 
 let screenWidth = window.innerWidth;
 let screenHeight = window.innerHeight;
@@ -69,6 +32,43 @@ export let GAME_WIDTH_PX = Math.round(BASE_WIDTH_PX * SCALE);
 export let GAME_HEIGHT_PX = Math.round(BASE_HEIGHT_PX * SCALE);
 
 const canvasCss = document.getElementById("canvas-css") as HTMLStyleElement;
+
+function pickBaseHeightPx(opts: {
+	screenWidth: number;
+	screenHeight: number;
+	aspectRatio: number;
+}) {
+	const { screenWidth, screenHeight, aspectRatio } = opts;
+
+	const isPortrait = screenHeight >= screenWidth;
+
+	const isCoarsePointer = matchMedia?.("(pointer: coarse)")?.matches ?? false;
+
+	const cssCanvasHeightPx = Math.min(screenHeight, screenWidth / aspectRatio);
+
+	const minDim = Math.min(screenWidth, screenHeight);
+
+	if (
+		isCoarsePointer &&
+		isPortrait &&
+		screenWidth <= PHONE_PORTRAIT_MAX_WIDTH_PX
+	) {
+		return BASE_HEIGHT_PX_MIN;
+	}
+
+	if (minDim >= LARGE_DEVICE_MIN_DIM_PX) {
+		return BASE_HEIGHT_PX_MAX;
+	}
+
+	const t = clamp(
+		(cssCanvasHeightPx - CSS_CANVAS_HEIGHT_SMALL) /
+			(CSS_CANVAS_HEIGHT_LARGE - CSS_CANVAS_HEIGHT_SMALL),
+		0,
+		1,
+	);
+
+	return Math.round(lerp(BASE_HEIGHT_PX_MIN, BASE_HEIGHT_PX_MAX, t));
+}
 
 export function initScreenDimensions() {
 	screenWidth = window.innerWidth;

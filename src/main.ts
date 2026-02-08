@@ -60,7 +60,6 @@ function startGameLoop() {
 function onHidden() {
 	stopGameLoop();
 }
-
 function onShown() {
 	audio.init();
 	startGameLoop();
@@ -70,14 +69,12 @@ document.addEventListener("visibilitychange", () => {
 	if (document.hidden) onHidden();
 	else onShown();
 });
-
 window.addEventListener("pagehide", () => {
 	onHidden();
 });
-
 window.addEventListener("pageshow", () => {
 	onShown();
 });
 
-// await loadEntitiesState();
+// await load();
 startGameLoop();

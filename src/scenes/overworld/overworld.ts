@@ -24,7 +24,7 @@ import {
 	movementIntent,
 } from "../../input/input";
 import { gameState, player } from "../../state";
-import { saveEntitiesState } from "../../storage";
+import { save } from "../../storage";
 import { menuState, openMenu } from "../menu/menu";
 import { camera, updateCamera } from "./camera";
 import {
@@ -630,5 +630,5 @@ export function overworld(dt: number) {
 	update(dt);
 	draw(dt);
 	renderDialogs();
-	saveEntitiesState();
+	save();
 }
