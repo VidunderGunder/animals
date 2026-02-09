@@ -12,7 +12,7 @@ import {
 } from "../../config";
 import type { Direction } from "../../input/input";
 import type { StringWithSuggestions } from "../../types";
-import type { Brain } from "./ai/brain";
+import type { Brain, BrainState } from "./ai/brain";
 import type { Transition } from "./transition/transition";
 
 export const entities = new Map<string, Entity>();
@@ -21,13 +21,15 @@ export type Entities = typeof entities;
 export const entityVariants = ["character", "animal"] as const;
 export type EntityVariant = (typeof entityVariants)[number];
 
-export type Entity = {
+type PlayerOnly<ID, T> = ID extends "player" ? T : never;
+
+export type Entity<ID extends string = StringWithSuggestions<"player">> = {
+	id: ID;
+	sheet: AnimationEntityKey;
+
 	variant: EntityVariant;
 	radius: number;
 	renderPriority: number;
-
-	id: StringWithSuggestions<"player">;
-	sheet: AnimationEntityKey;
 
 	/* Tile position */
 	x: number;
@@ -37,6 +39,7 @@ export type Entity = {
 	z: number;
 
 	direction: Direction;
+	turnLockMs?: PlayerOnly<ID, number>;
 
 	width: number;
 	height: number;
@@ -75,14 +78,23 @@ export type Entity = {
 	onActivate?: (props: { activator: Entity; activated: Entity }) => void;
 
 	/* --- AI fields --- */
-	/** Optional brain (behaviour + script runner) */
-	brain?: Brain | null;
-	/** Current movement mode (affects available transitions) */
+
+	/**
+	 * Optional stable brain identifier.
+	 * Only set this when you want a brain at all.
+	 * If absent/null -> no brain will be instantiated.
+	 */
+	brainId: string | null;
+
+	/** Runtime brain (behaviour + script runner) */
+	brain: Brain | null;
+	brainState: BrainState | null;
+
 	moveMode?: "walk" | "run";
 	/** Temporary desired direction set by brain for a single tick */
-	intentDir?: Direction | null;
+	intentDir: Direction | null;
 	/** Prevent activation spam while an interaction is running */
-	interactionLock?: boolean;
+	interactionLock: boolean;
 };
 
 export function getEntityCharacterDefaults({
@@ -123,10 +135,12 @@ export function getEntityCharacterDefaults({
 		pathSegmentProgress: 0,
 		movingToTile: null,
 		movingToAnimation: null,
+		brainId: null,
 		brain: null,
 		moveMode: "walk",
 		intentDir: null,
 		interactionLock: false,
+		brainState: null,
 	};
 }
 
@@ -163,4 +177,11 @@ export function getEntityFacingTile(entity: Entity): {
 		case "right":
 			return { x: entity.x + 1, y: entity.y, z: entity.z };
 	}
+}
+
+/** Player is just another entity. Keep access centralized. */
+export function getPlayerEntity(): Entity {
+	const p = entities.get("player");
+	if (!p) throw new Error(`Player entity "player" not found in entities map.`);
+	return p;
 }

@@ -120,6 +120,8 @@ export const ANIMAL_SPRITE_HEIGHT_PX = 32;
 export type MovementType = "walk" | "run";
 export const DEFAULT_MOVEMENT: MovementType = "walk";
 
+export const TAP_TO_TURN_MS = 90;
+
 export const movementSpeeds = {
 	walk: 0.06,
 	run: 0.12,

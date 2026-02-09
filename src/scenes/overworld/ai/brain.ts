@@ -87,3 +87,5 @@ export type Brain = {
 	/** Optional background routine that may enqueue commands when idle */
 	routine?: (entity: Entity, dt: number) => void;
 };
+
+export type BrainState = Record<string, number | string | boolean>;

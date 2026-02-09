@@ -20,7 +20,7 @@ But you can use any tool you like, as long as the sound effects fit the style.
 
 Priority
 
-- [ ] 💛 Fix start/select behavior (inconsistent toggling after gamepad refactor)
+- [ ] 💛 Improve Brain/AI/Routine ergononmics and scalability
 - [ ] 💛 Design beastiary
 
 Character Movement & Animation
@@ -38,11 +38,10 @@ Character Movement & Animation
 
 Bugs (clearly defined issues)
 
-- [ ] 💛 Saving/loading is broken (due to entity brains that uses classes and functions)  
-  We want to be able to save/load entity positions, states, routines, etc.
 - [ ] Looping ambience (forest definitely, beach maybe) has a small gap/pause when looping
 - [ ] Current ambience implementation hijacks audio on iOS, stopping music playback from other apps—we want to allow both to play simultaneously
 - [ ] Getting stuck in a zoom-in on iOS Safari is still happening occasionally when using the touch controller (primarily on the d-pad)
+- [ ] 🔻 Blurry menu (pause menu will be remade soon, so will probably not fix)
 
 Spikes (investigation tasks)
 

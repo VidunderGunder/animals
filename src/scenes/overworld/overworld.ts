@@ -24,7 +24,7 @@ import {
 	movementIntent,
 } from "../../input/input";
 import { gameState, player } from "../../state";
-import { save } from "../../storage";
+import { requestAutosave } from "../../storage";
 import { menuState, openMenu } from "../menu/menu";
 import { camera, updateCamera } from "./camera";
 import {
@@ -440,6 +440,8 @@ function updateEntityAndPlayer({
 
 				// Destination was reserved earlier; this is idempotent.
 				occupy(entity);
+
+				if (entity.id === "player") requestAutosave("player-settled");
 			}
 		} else {
 			const t = entity.pathSegmentProgress;
@@ -630,5 +632,4 @@ export function overworld(dt: number) {
 	update(dt);
 	draw(dt);
 	renderDialogs();
-	save();
 }

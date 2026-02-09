@@ -1,16 +1,52 @@
+// src/storage.ts
+
+import type { BrainState } from "./scenes/overworld/ai/brain";
+import { rehydrateBrains } from "./scenes/overworld/ai/brain-registry";
 import {
 	type Entities,
 	type Entity,
 	entities,
 } from "./scenes/overworld/entities";
-import { player, resetPlayer } from "./state";
 
 const DB_NAME = "animals-game";
 const USERS_STORE = "users";
 const SAVES_STORE = "saves";
 
+/**
+ * Pure-data snapshot of an entity that is safe to persist.
+ * Includes render positions (xPx/yPx) so intentional offsets (eg stub landings)
+ * survive load.
+ */
+export type EntitySnapshot = {
+	id: string;
+	variant: Entity["variant"];
+	sheet: Entity["sheet"];
+
+	// tile state
+	x: number;
+	y: number;
+	z: number;
+
+	// render state (may include intentional offsets)
+	xPx: number;
+	yPx: number;
+
+	// facing + animation state
+	direction: Entity["direction"];
+	animationCurrent: Entity["animationCurrent"];
+	animationFrameIndex: Entity["animationFrameIndex"];
+
+	// misc state you likely want to persist
+	moveMode?: Entity["moveMode"];
+	interactionLock?: boolean;
+
+	// stable runtime wiring
+	brainId?: string | null;
+	brainState?: BrainState | null;
+};
+
 // Serializable format for IndexedDB (Map can't be stored directly)
-type SerializedEntities = [string, Entity][];
+type SerializedEntities = [string, EntitySnapshot][];
 
 export type User = {
 	id: number;
@@ -49,7 +85,6 @@ function openDB(): Promise<IDBDatabase> {
 		request.onupgradeneeded = () => {
 			const database = request.result;
 
-			// Create users store
 			if (!database.objectStoreNames.contains(USERS_STORE)) {
 				const usersStore = database.createObjectStore(USERS_STORE, {
 					keyPath: "id",
@@ -58,7 +93,6 @@ function openDB(): Promise<IDBDatabase> {
 				usersStore.createIndex("name", "name", { unique: false });
 			}
 
-			// Create saves store
 			if (!database.objectStoreNames.contains(SAVES_STORE)) {
 				const savesStore = database.createObjectStore(SAVES_STORE, {
 					keyPath: "id",
@@ -82,9 +116,7 @@ async function createUser(name: string): Promise<User> {
 			createdAt: Date.now(),
 		};
 		const request = store.add(user);
-		request.onsuccess = () => {
-			resolve({ ...user, id: Number(request.result) });
-		};
+		request.onsuccess = () => resolve({ ...user, id: Number(request.result) });
 		request.onerror = () => reject(request.error);
 	});
 }
@@ -102,16 +134,41 @@ async function getUsers(): Promise<User[]> {
 
 // ============ Save functions ============
 
-// Helper functions to serialize/deserialize Map for IndexedDB
-// Strips out transient movement state (path, currentPathSegment) that contains functions
-function serializeEntities(map: Entities): SerializedEntities {
-	return Array.from(map.entries()).map(([key, entity]) => {
-		const { path, onActivate, ...rest } = entity;
-		return [key, { ...rest, path: [] }];
-	});
+function toSnapshot(entity: Entity): EntitySnapshot {
+	return {
+		id: entity.id,
+		variant: entity.variant,
+		sheet: entity.sheet,
+
+		x: entity.x,
+		y: entity.y,
+		z: entity.z,
+
+		xPx: entity.xPx,
+		yPx: entity.yPx,
+
+		direction: entity.direction,
+		animationCurrent: entity.animationCurrent,
+		animationFrameIndex: entity.animationFrameIndex,
+
+		moveMode: entity.moveMode,
+		interactionLock: entity.interactionLock,
+
+		brainId: entity.brainId ?? null,
+		brainState: entity.brainState ?? null,
+	};
 }
 
-function deserializeEntities(arr: SerializedEntities): Entities {
+function serializeEntities(map: Entities): SerializedEntities {
+	return Array.from(map.entries()).map(([key, entity]) => [
+		key,
+		toSnapshot(entity),
+	]);
+}
+
+function deserializeEntities(
+	arr: SerializedEntities,
+): Map<string, EntitySnapshot> {
 	return new Map(arr);
 }
 
@@ -133,9 +190,8 @@ async function createSave(
 			updatedAt: now,
 		};
 		const request = store.add(save);
-		request.onsuccess = () => {
+		request.onsuccess = () =>
 			resolve({ ...save, id: request.result as number });
-		};
 		request.onerror = () => reject(request.error);
 	});
 }
@@ -169,6 +225,7 @@ async function updateSave(id: number, entitiesData: Entities): Promise<void> {
 		const tx = database.transaction(SAVES_STORE, "readwrite");
 		const store = tx.objectStore(SAVES_STORE);
 		const getRequest = store.get(id);
+
 		getRequest.onsuccess = () => {
 			const save = getRequest.result as SaveSlot | undefined;
 			if (!save) {
@@ -181,23 +238,20 @@ async function updateSave(id: number, entitiesData: Entities): Promise<void> {
 			putRequest.onsuccess = () => resolve();
 			putRequest.onerror = () => reject(putRequest.error);
 		};
+
 		getRequest.onerror = () => reject(getRequest.error);
 	});
 }
 
-// ============ Convenience functions (used by game) ============
+// ============ Active save selection ============
 
 /**
  * Initialize storage: ensure at least one user and save exist,
  * then select the first user and first save.
- * Returns the player data from the selected save, or null if new.
  */
-export async function selectOrCreateActiveSave(
-	defaultEntitiesData: Entities,
-): Promise<Entities | null> {
+export async function selectOrCreateActiveSave(defaultEntitiesData: Entities) {
 	await openDB();
 
-	// Get or create first user
 	let users = await getUsers();
 	if (users.length === 0) {
 		const newUser = await createUser("Player 1");
@@ -207,7 +261,6 @@ export async function selectOrCreateActiveSave(
 	if (!user) throw new Error("No user found after creation.");
 	currentUserId = user.id;
 
-	// Get or create first save for this user
 	let saves = await getSavesForUser(currentUserId);
 	if (saves.length === 0) {
 		const newSave = await createSave(
@@ -220,54 +273,146 @@ export async function selectOrCreateActiveSave(
 	const save = saves[0];
 	if (!save) throw new Error("No save found after creation.");
 	currentSaveId = save.id;
-
-	return deserializeEntities(save.entitiesData);
 }
 
-/**
- * Save entities state to the current save slot.
- * Does nothing if no save is selected.
- */
-export async function save(): Promise<void> {
-	if (currentSaveId === null) return;
-	await updateSave(currentSaveId, entities);
-}
-
-/**
- * Load entities state from the current save slot.
- * Returns null if no save is selected.
- */
-export async function readActiveSaveEntities(): Promise<Entities | null> {
+export async function readActiveSaveSnapshots(): Promise<Map<
+	string,
+	EntitySnapshot
+> | null> {
 	if (currentSaveId === null) return null;
 	const save = await getSave(currentSaveId);
 	return save ? deserializeEntities(save.entitiesData) : null;
 }
 
+// ============ Apply snapshots ============
+
+function resetTransientMovement(e: Entity) {
+	e.path = [];
+	e.isMoving = false;
+
+	e.xPxi = 0;
+	e.yPxi = 0;
+	e.zi = e.z;
+	e.xPxf = 0;
+	e.yPxf = 0;
+	e.zf = e.z;
+
+	e.pathSegmentProgress = 0;
+	e.pathSegmentDuration = undefined;
+
+	e.movingToTile = null;
+	e.movingToAnimation = null;
+
+	e.intentDir = null;
+}
+
+function applySnapshot(live: Entity, snap: EntitySnapshot) {
+	// stable wiring
+	live.brainId = snap.brainId ?? live.brainId ?? null;
+	live.brainState = snap.brainState ?? live.brainState ?? null;
+
+	// core state
+	live.x = snap.x;
+	live.y = snap.y;
+	live.z = snap.z;
+
+	// IMPORTANT: keep persisted render position (may include offsets)
+	live.xPx = snap.xPx;
+	live.yPx = snap.yPx;
+
+	live.direction = snap.direction;
+	live.animationCurrent = snap.animationCurrent;
+	live.animationFrameIndex = snap.animationFrameIndex;
+
+	live.moveMode = snap.moveMode ?? live.moveMode;
+	live.interactionLock = snap.interactionLock ?? false;
+
+	resetTransientMovement(live);
+}
+
 export async function load() {
-	resetPlayer();
+	// Ensure we have an active save selected
+	await selectOrCreateActiveSave(entities);
 
-	const savedEntities = await selectOrCreateActiveSave(entities);
-	if (!savedEntities) return;
+	const saved = await readActiveSaveSnapshots();
+	if (!saved) return;
 
-	const p = savedEntities.get("player");
-
-	if (p) {
-		Object.assign(player, p);
-		savedEntities.set("player", player);
+	// Apply snapshots onto existing runtime entities (created by initializeArea / initEntities).
+	// Unknown ids are ignored for now (safe).
+	for (const [id, snap] of saved.entries()) {
+		const live = entities.get(id);
+		if (!live) continue;
+		applySnapshot(live, snap);
 	}
 
-	if (!savedEntities) return;
+	// Reattach brains from brainId (only those with brainId set will get brains)
+	rehydrateBrains(entities);
+}
 
-	for (const [id, entity] of savedEntities.entries()) {
-		if (id === "player") continue;
+// ============ Autosave (event-driven + debounced + periodic flush) ============
 
-		const oldEntity = entities.get(id);
+let dirty = false;
+let saveTimer: number | null = null;
+let periodicTimer: number | null = null;
+let saving = false;
 
-		if (oldEntity) {
-			entities.set(id, { ...oldEntity, ...entity });
-			continue;
-		}
+const DEBOUNCE_MS = 500;
+const PERIODIC_FLUSH_MS = 30_000;
 
-		entities.set(id, entity);
+async function saveNow() {
+	if (saving) return; // avoid overlapping IDB transactions
+	if (currentSaveId === null) return;
+
+	saving = true;
+	try {
+		await updateSave(currentSaveId, entities);
+		dirty = false;
+	} finally {
+		saving = false;
 	}
+}
+
+/**
+ * Request autosave. Cheap. Debounced.
+ * Call this on meaningful events (eg. player movement completed, pickups, dialog choice).
+ */
+export function requestAutosave(_reason?: string) {
+	dirty = true;
+
+	if (saveTimer !== null) window.clearTimeout(saveTimer);
+	saveTimer = window.setTimeout(() => {
+		saveTimer = null;
+		void saveNow();
+	}, DEBOUNCE_MS);
+}
+
+/** Force flush (used on hide/page close). */
+export async function flushAutosave() {
+	if (!dirty) return;
+	if (saveTimer !== null) {
+		window.clearTimeout(saveTimer);
+		saveTimer = null;
+	}
+	await saveNow();
+}
+
+/**
+ * Call once during startup (after area/entities initialized).
+ * Adds periodic safety flush + flush on hide/pagehide.
+ */
+export function initAutosave() {
+	if (periodicTimer !== null) return;
+
+	periodicTimer = window.setInterval(() => {
+		if (!dirty) return;
+		void saveNow();
+	}, PERIODIC_FLUSH_MS);
+
+	document.addEventListener("visibilitychange", () => {
+		if (document.hidden) void flushAutosave();
+	});
+
+	window.addEventListener("pagehide", () => {
+		void flushAutosave();
+	});
 }

@@ -1,7 +1,7 @@
 import { createImageElement } from "../../../assets/image";
 import { setAmbienceFields } from "../../../audio/ambience";
 import { TILE_SIZE_PX } from "../../../config";
-import { CommandRunner } from "../ai/brain";
+import { attachBrainFromId } from "../ai/brain-registry";
 import { cmd } from "../ai/commands";
 import {
 	cellToPx,
@@ -361,10 +361,13 @@ function initWorldImageLayers() {
 }
 
 function initEntities() {
+	// npc-1
 	const npcId = "npc-1";
-	entities.set(npcId, {
+	const npc = {
 		...getEntityCharacterDefaults({ x: 30, y: 44, id: npcId }),
 		sheet: "npc-1",
+		brainId: "brain:route-loop",
+		brain: null,
 		onActivate: ({ activator, activated }) => {
 			const bubbleId = `${activated.id}_interact`;
 			if (bubbles.has(bubbleId)) return;
@@ -373,7 +376,6 @@ function initEntities() {
 
 			activated.interactionLock = true;
 
-			// Preempt whatever it was doing, then continue its queued routine.
 			activated.brain?.runner.interrupt([
 				cmd.waitUntilStopped(),
 				cmd.goToTile(getEntityFacingTile(activator)),
@@ -388,45 +390,17 @@ function initEntities() {
 				},
 			]);
 		},
-		brain: {
-			runner: new CommandRunner(),
-			routine(entity) {
-				entity.moveMode = "run";
-				if (!entity.brain?.runner.isIdle()) return;
+	} satisfies Entity;
 
-				const route = [
-					{ x: 26, y: 44, z: 0, moveMode: "walk" },
-					{ x: 26, y: 46, z: 0, moveMode: "walk" },
-					{ x: 30, y: 46, z: 0, moveMode: "walk" },
-					{ x: 35, y: 49, z: 1, moveMode: "walk" },
-					{ x: 30, y: 49, z: 1, moveMode: "run" },
-					{ x: 26, y: 50, z: 0, moveMode: "run" },
-					{ x: 26, y: 55, z: 0, moveMode: "run" },
-					{ x: 30, y: 55, z: 0, moveMode: "run" },
-					{ x: 30, y: 44, z: 0, moveMode: "walk" },
-				] as const;
-
-				for (const point of route) {
-					entity.brain.runner.push({
-						onTick({ entity }) {
-							if (entity.moveMode !== point.moveMode) {
-								entity.moveMode = point.moveMode;
-							}
-							return true;
-						},
-					});
-					entity.brain.runner.push(
-						cmd.goToTile(point, { stopAdjacentIfTargetBlocked: true }),
-					);
-				}
-			},
-		},
-	});
-
+	attachBrainFromId(npc);
+	entities.set(npcId, npc);
+	// fox-1
 	const foxId1 = "fox-1";
-	entities.set(foxId1, {
+	const fox = {
 		...getEntityAnimalDefaults({ x: 30, y: 44, id: foxId1 }),
 		sheet: "fox",
+		brainId: "brain:route-loop",
+		brain: null,
 		onActivate: ({ activator, activated }) => {
 			const bubbleId = `${activated.id}_interact`;
 			if (bubbles.has(bubbleId)) return;
@@ -435,7 +409,6 @@ function initEntities() {
 
 			activated.interactionLock = true;
 
-			// Preempt whatever it was doing, then continue its queued routine.
 			activated.brain?.runner.interrupt([
 				cmd.waitUntilStopped(),
 				cmd.goToTile(getEntityFacingTile(activator)),
@@ -453,46 +426,17 @@ function initEntities() {
 				},
 			]);
 		},
-		brain: {
-			runner: new CommandRunner(),
-			routine(entity) {
-				entity.moveMode = "run";
-				if (!entity.brain?.runner.isIdle()) return;
+	} satisfies Entity;
 
-				const route = [
-					{ x: 26, y: 44, z: 0, moveMode: "walk" },
-					{ x: 26, y: 46, z: 0, moveMode: "walk" },
-					{ x: 30, y: 46, z: 0, moveMode: "walk" },
-					{ x: 35, y: 49, z: 1, moveMode: "walk" },
-					{ x: 30, y: 49, z: 1, moveMode: "run" },
-					{ x: 26, y: 50, z: 0, moveMode: "run" },
-					{ x: 26, y: 55, z: 0, moveMode: "run" },
-					{ x: 30, y: 55, z: 0, moveMode: "run" },
-					{ x: 30, y: 44, z: 0, moveMode: "walk" },
-				] as const;
-
-				for (const point of route) {
-					entity.brain.runner.push({
-						onTick({ entity }) {
-							if (entity.moveMode !== point.moveMode) {
-								entity.moveMode = point.moveMode;
-							}
-							return true;
-						},
-					});
-					entity.brain.runner.push(
-						cmd.goToTile(point, { stopAdjacentIfTargetBlocked: true }),
-					);
-				}
-			},
-		},
-	});
-
+	attachBrainFromId(fox);
+	entities.set(foxId1, fox);
+	// kitsune-1
 	const kitsuneId1 = "kitsune-1";
-	const kitsunePos = { x: 33, y: 43 };
-	entities.set(kitsuneId1, {
-		...getEntityAnimalDefaults({ ...kitsunePos, id: kitsuneId1 }),
+	const kitsune = {
+		...getEntityAnimalDefaults({ x: 33, y: 43, id: kitsuneId1 }),
 		sheet: "kitsune",
+		brainId: "brain:wander:kitsune",
+		brain: null,
 		onActivate: ({ activator, activated }) => {
 			const bubbleId = `${activated.id}_interact`;
 			if (bubbles.has(bubbleId)) return;
@@ -520,35 +464,17 @@ function initEntities() {
 				},
 			]);
 		},
-		brain: {
-			runner: new CommandRunner(),
-			routine(entity) {
-				// Idle randomly around the same spot
-				if (!entity.brain?.runner.isIdle()) return;
+	} satisfies Entity;
 
-				const randomOffset = () => Math.floor(Math.random() * 3) - 1;
-				const pause = Math.floor(Math.random() * 2000) + 1000;
-
-				entity.brain.runner.push(cmd.wait(pause));
-
-				const dest = {
-					x: kitsunePos.x + randomOffset(),
-					y: kitsunePos.y + randomOffset(),
-					z: 0,
-				};
-
-				entity.brain.runner.push(
-					cmd.goToTile(dest, { stopAdjacentIfTargetBlocked: true }),
-				);
-			},
-		},
-	});
-
+	attachBrainFromId(kitsune);
+	entities.set(kitsuneId1, kitsune);
+	// turtle-1
 	const turtleId1 = "turtle-1";
-	const turtlePos = { x: 27, y: 42 };
-	entities.set(turtleId1, {
-		...getEntityAnimalDefaults({ ...turtlePos, id: turtleId1 }),
+	const turtle = {
+		...getEntityAnimalDefaults({ x: 27, y: 42, id: turtleId1 }),
 		sheet: "turtle",
+		brainId: "brain:wander:turtle",
+		brain: null,
 		onActivate: ({ activator, activated }) => {
 			const bubbleId = `${activated.id}_interact`;
 			if (bubbles.has(bubbleId)) return;
@@ -576,29 +502,10 @@ function initEntities() {
 				},
 			]);
 		},
-		brain: {
-			runner: new CommandRunner(),
-			routine(entity) {
-				// Idle randomly around the same spot
-				if (!entity.brain?.runner.isIdle()) return;
+	} satisfies Entity;
 
-				const randomOffset = () => Math.floor(Math.random() * 3) - 1;
-				const pause = Math.floor(Math.random() * 2000) + 1000;
-
-				entity.brain.runner.push(cmd.wait(pause));
-
-				const dest = {
-					x: turtlePos.x + randomOffset(),
-					y: turtlePos.y + randomOffset(),
-					z: 0,
-				};
-
-				entity.brain.runner.push(
-					cmd.goToTile(dest, { stopAdjacentIfTargetBlocked: true }),
-				);
-			},
-		},
-	});
+	attachBrainFromId(turtle);
+	entities.set(turtleId1, turtle);
 
 	const tarasqueId1 = "tarasque-1";
 	const tarasquePos = { x: 26, y: 42 };
