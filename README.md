@@ -2,7 +2,7 @@
 
 Nostalgic GBA inspired game about a skater collecting animals and mythological beings to make them dance battle.
 
-## Sounds
+## 🔊 Sounds
 
 Music and ambience can be high fidelity, but sound effects should be lo-fi/chiptune style to match the retro aesthetic.
 
@@ -16,7 +16,7 @@ Make sure you export as or convert to `.mp3` before adding to the project.
 
 But you can use any tool you like, as long as the sound effects fit the style.
 
-## TODO
+## ✅ TODO
 
 - 🧠 Requires human thought and care
 - 🎨 Requires pixel art
@@ -27,7 +27,7 @@ But you can use any tool you like, as long as the sound effects fit the style.
 
 Priority
 
-- [ ] 🧠 Improve Brain/AI/Routine ergononmics and scalability ⬅️
+- [ ] 🧠 Improve Brain/AI/Routine ergonomics and scalability ⬅️
 - [ ] 🎨 Design beastiary
 
 Character Movement & Animation
