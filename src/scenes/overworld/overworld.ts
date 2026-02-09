@@ -129,9 +129,10 @@ function getDesiredAnimation(entity: Entity): AnimationID {
 	if (entity.animationOverride) return entity.animationOverride;
 
 	const isTryingToMove =
-		entity.isMoving || isPlayerID(entity.id)
+		entity.isMoving ||
+		(isPlayerID(entity.id)
 			? !!(movementIntent ?? entity.brainDesiredDirection)
-			: !!entity.brainDesiredDirection;
+			: !!entity.brainDesiredDirection);
 	if (menuState.show && isPlayerID(entity.id)) return "idle";
 	if (isTryingToMove) return entity.moveMode === "run" ? "run" : "walk";
 	return "idle";
