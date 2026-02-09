@@ -350,7 +350,11 @@ function updatePlayer(dt: number) {
 
 	const desiredDirection = applyTapToTurnGate({ entity });
 	const desiredAnimation =
-		movementIntent && !desiredDirection ? "walk" : getDesiredAnimation(entity);
+		movementIntent && !desiredDirection
+			? entity.moveMode === "run"
+				? "walk"
+				: "idle"
+			: getDesiredAnimation(entity);
 
 	updateEntityAndPlayer({
 		dt,
