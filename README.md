@@ -25,8 +25,6 @@ Priority
 
 Character Movement & Animation
 
-- [ ] 💛 Tap to turn  
-  Enable turning by tapping direction (not in facing direction) when in slow mode (e.g., walk), yet still allow smooth direction changes when moving or in fast mode (e.g., run)
 - [ ] 🤍 Smoke effect for jumps, drops, tricks etc.
 - [ ] 🤍 Terrain dependant rendering
   Cut off lower part of sprite (dynamic height), add animated overlay (e.g., water, grass, mud)
