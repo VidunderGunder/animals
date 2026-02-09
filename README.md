@@ -46,11 +46,11 @@ Character Movement & Animation
 
 Bugs (clearly defined issues)
 
+- [ ] 🤖 Loaded entities are not snapped to the beginning or end of a transition that was in progress when saving
 - [ ] 🔊 Looping ambience (forest definitely, beach maybe) has a small gap/pause when looping
 - [ ] 🤖 Current ambience implementation hijacks audio on iOS, stopping music playback from other apps—we want to allow both to play simultaneously
 - [ ] 🤖 Getting stuck in a zoom-in on iOS Safari is still happening occasionally when using the touch controller (primarily on the d-pad)
 - [ ] 🔻 Blurry menu (pause menu will be remade soon, so will probably not fix)
 
 Spikes (investigation tasks)
-
 - [ ] 🧠 Maybe we should properly pause the game (now animations and sound still play, and the current transition continues—but we should probably freeze everything), but it could be fine the way it is for now?

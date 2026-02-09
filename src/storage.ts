@@ -7,6 +7,7 @@ import {
 	type Entity,
 	entities,
 } from "./scenes/overworld/entities";
+import { occupied, occupy } from "./scenes/overworld/occupancy";
 
 const DB_NAME = "animals-game";
 const USERS_STORE = "users";
@@ -39,7 +40,6 @@ export type EntitySnapshot = {
 	// misc state you likely want to persist
 	moveMode?: Entity["moveMode"];
 	autoRun?: Entity["autoRun"];
-	interactionLock?: boolean;
 
 	// stable runtime wiring
 	brainId?: string | null;
@@ -154,7 +154,6 @@ function toSnapshot(entity: Entity): EntitySnapshot {
 
 		moveMode: entity.moveMode,
 		autoRun: entity.autoRun,
-		interactionLock: entity.interactionLock,
 
 		brainId: entity.brainId ?? null,
 		brainState: entity.brainState ?? null,
@@ -328,7 +327,9 @@ function applySnapshot(live: Entity, snap: EntitySnapshot) {
 
 	live.moveMode = snap.moveMode ?? live.moveMode;
 	live.autoRun = snap.autoRun ?? live.autoRun;
-	live.interactionLock = snap.interactionLock ?? false;
+
+	// ✅ interactionLock must be transient; never restore a saved "true"
+	live.interactionLock = false;
 
 	resetTransientMovement(live);
 }
@@ -341,15 +342,20 @@ export async function load() {
 	if (!saved) return;
 
 	// Apply snapshots onto existing runtime entities (created by initializeArea / initEntities).
-	// Unknown ids are ignored for now (safe).
 	for (const [id, snap] of saved.entries()) {
 		const live = entities.get(id);
 		if (!live) continue;
 		applySnapshot(live, snap);
 	}
 
-	// Reattach brains from brainId (only those with brainId set will get brains)
+	// Reattach brains from brainId
 	rehydrateBrains(entities);
+
+	// ✅ Rebuild occupancy (fix "ghost occupants" / wrong interaction targets)
+	occupied.clear();
+	for (const e of entities.values()) {
+		occupy(e);
+	}
 }
 
 // ============ Autosave (event-driven + debounced + periodic flush) ============
