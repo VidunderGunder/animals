@@ -123,7 +123,7 @@ export const TAP_TO_TURN_MS = 110;
 
 export const moveSpeeds = {
 	walk: 0.06,
-	run: 0.11,
+	run: 0.105,
 	skate: 0.13,
 } as const satisfies Record<MoveMode, number>;
 
