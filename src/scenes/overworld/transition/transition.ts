@@ -4,7 +4,7 @@ import type { Entity } from "../entities";
 export type Transition = {
 	condition?: (entity: Entity) => boolean;
 
-	/* optional: force animation during the transition */
+	/* optional: overrides current animation during the transition */
 	animation?: AnimationID;
 
 	/** Path in pixel space (tile-top-left in world pixels), INCLUDING destination. */

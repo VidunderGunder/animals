@@ -125,27 +125,12 @@ function getIsPlayerMoveMode(): Entity["moveMode"] {
 	return isRun ? "run" : "walk";
 }
 
-function getPlayerAnimation(): AnimationID {
-	const entity = player;
-
-	if (entity.transitionAnimation) return entity.transitionAnimation;
-
-	if (menuState.show) return "idle";
-
-	if (entity.moveMode === "run") return "run";
-	if (entity.moveMode === "walk") return "walk";
-
-	return "idle";
-}
-
-function getEntityAnimation(entity: Entity): AnimationID {
-	if (entity.transitionAnimation) return entity.transitionAnimation;
+function getDesiredAnimation(entity: Entity): AnimationID {
+	if (entity.animationOverride) return entity.animationOverride;
 
 	const isTryingToMove = entity.isMoving || !!entity.brainDesiredDirection;
-	if (isTryingToMove) {
-		return entity.moveMode === "run" ? "run" : "walk";
-	}
-
+	if (menuState.show && isPlayerID(entity.id)) return "idle";
+	if (isTryingToMove) return entity.moveMode === "run" ? "run" : "walk";
 	return "idle";
 }
 
@@ -365,7 +350,7 @@ function updatePlayer(dt: number) {
 
 	const desiredDirection = applyTapToTurnGate({ entity });
 	const desiredAnimation =
-		movementIntent && !desiredDirection ? "walk" : getPlayerAnimation();
+		movementIntent && !desiredDirection ? "walk" : getDesiredAnimation(entity);
 
 	updateEntityAndPlayer({
 		dt,
@@ -391,7 +376,7 @@ function updateEntity(dt: number, entity: Entity) {
 		dt,
 		entity,
 		desiredDirection: entity.brainDesiredDirection ?? null,
-		desiredAnimation: getEntityAnimation(entity),
+		desiredAnimation: getDesiredAnimation(entity),
 	});
 
 	entity.brainDesiredDirection = null;
@@ -430,7 +415,7 @@ function updateEntityAndPlayer({
 					entity.isMoving = true;
 
 					entity.transitionEndTile = planned.end;
-					entity.transitionAnimation = planned.animation ?? null;
+					entity.animationOverride = planned.animation ?? null;
 
 					entity.transitionPath = planned.path.map((p) => ({ ...p }));
 
@@ -494,7 +479,7 @@ function updateEntityAndPlayer({
 
 				entity.isMoving = false;
 				entity.transitionEndTile = null;
-				entity.transitionAnimation = null;
+				entity.animationOverride = null;
 
 				// Destination was reserved earlier; this is idempotent.
 				occupy(entity);
@@ -613,7 +598,7 @@ function draw(dt: number) {
 			`moving: ${player.isMoving}`,
 			`move mode: ${player.moveMode}`,
 			`faster: ${getIsPlayerMoveMode()}`,
-			`transition animation: ${player.transitionAnimation ?? "-"}`,
+			`transition animation: ${player.animationOverride ?? "-"}`,
 		].forEach((line, index) => {
 			ctx.fillText(line, 4, 2 + index * 8);
 		});

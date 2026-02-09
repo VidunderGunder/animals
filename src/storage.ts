@@ -303,7 +303,7 @@ function resetTransientMovement(e: Entity) {
 	e.transitionPathSegmentDuration = undefined;
 
 	e.transitionEndTile = null;
-	e.transitionAnimation = null;
+	e.animationOverride = null;
 
 	e.brainDesiredDirection = null;
 }

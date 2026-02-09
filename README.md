@@ -53,5 +53,4 @@ Bugs (clearly defined issues)
 
 Spikes (investigation tasks)
 
-- [ ] 🤖 + 🧠 Is it cleaner to only use `animationCurrent`, and not `movingToAnimation`?
 - [ ] 🧠 Maybe we should properly pause the game (now animations and sound still play, and the current transition continues—but we should probably freeze everything), but it could be fine the way it is for now?

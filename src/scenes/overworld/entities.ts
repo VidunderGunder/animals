@@ -96,7 +96,7 @@ export type Entity<ID extends string = StringWithSuggestions<"player">> = {
 	transitionPathSegmentDuration?: number;
 
 	transitionEndTile: Transition["end"] | null;
-	transitionAnimation: Transition["animation"] | null;
+	animationOverride: AnimationID | null;
 
 	animationCurrent: AnimationID;
 	animationFrameIndex: number;
@@ -159,7 +159,7 @@ export function getEntityCharacterDefaults<ID extends string>({
 		zf: 0,
 		transitionPathSegmentProgress: 0,
 		transitionEndTile: null,
-		transitionAnimation: null,
+		animationOverride: null,
 		brainId: null,
 		brain: null,
 		moveMode: "walk",
