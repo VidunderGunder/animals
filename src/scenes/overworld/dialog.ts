@@ -1,8 +1,8 @@
 import { type SpeechOptions, speak } from "../../audio/speak";
 import { TILE_SIZE_PX } from "../../config";
 import { clamp } from "../../functions/general";
+import { player } from "../../game-state";
 import { ctx } from "../../gfx/canvas";
-import { player } from "../../state";
 import type { Vec2Px } from "../../types";
 import { camera } from "./camera";
 import type { Entity } from "./entities";

@@ -8,6 +8,7 @@ import {
 	ANIMAL_SPRITE_WIDTH_PX,
 	CHARACTER_SPRITE_HEIGHT_PX,
 	CHARACTER_SPRITE_WIDTH_PX,
+	type MoveMode,
 	TILE_SIZE_PX,
 } from "../../config";
 import type { Direction } from "../../input/input";
@@ -78,7 +79,8 @@ export type Entity<ID extends string = StringWithSuggestions<"player">> = {
 	/** Remaining transition path segments (world pixels) */
 	transitionPath: Transition["path"];
 
-	moveMode?: "walk" | "run";
+	autoRun?: boolean;
+	moveMode?: MoveMode;
 	isMoving: boolean;
 
 	/** Segment interpolation (world pixels) */

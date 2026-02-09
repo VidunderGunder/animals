@@ -117,14 +117,14 @@ export const CHARACTER_SPRITE_HEIGHT_PX = 24;
 export const ANIMAL_SPRITE_WIDTH_PX = 32;
 export const ANIMAL_SPRITE_HEIGHT_PX = 32;
 
-export type MovementType = "walk" | "run";
-export const DEFAULT_MOVEMENT: MovementType = "walk";
+export type MoveMode = "walk" | "run" | "skate";
 
 export const TAP_TO_TURN_MS = 110;
 
-export const movementSpeeds = {
+export const moveSpeeds = {
 	walk: 0.06,
-	run: 0.12,
-} as const satisfies Record<MovementType, number>;
+	run: 0.11,
+	skate: 0.13,
+} as const satisfies Record<MoveMode, number>;
 
 export const DEBUG_OVERLAY = import.meta.env.DEV;

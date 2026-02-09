@@ -1,6 +1,6 @@
 // ambience.ts
 import { TILE_SIZE_PX } from "../config";
-import { player } from "../state";
+import { player } from "../game-state";
 import { objectKeys } from "../types";
 import { type AmbienceMix, audio } from "./audio-engine";
 import { isAmbienceId } from "./audio-paths";

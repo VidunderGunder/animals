@@ -1,6 +1,6 @@
 import { TILE_SIZE_PX } from "../config";
 import { clamp } from "../functions/general";
-import { player } from "../state";
+import { player } from "../game-state";
 import { audio, type MusicOptions } from "./audio-engine";
 import { isMusicId, type MusicId } from "./audio-paths";
 

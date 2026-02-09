@@ -2,6 +2,7 @@ import {
 	type Entity,
 	entities,
 	getEntityCharacterDefaults,
+	type PlayerID,
 } from "./scenes/overworld/entities";
 
 export type GameState = {
@@ -29,7 +30,8 @@ const playerDefault = {
 	z: startLayerZ,
 	direction: "up",
 	renderPriority: 1,
-} as const satisfies Entity;
+	autoRun: true,
+} as const satisfies Entity<PlayerID>;
 
 entities.set("player", { ...playerDefault });
 export const player = entities.get("player") ?? {
@@ -39,8 +41,3 @@ export const player = entities.get("player") ?? {
 export function resetPlayer(): void {
 	Object.assign(player, playerDefault);
 }
-
-export type Animation = {
-	frames: readonly number[];
-	frameDuration: number;
-};

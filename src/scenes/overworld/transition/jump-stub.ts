@@ -1,5 +1,5 @@
 import { audio } from "../../../audio/audio-engine";
-import { movementSpeeds, TILE_SIZE_PX } from "../../../config";
+import { moveSpeeds, TILE_SIZE_PX } from "../../../config";
 import type { Direction } from "../../../input/input";
 import { cellToPx, setEdge } from "../cells";
 import type { Entity } from "../entities";
@@ -57,7 +57,7 @@ function setStubJumpTransitionsSingle(
 		entity.moveMode === "run" ? -TOP_Y : 15;
 
 	const duration = (entity: Entity) =>
-		entity.moveMode === "run" ? 0.5 * (TILE_SIZE_PX / movementSpeeds.run) : 115;
+		entity.moveMode === "run" ? 0.5 * (TILE_SIZE_PX / moveSpeeds.run) : 115;
 
 	const HALF_TILE_PX = TILE_SIZE_PX / 2;
 

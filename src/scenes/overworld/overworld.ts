@@ -9,14 +9,14 @@ import { updateMusic } from "../../audio/music";
 import {
 	ASPECT_RATIO,
 	DEBUG_OVERLAY,
-	DEFAULT_MOVEMENT,
 	GAME_HEIGHT_PX,
 	GAME_WIDTH_PX,
-	movementSpeeds,
+	moveSpeeds,
 	SCALE,
 	TAP_TO_TURN_MS,
 	TILE_SIZE_PX,
 } from "../../config";
+import { gameState, player } from "../../game-state";
 import { clear, ctx } from "../../gfx/canvas";
 import {
 	activeActions,
@@ -24,7 +24,6 @@ import {
 	type Direction,
 	movementIntent,
 } from "../../input/input";
-import { gameState, player } from "../../state";
 import { requestAutosave } from "../../storage";
 import { menuState, openMenu } from "../menu/menu";
 import { camera, updateCamera } from "./camera";
@@ -37,7 +36,7 @@ import {
 } from "./cells";
 import { initializeArea as initializeStartArea } from "./data/start";
 import { renderDialogs } from "./dialog";
-import { type Entity, entities } from "./entities";
+import { type Entity, entities, isPlayerID } from "./entities";
 import { getOccupant, occupy, vacate } from "./occupancy";
 import { getPathValues, type Transition } from "./transition/transition";
 
@@ -64,21 +63,25 @@ function dirToDxDy(direction: Direction): { dx: number; dy: number } {
 
 function applyTapToTurnGate(opts: {
 	entity: Entity;
-	desired: Direction | null;
-	nowMs: number;
+	direction?: Direction | null;
 }): Direction | null {
-	const { entity, desired, nowMs } = opts;
+	const nowMs = performance.now();
 
-	if (entity.moveMode !== "walk") return desired;
+	if (gameState.disabled) return null;
+
+	const entity = opts.entity;
+	const direction = isPlayerID(entity.id)
+		? movementIntent
+		: (opts.direction ?? null);
 
 	// Only relevant before we start moving
 	if (entity.isMoving) {
 		entity.idleTurnLockMs = undefined;
-		return desired;
+		return direction;
 	}
 
 	// No input -> clear lock
-	if (!desired) {
+	if (!direction) {
 		entity.idleTurnLockMs = undefined;
 		return null;
 	}
@@ -87,8 +90,8 @@ function applyTapToTurnGate(opts: {
 
 	// New direction press while idle:
 	// - If it changes facing, turn immediately and arm the lock.
-	if (activeActionsOnDown.has(desired) && entity.direction !== desired) {
-		entity.direction = desired;
+	if (activeActionsOnDown.has(direction) && entity.direction !== direction) {
+		entity.direction = direction;
 		entity.idleTurnLockMs = nowMs + TAP_TO_TURN_MS;
 		return null; // gate movement for TAP_TO_TURN_MS
 	}
@@ -97,8 +100,8 @@ function applyTapToTurnGate(opts: {
 	// Also allow "turning again" during the lock if the user changes direction,
 	// and reset the lock (feels crisp and avoids weird “buffering”).
 	if (lockUntil !== undefined && nowMs < lockUntil) {
-		if (entity.direction !== desired) {
-			entity.direction = desired;
+		if (entity.direction !== direction) {
+			entity.direction = direction;
 			entity.idleTurnLockMs = nowMs + TAP_TO_TURN_MS;
 		}
 		return null;
@@ -106,7 +109,7 @@ function applyTapToTurnGate(opts: {
 
 	// Lock expired (or never armed) -> allow movement
 	entity.idleTurnLockMs = undefined;
-	return desired;
+	return direction;
 }
 
 function getPlayerIsMoving(): boolean {
@@ -118,7 +121,7 @@ function getIsPlayerMoveMode(): Entity["moveMode"] {
 	const isMoving = getPlayerIsMoving();
 	if (!isMoving) return undefined;
 	const bPressed = activeActions.has("b");
-	const isRun = DEFAULT_MOVEMENT === "run" ? !bPressed : bPressed;
+	const isRun = player.autoRun ? !bPressed : bPressed;
 	return isRun ? "run" : "walk";
 }
 
@@ -308,16 +311,8 @@ function updatePlayer(dt: number) {
 
 	entity.moveMode = getIsPlayerMoveMode();
 
-	const desired = gameState.disabled
-		? null
-		: applyTapToTurnGate({
-				entity,
-				desired: movementIntent,
-				nowMs: performance.now(),
-			});
-
 	// Speed based on run/walk
-	entity.speed = movementSpeeds[entity.moveMode ?? "walk"];
+	entity.speed = moveSpeeds[entity.moveMode ?? "walk"];
 
 	// Interaction: activate target in front of player
 	if (!gameState.disabled && activeActions.has("a") && !entity.isMoving) {
@@ -364,11 +359,15 @@ function updatePlayer(dt: number) {
 		activeActions.delete("a");
 	}
 
+	const desiredDirection = applyTapToTurnGate({ entity });
+	const desiredAnimation =
+		movementIntent && !desiredDirection ? "walk" : getPlayerAnimation();
+
 	updateEntityAndPlayer({
 		dt,
 		entity,
-		desiredDirection: desired,
-		desiredAnimation: getPlayerAnimation(),
+		desiredDirection,
+		desiredAnimation,
 	});
 }
 
@@ -406,7 +405,7 @@ function updateEntityAndPlayer({
 	desiredAnimation?: AnimationID;
 }) {
 	// Speed based on run/walk
-	entity.speed = movementSpeeds[entity.moveMode ?? "walk"];
+	entity.speed = moveSpeeds[entity.moveMode ?? "walk"];
 
 	// Movement start
 	if (!entity.isMoving) {
