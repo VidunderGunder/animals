@@ -18,10 +18,34 @@ import type { Transition } from "./transition/transition";
 export const entities = new Map<string, Entity>();
 export type Entities = typeof entities;
 
+/**
+ * Type safe getter
+ */
+export function entitiesGet<ID extends string>(id: ID): Entity<ID> | undefined {
+	return entities.get(id) as Entity<ID> | undefined;
+}
+
+/**
+ * Type safe setter
+ */
+export function entitiesSet<ID extends string>(
+	id: ID,
+	entity: Entity<ID>,
+): void {
+	entities.set(id, entity);
+}
+
 export const entityVariants = ["character", "animal"] as const;
 export type EntityVariant = (typeof entityVariants)[number];
 
-type PlayerOnly<ID, T> = ID extends "player" ? T : never;
+export const playerIds = ["player"] as const;
+export type PlayerID = (typeof playerIds)[number];
+export function isPlayerID(id: string): id is PlayerID {
+	return playerIds.some((pid) => pid === id);
+}
+export function isPlayer(entity: Entity): entity is Entity<PlayerID> {
+	return isPlayerID(entity.id);
+}
 
 export type Entity<ID extends string = StringWithSuggestions<"player">> = {
 	id: ID;
@@ -39,7 +63,7 @@ export type Entity<ID extends string = StringWithSuggestions<"player">> = {
 	z: number;
 
 	direction: Direction;
-	turnLockMs?: PlayerOnly<ID, number>;
+	idleTurnLockMs?: number;
 
 	width: number;
 	height: number;
@@ -52,8 +76,9 @@ export type Entity<ID extends string = StringWithSuggestions<"player">> = {
 	yPx: number;
 
 	/** Remaining transition path segments (world pixels) */
-	path: Transition["path"];
+	transitionPath: Transition["path"];
 
+	moveMode?: "walk" | "run";
 	isMoving: boolean;
 
 	/** Segment interpolation (world pixels) */
@@ -64,12 +89,12 @@ export type Entity<ID extends string = StringWithSuggestions<"player">> = {
 	yPxf: number;
 	zf: number;
 
-	pathSegmentProgress: number;
+	transitionPathSegmentProgress: number;
 	/** Fixed duration for current segment (ms), undefined -> use entity speed */
-	pathSegmentDuration?: number;
+	transitionPathSegmentDuration?: number;
 
-	movingToTile: Transition["end"] | null;
-	movingToAnimation: Transition["animation"] | null;
+	transitionEndTile: Transition["end"] | null;
+	transitionAnimation: Transition["animation"] | null;
 
 	animationCurrent: AnimationID;
 	animationFrameIndex: number;
@@ -78,7 +103,6 @@ export type Entity<ID extends string = StringWithSuggestions<"player">> = {
 	onActivate?: (props: { activator: Entity; activated: Entity }) => void;
 
 	/* --- AI fields --- */
-
 	/**
 	 * Optional stable brain identifier.
 	 * Only set this when you want a brain at all.
@@ -90,22 +114,21 @@ export type Entity<ID extends string = StringWithSuggestions<"player">> = {
 	brain: Brain | null;
 	brainState: BrainState | null;
 
-	moveMode?: "walk" | "run";
 	/** Temporary desired direction set by brain for a single tick */
-	intentDir: Direction | null;
+	brainDesiredDirection: Direction | null;
 	/** Prevent activation spam while an interaction is running */
 	interactionLock: boolean;
 };
 
-export function getEntityCharacterDefaults({
+export function getEntityCharacterDefaults<ID extends string>({
 	id,
 	x,
 	y,
 }: {
-	id: string;
+	id: ID;
 	x: number;
 	y: number;
-}): Entity {
+}): Entity<ID> {
 	return {
 		renderPriority: 0,
 		variant: "character",
@@ -124,7 +147,7 @@ export function getEntityCharacterDefaults({
 		animationCurrent: "idle",
 		animationFrameIndex: 0,
 		animationTimer: 0,
-		path: [],
+		transitionPath: [],
 		isMoving: false,
 		xPxi: 0,
 		yPxi: 0,
@@ -132,13 +155,13 @@ export function getEntityCharacterDefaults({
 		xPxf: 0,
 		yPxf: 0,
 		zf: 0,
-		pathSegmentProgress: 0,
-		movingToTile: null,
-		movingToAnimation: null,
+		transitionPathSegmentProgress: 0,
+		transitionEndTile: null,
+		transitionAnimation: null,
 		brainId: null,
 		brain: null,
 		moveMode: "walk",
-		intentDir: null,
+		brainDesiredDirection: null,
 		interactionLock: false,
 		brainState: null,
 	};
@@ -177,11 +200,4 @@ export function getEntityFacingTile(entity: Entity): {
 		case "right":
 			return { x: entity.x + 1, y: entity.y, z: entity.z };
 	}
-}
-
-/** Player is just another entity. Keep access centralized. */
-export function getPlayerEntity(): Entity {
-	const p = entities.get("player");
-	if (!p) throw new Error(`Player entity "player" not found in entities map.`);
-	return p;
 }

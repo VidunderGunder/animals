@@ -133,7 +133,7 @@ function step(dir: Direction): Command {
 			}
 
 			const nextDir = tries[attemptIndex] ?? dir;
-			entity.intentDir = nextDir;
+			entity.brainDesiredDirection = nextDir;
 
 			// next attempt next tick
 			attemptIndex = (attemptIndex + 1) % tries.length;
@@ -264,7 +264,7 @@ function goToTile(
 				}
 			}
 
-			entity.intentDir = next;
+			entity.brainDesiredDirection = next;
 			lastIssued = next; // NEW: remember what we asked for
 
 			cached?.shift();

@@ -31,11 +31,10 @@ const playerDefault = {
 	renderPriority: 1,
 } as const satisfies Entity;
 
-export const player: Entity = {
+entities.set("player", { ...playerDefault });
+export const player = entities.get("player") ?? {
 	...playerDefault,
 };
-
-entities.set("player", player);
 
 export function resetPlayer(): void {
 	Object.assign(player, playerDefault);

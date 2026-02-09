@@ -287,7 +287,7 @@ export async function readActiveSaveSnapshots(): Promise<Map<
 // ============ Apply snapshots ============
 
 function resetTransientMovement(e: Entity) {
-	e.path = [];
+	e.transitionPath = [];
 	e.isMoving = false;
 
 	e.xPxi = 0;
@@ -297,13 +297,13 @@ function resetTransientMovement(e: Entity) {
 	e.yPxf = 0;
 	e.zf = e.z;
 
-	e.pathSegmentProgress = 0;
-	e.pathSegmentDuration = undefined;
+	e.transitionPathSegmentProgress = 0;
+	e.transitionPathSegmentDuration = undefined;
 
-	e.movingToTile = null;
-	e.movingToAnimation = null;
+	e.transitionEndTile = null;
+	e.transitionAnimation = null;
 
-	e.intentDir = null;
+	e.brainDesiredDirection = null;
 }
 
 function applySnapshot(live: Entity, snap: EntitySnapshot) {

@@ -14,6 +14,7 @@ import {
 	GAME_WIDTH_PX,
 	movementSpeeds,
 	SCALE,
+	TAP_TO_TURN_MS,
 	TILE_SIZE_PX,
 } from "../../config";
 import { clear, ctx } from "../../gfx/canvas";
@@ -77,7 +78,7 @@ function getIsPlayerMoveMode(): Entity["moveMode"] {
 function getPlayerAnimation(): AnimationID {
 	const entity = player;
 
-	if (entity.movingToAnimation) return entity.movingToAnimation;
+	if (entity.transitionAnimation) return entity.transitionAnimation;
 
 	if (menuState.show) return "idle";
 
@@ -88,9 +89,9 @@ function getPlayerAnimation(): AnimationID {
 }
 
 function getEntityAnimation(entity: Entity): AnimationID {
-	if (entity.movingToAnimation) return entity.movingToAnimation;
+	if (entity.transitionAnimation) return entity.transitionAnimation;
 
-	const isTryingToMove = entity.isMoving || !!entity.intentDir;
+	const isTryingToMove = entity.isMoving || !!entity.brainDesiredDirection;
 	if (isTryingToMove) {
 		return entity.moveMode === "run" ? "run" : "walk";
 	}
@@ -177,12 +178,12 @@ function startSegment(
 	entity.yPxf = toYPx;
 	entity.zf = toZ;
 
-	entity.pathSegmentProgress = 0;
-	entity.pathSegmentDuration = duration;
+	entity.transitionPathSegmentProgress = 0;
+	entity.transitionPathSegmentDuration = duration;
 }
 
 function setCurrentSegment(entity: Entity): boolean {
-	const next = entity.path[0];
+	const next = entity.transitionPath[0];
 
 	if (!next) return false;
 
@@ -333,11 +334,11 @@ async function updateEntity(dt: number, entity: Entity) {
 	updateEntityAndPlayer({
 		dt,
 		entity,
-		desiredDirection: entity.intentDir ?? null,
+		desiredDirection: entity.brainDesiredDirection ?? null,
 		desiredAnimation: getEntityAnimation(entity),
 	});
 
-	entity.intentDir = null;
+	entity.brainDesiredDirection = null;
 }
 
 function updateEntityAndPlayer({
@@ -372,12 +373,12 @@ function updateEntityAndPlayer({
 				} else {
 					entity.isMoving = true;
 
-					entity.movingToTile = planned.end;
-					entity.movingToAnimation = planned.animation ?? null;
+					entity.transitionEndTile = planned.end;
+					entity.transitionAnimation = planned.animation ?? null;
 
-					entity.path = planned.path.map((p) => ({ ...p }));
+					entity.transitionPath = planned.path.map((p) => ({ ...p }));
 
-					const first = entity.path[0];
+					const first = entity.transitionPath[0];
 					if (first) {
 						const prev = first.onSegmentEnd;
 						first.onSegmentEnd = (e) => {
@@ -400,43 +401,44 @@ function updateEntityAndPlayer({
 
 		const distancePx = dx === 0 && dy === 0 ? 0 : Math.hypot(dx, dy);
 
-		const currentPathSegment = entity.path[0];
-		if (!entity.pathSegmentProgress && currentPathSegment) {
+		const currentPathSegment = entity.transitionPath[0];
+		if (!entity.transitionPathSegmentProgress && currentPathSegment) {
 			currentPathSegment.onSegmentStart?.(entity);
 		}
 
 		const moveDuration =
-			entity.pathSegmentDuration ?? distancePx / entity.speed;
+			entity.transitionPathSegmentDuration ?? distancePx / entity.speed;
 
-		entity.pathSegmentProgress += moveDuration === 0 ? 1 : dt / moveDuration;
+		entity.transitionPathSegmentProgress +=
+			moveDuration === 0 ? 1 : dt / moveDuration;
 
 		currentPathSegment?.onSegment?.(entity);
 
-		if (entity.pathSegmentProgress >= 1 && currentPathSegment) {
+		if (entity.transitionPathSegmentProgress >= 1 && currentPathSegment) {
 			currentPathSegment.onSegmentEnd?.(entity);
 		}
 
-		if (entity.pathSegmentProgress >= 1) {
-			entity.pathSegmentProgress = 1;
+		if (entity.transitionPathSegmentProgress >= 1) {
+			entity.transitionPathSegmentProgress = 1;
 			snapToSegmentEnd(entity);
 
-			entity.path.shift();
+			entity.transitionPath.shift();
 
 			const hasMore = setCurrentSegment(entity);
 			if (!hasMore) {
-				if (!entity.movingToTile) {
+				if (!entity.transitionEndTile) {
 					throw new Error(
 						"Invariant: movement finished but pendingEnd is null",
 					);
 				}
 
-				entity.x = entity.movingToTile.x;
-				entity.y = entity.movingToTile.y;
-				entity.z = entity.movingToTile.z;
+				entity.x = entity.transitionEndTile.x;
+				entity.y = entity.transitionEndTile.y;
+				entity.z = entity.transitionEndTile.z;
 
 				entity.isMoving = false;
-				entity.movingToTile = null;
-				entity.movingToAnimation = null;
+				entity.transitionEndTile = null;
+				entity.transitionAnimation = null;
 
 				// Destination was reserved earlier; this is idempotent.
 				occupy(entity);
@@ -444,7 +446,7 @@ function updateEntityAndPlayer({
 				if (entity.id === "player") requestAutosave("player-settled");
 			}
 		} else {
-			const t = entity.pathSegmentProgress;
+			const t = entity.transitionPathSegmentProgress;
 			entity.xPx = Math.round(entity.xPxi + dx * t);
 			entity.yPx = Math.round(entity.yPxi + dy * t);
 		}
@@ -550,12 +552,12 @@ function draw(dt: number) {
 				2,
 			)}:${1})`,
 			`current tile: ${player.x}, ${player.y}, ${player.z}`,
-			`move to tile: ${player.movingToTile?.x ?? "x"}, ${player.movingToTile?.y ?? "y"}, ${player.movingToTile?.z ?? "z"}`,
+			`move to tile: ${player.transitionEndTile?.x ?? "x"}, ${player.transitionEndTile?.y ?? "y"}, ${player.transitionEndTile?.z ?? "z"}`,
 			`facing: ${player.direction}`,
 			`moving: ${player.isMoving}`,
 			`move mode: ${player.moveMode}`,
 			`faster: ${getIsPlayerMoveMode()}`,
-			`transition animation: ${player.movingToAnimation ?? "-"}`,
+			`transition animation: ${player.transitionAnimation ?? "-"}`,
 		].forEach((line, index) => {
 			ctx.fillText(line, 4, 2 + index * 8);
 		});
@@ -570,7 +572,7 @@ function getEntitiesRenderZ(entity: Entity): number {
 	const toZ = entity.zf;
 	if (fromZ === toZ) return entity.z;
 
-	return entity.pathSegmentProgress < 0.5 ? fromZ : toZ;
+	return entity.transitionPathSegmentProgress < 0.5 ? fromZ : toZ;
 }
 
 function drawEntity(entity: Entity) {
