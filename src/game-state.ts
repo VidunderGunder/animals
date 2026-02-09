@@ -30,7 +30,7 @@ const playerDefault = {
 	z: startLayerZ,
 	direction: "up",
 	renderPriority: 1,
-	autoRun: true,
+	autoRun: false,
 } as const satisfies Entity<PlayerID>;
 
 entities.set("player", { ...playerDefault });

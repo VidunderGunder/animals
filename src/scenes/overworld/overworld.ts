@@ -309,6 +309,10 @@ function updatePlayer(dt: number) {
 		openMenu();
 	}
 
+	if (activeActionsOnDown.has("x")) {
+		entity.autoRun = !entity.autoRun;
+	}
+
 	entity.moveMode = getIsPlayerMoveMode();
 
 	// Speed based on run/walk
@@ -372,11 +376,11 @@ function updatePlayer(dt: number) {
 }
 
 /** Update NPC */
-async function updateEntity(dt: number, entity: Entity) {
+function updateEntity(dt: number, entity: Entity) {
 	if (gameState.paused) return;
 
 	if (entity.brain) {
-		await entity.brain.runner.tick(entity, dt);
+		entity.brain.runner.tick(entity, dt);
 
 		if (entity.brain.runner.isIdle() && entity.brain.routine) {
 			entity.brain.routine(entity, dt);

@@ -11,8 +11,8 @@ export const keyMap: Record<Action, readonly string[]> = {
 	y: [],
 	start: ["Enter"],
 	select: ["Tab"],
-	l: [],
-	r: [],
+	l: ["KeyL"],
+	r: ["KeyR"],
 	zl: [],
 	zr: [],
 } as const satisfies Record<Action, readonly KeyEventCode[]>;

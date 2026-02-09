@@ -38,6 +38,7 @@ export type EntitySnapshot = {
 
 	// misc state you likely want to persist
 	moveMode?: Entity["moveMode"];
+	autoRun?: Entity["autoRun"];
 	interactionLock?: boolean;
 
 	// stable runtime wiring
@@ -152,6 +153,7 @@ function toSnapshot(entity: Entity): EntitySnapshot {
 		animationFrameIndex: entity.animationFrameIndex,
 
 		moveMode: entity.moveMode,
+		autoRun: entity.autoRun,
 		interactionLock: entity.interactionLock,
 
 		brainId: entity.brainId ?? null,
@@ -325,6 +327,7 @@ function applySnapshot(live: Entity, snap: EntitySnapshot) {
 	live.animationFrameIndex = snap.animationFrameIndex;
 
 	live.moveMode = snap.moveMode ?? live.moveMode;
+	live.autoRun = snap.autoRun ?? live.autoRun;
 	live.interactionLock = snap.interactionLock ?? false;
 
 	resetTransientMovement(live);
