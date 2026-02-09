@@ -62,6 +62,53 @@ function dirToDxDy(direction: Direction): { dx: number; dy: number } {
 	}
 }
 
+function applyTapToTurnGate(opts: {
+	entity: Entity;
+	desired: Direction | null;
+	nowMs: number;
+}): Direction | null {
+	const { entity, desired, nowMs } = opts;
+
+	if (entity.moveMode !== "walk") return desired;
+
+	// Only relevant before we start moving
+	if (entity.isMoving) {
+		entity.idleTurnLockMs = undefined;
+		return desired;
+	}
+
+	// No input -> clear lock
+	if (!desired) {
+		entity.idleTurnLockMs = undefined;
+		return null;
+	}
+
+	const lockUntil = entity.idleTurnLockMs;
+
+	// New direction press while idle:
+	// - If it changes facing, turn immediately and arm the lock.
+	if (activeActionsOnDown.has(desired) && entity.direction !== desired) {
+		entity.direction = desired;
+		entity.idleTurnLockMs = nowMs + TAP_TO_TURN_MS;
+		return null; // gate movement for TAP_TO_TURN_MS
+	}
+
+	// If we are currently locked, keep gating movement.
+	// Also allow "turning again" during the lock if the user changes direction,
+	// and reset the lock (feels crisp and avoids weird “buffering”).
+	if (lockUntil !== undefined && nowMs < lockUntil) {
+		if (entity.direction !== desired) {
+			entity.direction = desired;
+			entity.idleTurnLockMs = nowMs + TAP_TO_TURN_MS;
+		}
+		return null;
+	}
+
+	// Lock expired (or never armed) -> allow movement
+	entity.idleTurnLockMs = undefined;
+	return desired;
+}
+
 function getPlayerIsMoving(): boolean {
 	const entity = player;
 	return !!entity.isMoving || !!movementIntent;
@@ -261,7 +308,13 @@ function updatePlayer(dt: number) {
 
 	entity.moveMode = getIsPlayerMoveMode();
 
-	const desired = gameState.disabled ? null : movementIntent;
+	const desired = gameState.disabled
+		? null
+		: applyTapToTurnGate({
+				entity,
+				desired: movementIntent,
+				nowMs: performance.now(),
+			});
 
 	// Speed based on run/walk
 	entity.speed = movementSpeeds[entity.moveMode ?? "walk"];

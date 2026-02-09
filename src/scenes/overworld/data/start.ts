@@ -468,6 +468,7 @@ function initEntities() {
 
 	attachBrainFromId(kitsune);
 	entities.set(kitsuneId1, kitsune);
+
 	// turtle-1
 	const turtleId1 = "turtle-1";
 	const turtle = {
