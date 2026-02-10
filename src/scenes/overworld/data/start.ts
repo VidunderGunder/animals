@@ -361,6 +361,18 @@ function initWorldImageLayers() {
 }
 
 function initEntities() {
+	const routeObstacleCourse = [
+		{ x: 26, y: 44, z: 0, moveMode: "walk" },
+		{ x: 26, y: 46, z: 0, moveMode: "walk" },
+		{ x: 30, y: 46, z: 0, moveMode: "walk" },
+		{ x: 35, y: 49, z: 1, moveMode: "walk" },
+		{ x: 30, y: 49, z: 1, moveMode: "run" },
+		{ x: 26, y: 50, z: 0, moveMode: "run" },
+		{ x: 26, y: 55, z: 0, moveMode: "run" },
+		{ x: 30, y: 55, z: 0, moveMode: "run" },
+		{ x: 30, y: 44, z: 0, moveMode: "walk" },
+	] as const satisfies Route;
+
 	const npcId = "npc-1";
 	entities.set(npcId, {
 		...getEntityCharacterDefaults({ x: 30, y: 44, id: npcId }),
@@ -486,15 +498,3 @@ function initEntities() {
 		},
 	});
 }
-
-const routeObstacleCourse = [
-	{ x: 26, y: 44, z: 0, moveMode: "walk" },
-	{ x: 26, y: 46, z: 0, moveMode: "walk" },
-	{ x: 30, y: 46, z: 0, moveMode: "walk" },
-	{ x: 35, y: 49, z: 1, moveMode: "walk" },
-	{ x: 30, y: 49, z: 1, moveMode: "run" },
-	{ x: 26, y: 50, z: 0, moveMode: "run" },
-	{ x: 26, y: 55, z: 0, moveMode: "run" },
-	{ x: 30, y: 55, z: 0, moveMode: "run" },
-	{ x: 30, y: 44, z: 0, moveMode: "walk" },
-] as const satisfies Route;
