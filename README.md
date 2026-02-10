@@ -27,7 +27,6 @@ But you can use any tool you like, as long as the sound effects fit the style.
 
 Priority
 
-- [ ] 🧠 Improve Brain/AI/Routine ergonomics and scalability ⬅️
 - [ ] 🎨 Design beastiary
 
 Character Movement & Animation

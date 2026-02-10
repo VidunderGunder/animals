@@ -1,7 +1,8 @@
 import { createImageElement } from "../../../assets/image";
 import { setAmbienceFields } from "../../../audio/ambience";
-import { TILE_SIZE_PX } from "../../../config";
-import { attachBrainFromId } from "../ai/brain-registry";
+import type { SpeechOptions } from "../../../audio/speak";
+import { type MoveMode, TILE_SIZE_PX } from "../../../config";
+import { CommandRunner } from "../ai/brain";
 import { cmd } from "../ai/commands";
 import {
 	cellToPx,
@@ -363,80 +364,59 @@ function initWorldImageLayers() {
 function initEntities() {
 	// npc-1
 	const npcId = "npc-1";
-	const npc = {
+	entities.set(npcId, {
 		...getEntityCharacterDefaults({ x: 30, y: 44, id: npcId }),
 		sheet: "npc-1",
-		brainId: "brain:route-loop",
-		brain: null,
-		onActivate: ({ activator, activated }) => {
-			const bubbleId = `${activated.id}_interact`;
-			if (bubbles.has(bubbleId)) return;
-			if (activated.interactionLock) return;
-			if (!activated.brain) return;
-
-			activated.interactionLock = true;
-
-			activated.brain?.runner.interrupt([
-				cmd.waitUntilStopped(),
-				cmd.goToTile(getEntityFacingTile(activator)),
-				cmd.face(activator),
-				() => bubble(bubbleId, "Hello!", activated),
-				cmd.wait(1000),
-				{
-					onTick: ({ entity }) => {
-						entity.interactionLock = false;
-						return true;
-					},
-				},
-			]);
+		brain: {
+			runner: new CommandRunner(),
+			routine(entity) {
+				routeLoop(entity, routeObstacleCourse);
+			},
 		},
-	} satisfies Entity;
+		onActivate: ({ activator, activated }) => {
+			talk({
+				activator,
+				activated,
+				content: "Hello!",
+			});
+		},
+	});
 
-	attachBrainFromId(npc);
-	entities.set(npcId, npc);
 	// fox-1
 	const foxId1 = "fox-1";
-	const fox = {
+	entities.set(foxId1, {
 		...getEntityAnimalDefaults({ x: 30, y: 44, id: foxId1 }),
 		sheet: "fox",
-		brainId: "brain:route-loop",
-		brain: null,
-		onActivate: ({ activator, activated }) => {
-			const bubbleId = `${activated.id}_interact`;
-			if (bubbles.has(bubbleId)) return;
-			if (activated.interactionLock) return;
-			if (!activated.brain) return;
-
-			activated.interactionLock = true;
-
-			activated.brain?.runner.interrupt([
-				cmd.waitUntilStopped(),
-				cmd.goToTile(getEntityFacingTile(activator)),
-				cmd.face(activator),
-				() =>
-					bubble(bubbleId, "Yip!", activated, {
-						pitch: 3.5,
-					}),
-				cmd.wait(1000),
-				{
-					onTick: ({ entity }) => {
-						entity.interactionLock = false;
-						return true;
-					},
-				},
-			]);
+		brain: {
+			runner: new CommandRunner(),
+			routine(entity) {
+				routeLoop(entity, routeObstacleCourse);
+			},
 		},
-	} satisfies Entity;
+		onActivate: ({ activator, activated }) => {
+			talk({
+				activator,
+				activated,
+				content: "Yip!",
+				options: {
+					pitch: 3.5,
+				},
+			});
+		},
+	});
 
-	attachBrainFromId(fox);
-	entities.set(foxId1, fox);
 	// kitsune-1
 	const kitsuneId1 = "kitsune-1";
-	const kitsune = {
-		...getEntityAnimalDefaults({ x: 33, y: 43, id: kitsuneId1 }),
+	const kitsunePos = { x: 33, y: 43 };
+	entities.set(kitsuneId1, {
+		...getEntityAnimalDefaults({ ...kitsunePos, id: kitsuneId1 }),
 		sheet: "kitsune",
-		brainId: "brain:wander:kitsune",
-		brain: null,
+		brain: {
+			runner: new CommandRunner(),
+			routine(entity) {
+				wanderAround(entity, kitsunePos);
+			},
+		},
 		onActivate: ({ activator, activated }) => {
 			const bubbleId = `${activated.id}_interact`;
 			if (bubbles.has(bubbleId)) return;
@@ -464,49 +444,33 @@ function initEntities() {
 				},
 			]);
 		},
-	} satisfies Entity;
-
-	attachBrainFromId(kitsune);
-	entities.set(kitsuneId1, kitsune);
+	});
 
 	// turtle-1
 	const turtleId1 = "turtle-1";
-	const turtle = {
-		...getEntityAnimalDefaults({ x: 27, y: 42, id: turtleId1 }),
+	const turtlePos = { x: 27, y: 42 };
+	entities.set(turtleId1, {
+		...getEntityAnimalDefaults({ ...turtlePos, id: turtleId1 }),
 		sheet: "turtle",
-		brainId: "brain:wander:turtle",
-		brain: null,
-		onActivate: ({ activator, activated }) => {
-			const bubbleId = `${activated.id}_interact`;
-			if (bubbles.has(bubbleId)) return;
-			if (activated.interactionLock) return;
-			if (!activated.brain) return;
-
-			activated.interactionLock = true;
-
-			activated.brain?.runner.interrupt([
-				cmd.waitUntilStopped(),
-				cmd.goToTile(getEntityFacingTile(activator)),
-				cmd.face(activator),
-				() =>
-					bubble(bubbleId, "Ah", activated, {
-						pitch: 0.4,
-						tempo: 1.5,
-						intensity: 1,
-					}),
-				cmd.wait(1000),
-				{
-					onTick: ({ entity }) => {
-						entity.interactionLock = false;
-						return true;
-					},
-				},
-			]);
+		brain: {
+			runner: new CommandRunner(),
+			routine(entity) {
+				wanderAround(entity, turtlePos);
+			},
 		},
-	} satisfies Entity;
-
-	attachBrainFromId(turtle);
-	entities.set(turtleId1, turtle);
+		onActivate: ({ activator, activated }) => {
+			talk({
+				activator,
+				activated,
+				content: "Ah",
+				options: {
+					pitch: 0.4,
+					tempo: 1.5,
+					intensity: 1,
+				},
+			});
+		},
+	});
 
 	const tarasqueId1 = "tarasque-1";
 	const tarasquePos = { x: 26, y: 42 };
@@ -525,4 +489,125 @@ function initEntities() {
 			});
 		},
 	});
+}
+
+type Route = { x: number; y: number; z: number; moveMode: MoveMode }[];
+
+const routeObstacleCourse = [
+	{ x: 26, y: 44, z: 0, moveMode: "walk" },
+	{ x: 26, y: 46, z: 0, moveMode: "walk" },
+	{ x: 30, y: 46, z: 0, moveMode: "walk" },
+	{ x: 35, y: 49, z: 1, moveMode: "walk" },
+	{ x: 30, y: 49, z: 1, moveMode: "run" },
+	{ x: 26, y: 50, z: 0, moveMode: "run" },
+	{ x: 26, y: 55, z: 0, moveMode: "run" },
+	{ x: 30, y: 55, z: 0, moveMode: "run" },
+	{ x: 30, y: 44, z: 0, moveMode: "walk" },
+] as const satisfies Route;
+
+function routeLoop(entity: Entity, route: Route) {
+	type RouteBrainState = { routeIndex?: number };
+
+	entity.brainState ??= { routeIndex: 0 };
+	const state: RouteBrainState = entity.brainState;
+
+	entity.moveMode = "run";
+	if (!entity.brain?.runner.isIdle()) return;
+
+	let i = (typeof state.routeIndex === "number" ? state.routeIndex : 0) | 0;
+	if (i < 0 || i >= route.length) i = 0;
+
+	const cur = route[i];
+	if (!cur) throw new Error(`Invalid brain route index ${i}`);
+
+	if (entity.x === cur.x && entity.y === cur.y && entity.z === cur.z) {
+		i = (i + 1) % route.length;
+		state.routeIndex = i;
+	} else {
+		state.routeIndex = i;
+	}
+
+	if (typeof state.routeIndex !== "number") {
+		throw new Error(`Invalid brain state routeIndex ${state.routeIndex}`);
+	}
+
+	const target = route[state.routeIndex];
+	if (!target) {
+		throw new Error(`Invalid brain route index ${state.routeIndex}`);
+	}
+
+	entity.brain.runner.push({
+		onTick({ entity }) {
+			if (entity.moveMode !== target.moveMode)
+				entity.moveMode = target.moveMode;
+			return true;
+		},
+	});
+
+	entity.brain.runner.push(
+		cmd.goToTile(target, { stopAdjacentIfTargetBlocked: true }),
+	);
+
+	entity.brain.runner.push({
+		onTick() {
+			entity.brainState ??= {};
+			const s2 = entity.brainState;
+			const i2 = (typeof s2.routeIndex === "number" ? s2.routeIndex : 0) | 0;
+			s2.routeIndex = (i2 + 1) % route.length;
+			return true;
+		},
+	});
+}
+
+function talk({
+	activator,
+	activated,
+	content,
+	options,
+}: {
+	activator: Entity;
+	activated: Entity;
+	content: string;
+	options?: SpeechOptions;
+}) {
+	const bubbleId = `${activated.id}_interact`;
+	if (bubbles.has(bubbleId)) return;
+	if (activated.interactionLock) return;
+	if (!activated.brain) return;
+
+	activated.interactionLock = true;
+
+	// Preempt whatever it was doing, then continue its queued routine.
+	activated.brain?.runner.interrupt([
+		cmd.waitUntilStopped(),
+		cmd.goToTile(getEntityFacingTile(activator)),
+		cmd.face(activator),
+		() => bubble(bubbleId, content, activated, options),
+		cmd.wait(1000),
+		{
+			onTick: ({ entity }) => {
+				entity.interactionLock = false;
+				return true;
+			},
+		},
+	]);
+}
+
+function wanderAround(entity: Entity, origin: { x: number; y: number }) {
+	if (!entity.brain?.runner.isIdle()) return;
+
+	const randomOffset = () => Math.floor(Math.random() * 3) - 1;
+	const pause = Math.floor(Math.random() * 2000) + 1000;
+
+	entity.brain.runner.push(cmd.wait(pause));
+
+	const dest = {
+		x: origin.x + randomOffset(),
+		y: origin.y + randomOffset(),
+		z: 0,
+	};
+
+	entity.brain.runner.push(
+		cmd.goToTile(dest, { stopAdjacentIfTargetBlocked: true }),
+	);
 }

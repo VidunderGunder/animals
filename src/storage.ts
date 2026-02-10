@@ -1,7 +1,6 @@
 // src/storage.ts
 
 import type { BrainState } from "./scenes/overworld/ai/brain";
-import { rehydrateBrains } from "./scenes/overworld/ai/brain-registry";
 import {
 	type Entities,
 	type Entity,
@@ -347,9 +346,6 @@ export async function load() {
 		if (!live) continue;
 		applySnapshot(live, snap);
 	}
-
-	// Reattach brains from brainId
-	rehydrateBrains(entities);
 
 	// ✅ Rebuild occupancy (fix "ghost occupants" / wrong interaction targets)
 	occupied.clear();
