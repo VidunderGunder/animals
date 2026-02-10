@@ -33,13 +33,14 @@ Priority
 Character Movement & Animation
 
 - [ ] 🤖 Trick improvements ⬅️
-  - [ ] Occupy all tiles involved when doing a trick transition (if possible)
-  - [ ] Collide if traversing through an occupied tile
-  - [ ] Collide if traversing through an edge with a transition
-  - [ ] Allow trick through certain transtions (e.g., stairs)
+  - [ ] 🔊 Spin sound effect
+  - [ ] 🤖 Occupy all tiles involved when doing a trick transition (if possible)
+  - [ ] 🤖 Collide if traversing through an occupied tile
+  - [ ] 🤖 Collide if traversing through an edge with a transition
+  - [ ] 🤖 Allow trick through certain transtions (e.g., stairs)
 - [ ] 🤖 Make it possible to rotate while jumping (jump transitions)
 - [ ] 🤖 Ensure animation rotation, position offsets and other effects work in the overworld (only works in the menu as of now)
-- [ ] Roll & flip animation
+- [ ] Roll & flip tricks
   - [ ] 🎨 Create new sprites
   - [ ] 🤖 Possible to roll and flip whenever (pressing A)
   - [ ] 🤖 Crash animation on collision or any non-rollable/flipable transition (e.g., blocked cells or ladder)
