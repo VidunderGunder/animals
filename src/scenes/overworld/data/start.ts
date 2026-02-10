@@ -362,7 +362,6 @@ function initWorldImageLayers() {
 }
 
 function initEntities() {
-	// npc-1
 	const npcId = "npc-1";
 	entities.set(npcId, {
 		...getEntityCharacterDefaults({ x: 30, y: 44, id: npcId }),
@@ -382,7 +381,6 @@ function initEntities() {
 		},
 	});
 
-	// fox-1
 	const foxId1 = "fox-1";
 	entities.set(foxId1, {
 		...getEntityAnimalDefaults({ x: 30, y: 44, id: foxId1 }),
@@ -405,7 +403,6 @@ function initEntities() {
 		},
 	});
 
-	// kitsune-1
 	const kitsuneId1 = "kitsune-1";
 	const kitsunePos = { x: 33, y: 43 };
 	entities.set(kitsuneId1, {
@@ -446,7 +443,6 @@ function initEntities() {
 		},
 	});
 
-	// turtle-1
 	const turtleId1 = "turtle-1";
 	const turtlePos = { x: 27, y: 42 };
 	entities.set(turtleId1, {
@@ -479,13 +475,14 @@ function initEntities() {
 		radius: 11,
 		sheet: "tarasque",
 		onActivate: ({ activated }) => {
-			const bubbleId = `${activated.id}_interact`;
-			if (bubbles.has(bubbleId)) return;
-
-			bubble(bubbleId, "Growl", activated, {
-				pitch: 0.4,
-				tempo: 0.5,
-				intensity: 20,
+			talk({
+				activated,
+				content: "Growl",
+				options: {
+					pitch: 0.4,
+					tempo: 0.5,
+					intensity: 20,
+				},
 			});
 		},
 	});
@@ -565,7 +562,7 @@ function talk({
 	content,
 	options,
 }: {
-	activator: Entity;
+	activator?: Entity;
 	activated: Entity;
 	content: string;
 	options?: SpeechOptions;
@@ -573,15 +570,21 @@ function talk({
 	const bubbleId = `${activated.id}_interact`;
 	if (bubbles.has(bubbleId)) return;
 	if (activated.interactionLock) return;
-	if (!activated.brain) return;
+
+	const brain = activated.brain;
+
+	if (!brain) {
+		bubble(bubbleId, content, activated, options);
+		return;
+	}
 
 	activated.interactionLock = true;
 
 	// Preempt whatever it was doing, then continue its queued routine.
 	activated.brain?.runner.interrupt([
 		cmd.waitUntilStopped(),
-		cmd.goToTile(getEntityFacingTile(activator)),
-		cmd.face(activator),
+		activator ? cmd.goToTile(getEntityFacingTile(activator)) : null,
+		activator ? cmd.face(activator) : null,
 		() => bubble(bubbleId, content, activated, options),
 		cmd.wait(1000),
 		{

@@ -31,7 +31,7 @@ export class CommandRunner {
 	}
 
 	/** Push a command to the FRONT (preempt current plan). */
-	interrupt(cmd: Command | (() => void) | (Command | (() => void))[]) {
+	interrupt(cmd: Command | (() => void) | (Command | null | (() => void))[]) {
 		if (Array.isArray(cmd)) {
 			// preserve order: first in array runs first
 			for (let i = cmd.length - 1; i >= 0; i--) {
