@@ -1,7 +1,7 @@
 // src/scenes/overworld/ai/pathfinding.ts
 import type { Direction } from "../../../input/input";
 import { cellKey, getCell, getEdge, worldBounds } from "../cells";
-import type { Entity } from "../entities";
+import type { Entity } from "../entity";
 import { getOccupant } from "../occupancy";
 import type { Transition } from "../transition/transition";
 

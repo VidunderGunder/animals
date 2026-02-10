@@ -2,7 +2,7 @@ import { audio } from "../../../audio/audio-engine";
 import { moveSpeeds, TILE_SIZE_PX } from "../../../config";
 import type { Direction } from "../../../input/input";
 import { cellToPx, setEdge } from "../cells";
-import type { Entity } from "../entities";
+import type { Entity } from "../entity";
 import type { Transition } from "./transition";
 
 export function setStubJumpTransitions(

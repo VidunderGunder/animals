@@ -3,7 +3,7 @@ import {
 	entities,
 	getEntityCharacterDefaults,
 	type PlayerID,
-} from "./scenes/overworld/entities";
+} from "./scenes/overworld/entity";
 
 export type GameState = {
 	disabled: boolean;

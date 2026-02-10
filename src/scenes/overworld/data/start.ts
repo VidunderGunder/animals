@@ -1,9 +1,8 @@
 import { createImageElement } from "../../../assets/image";
 import { setAmbienceFields } from "../../../audio/ambience";
-import type { SpeechOptions } from "../../../audio/speak";
-import { type MoveMode, TILE_SIZE_PX } from "../../../config";
+import { TILE_SIZE_PX } from "../../../config";
 import { CommandRunner } from "../ai/brain";
-import { cmd } from "../ai/commands";
+import { cmd, type Route } from "../ai/commands";
 import {
 	cellToPx,
 	getCellsOutline,
@@ -19,7 +18,7 @@ import {
 	getEntityAnimalDefaults,
 	getEntityCharacterDefaults,
 	getEntityFacingTile,
-} from "../entities";
+} from "../entity";
 import { getJumpDownTransition } from "../transition/jump-down";
 import { setStubJumpTransitions } from "../transition/jump-stub";
 
@@ -369,11 +368,11 @@ function initEntities() {
 		brain: {
 			runner: new CommandRunner(),
 			routine(entity) {
-				routeLoop(entity, routeObstacleCourse);
+				cmd.routeLoop(entity, routeObstacleCourse);
 			},
 		},
 		onActivate: ({ activator, activated }) => {
-			talk({
+			cmd.talk({
 				activator,
 				activated,
 				content: "Hello!",
@@ -388,11 +387,11 @@ function initEntities() {
 		brain: {
 			runner: new CommandRunner(),
 			routine(entity) {
-				routeLoop(entity, routeObstacleCourse);
+				cmd.routeLoop(entity, routeObstacleCourse);
 			},
 		},
 		onActivate: ({ activator, activated }) => {
-			talk({
+			cmd.talk({
 				activator,
 				activated,
 				content: "Yip!",
@@ -411,7 +410,7 @@ function initEntities() {
 		brain: {
 			runner: new CommandRunner(),
 			routine(entity) {
-				wanderAround(entity, kitsunePos);
+				cmd.wanderAround(entity, kitsunePos);
 			},
 		},
 		onActivate: ({ activator, activated }) => {
@@ -451,11 +450,11 @@ function initEntities() {
 		brain: {
 			runner: new CommandRunner(),
 			routine(entity) {
-				wanderAround(entity, turtlePos);
+				cmd.wanderAround(entity, turtlePos);
 			},
 		},
 		onActivate: ({ activator, activated }) => {
-			talk({
+			cmd.talk({
 				activator,
 				activated,
 				content: "Ah",
@@ -475,7 +474,7 @@ function initEntities() {
 		radius: 11,
 		sheet: "tarasque",
 		onActivate: ({ activated }) => {
-			talk({
+			cmd.talk({
 				activated,
 				content: "Growl",
 				options: {
@@ -488,8 +487,6 @@ function initEntities() {
 	});
 }
 
-type Route = { x: number; y: number; z: number; moveMode: MoveMode }[];
-
 const routeObstacleCourse = [
 	{ x: 26, y: 44, z: 0, moveMode: "walk" },
 	{ x: 26, y: 46, z: 0, moveMode: "walk" },
@@ -501,116 +498,3 @@ const routeObstacleCourse = [
 	{ x: 30, y: 55, z: 0, moveMode: "run" },
 	{ x: 30, y: 44, z: 0, moveMode: "walk" },
 ] as const satisfies Route;
-
-function routeLoop(entity: Entity, route: Route) {
-	type RouteBrainState = { routeIndex?: number };
-
-	entity.brainState ??= { routeIndex: 0 };
-	const state: RouteBrainState = entity.brainState;
-
-	entity.moveMode = "run";
-	if (!entity.brain?.runner.isIdle()) return;
-
-	let i = (typeof state.routeIndex === "number" ? state.routeIndex : 0) | 0;
-	if (i < 0 || i >= route.length) i = 0;
-
-	const cur = route[i];
-	if (!cur) throw new Error(`Invalid brain route index ${i}`);
-
-	if (entity.x === cur.x && entity.y === cur.y && entity.z === cur.z) {
-		i = (i + 1) % route.length;
-		state.routeIndex = i;
-	} else {
-		state.routeIndex = i;
-	}
-
-	if (typeof state.routeIndex !== "number") {
-		throw new Error(`Invalid brain state routeIndex ${state.routeIndex}`);
-	}
-
-	const target = route[state.routeIndex];
-	if (!target) {
-		throw new Error(`Invalid brain route index ${state.routeIndex}`);
-	}
-
-	entity.brain.runner.push({
-		onTick({ entity }) {
-			if (entity.moveMode !== target.moveMode)
-				entity.moveMode = target.moveMode;
-			return true;
-		},
-	});
-
-	entity.brain.runner.push(
-		cmd.goToTile(target, { stopAdjacentIfTargetBlocked: true }),
-	);
-
-	entity.brain.runner.push({
-		onTick() {
-			entity.brainState ??= {};
-			const s2 = entity.brainState;
-			const i2 = (typeof s2.routeIndex === "number" ? s2.routeIndex : 0) | 0;
-			s2.routeIndex = (i2 + 1) % route.length;
-			return true;
-		},
-	});
-}
-
-function talk({
-	activator,
-	activated,
-	content,
-	options,
-}: {
-	activator?: Entity;
-	activated: Entity;
-	content: string;
-	options?: SpeechOptions;
-}) {
-	const bubbleId = `${activated.id}_interact`;
-	if (bubbles.has(bubbleId)) return;
-	if (activated.interactionLock) return;
-
-	const brain = activated.brain;
-
-	if (!brain) {
-		bubble(bubbleId, content, activated, options);
-		return;
-	}
-
-	activated.interactionLock = true;
-
-	// Preempt whatever it was doing, then continue its queued routine.
-	activated.brain?.runner.interrupt([
-		cmd.waitUntilStopped(),
-		activator ? cmd.goToTile(getEntityFacingTile(activator)) : null,
-		activator ? cmd.face(activator) : null,
-		() => bubble(bubbleId, content, activated, options),
-		cmd.wait(1000),
-		{
-			onTick: ({ entity }) => {
-				entity.interactionLock = false;
-				return true;
-			},
-		},
-	]);
-}
-
-function wanderAround(entity: Entity, origin: { x: number; y: number }) {
-	if (!entity.brain?.runner.isIdle()) return;
-
-	const randomOffset = () => Math.floor(Math.random() * 3) - 1;
-	const pause = Math.floor(Math.random() * 2000) + 1000;
-
-	entity.brain.runner.push(cmd.wait(pause));
-
-	const dest = {
-		x: origin.x + randomOffset(),
-		y: origin.y + randomOffset(),
-		z: 0,
-	};
-
-	entity.brain.runner.push(
-		cmd.goToTile(dest, { stopAdjacentIfTargetBlocked: true }),
-	);
-}

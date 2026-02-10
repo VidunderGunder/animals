@@ -1,5 +1,5 @@
 // src/scenes/overworld/ai/brain.ts
-import type { Entity } from "../entities";
+import type { Entity } from "../entity";
 import type { Command } from "./commands";
 
 /**

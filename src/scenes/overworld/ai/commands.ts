@@ -1,6 +1,9 @@
 // src/scenes/overworld/ai/commands.ts
+import type { SpeechOptions } from "../../../audio/speak";
+import type { MoveMode } from "../../../config";
 import type { Direction } from "../../../input/input";
-import type { Entity } from "../entities";
+import { bubble, bubbles } from "../dialog";
+import { type Entity, getEntityFacingTile } from "../entity";
 import { getOccupant } from "../occupancy";
 import { findPathDirections } from "./pathfinding";
 
@@ -274,10 +277,128 @@ function goToTile(
 	};
 }
 
+export type Route = { x: number; y: number; z: number; moveMode: MoveMode }[];
+
+function routeLoop(entity: Entity, route: Route) {
+	type RouteBrainState = { routeIndex?: number };
+
+	entity.brainState ??= { routeIndex: 0 };
+	const state: RouteBrainState = entity.brainState;
+
+	entity.moveMode = "run";
+	if (!entity.brain?.runner.isIdle()) return;
+
+	let i = (typeof state.routeIndex === "number" ? state.routeIndex : 0) | 0;
+	if (i < 0 || i >= route.length) i = 0;
+
+	const cur = route[i];
+	if (!cur) throw new Error(`Invalid brain route index ${i}`);
+
+	if (entity.x === cur.x && entity.y === cur.y && entity.z === cur.z) {
+		i = (i + 1) % route.length;
+		state.routeIndex = i;
+	} else {
+		state.routeIndex = i;
+	}
+
+	if (typeof state.routeIndex !== "number") {
+		throw new Error(`Invalid brain state routeIndex ${state.routeIndex}`);
+	}
+
+	const target = route[state.routeIndex];
+	if (!target) {
+		throw new Error(`Invalid brain route index ${state.routeIndex}`);
+	}
+
+	entity.brain.runner.push({
+		onTick({ entity }) {
+			if (entity.moveMode !== target.moveMode)
+				entity.moveMode = target.moveMode;
+			return true;
+		},
+	});
+
+	entity.brain.runner.push(
+		cmd.goToTile(target, { stopAdjacentIfTargetBlocked: true }),
+	);
+
+	entity.brain.runner.push({
+		onTick() {
+			entity.brainState ??= {};
+			const s2 = entity.brainState;
+			const i2 = (typeof s2.routeIndex === "number" ? s2.routeIndex : 0) | 0;
+			s2.routeIndex = (i2 + 1) % route.length;
+			return true;
+		},
+	});
+}
+
+function talk({
+	activator,
+	activated,
+	content,
+	options,
+}: {
+	activator?: Entity;
+	activated: Entity;
+	content: string;
+	options?: SpeechOptions;
+}) {
+	const bubbleId = `${activated.id}_interact`;
+	if (bubbles.has(bubbleId)) return;
+	if (activated.interactionLock) return;
+
+	const brain = activated.brain;
+
+	if (!brain) {
+		bubble(bubbleId, content, activated, options);
+		return;
+	}
+
+	activated.interactionLock = true;
+
+	// Preempt whatever it was doing, then continue its queued routine.
+	activated.brain?.runner.interrupt([
+		cmd.waitUntilStopped(),
+		activator ? cmd.goToTile(getEntityFacingTile(activator)) : null,
+		activator ? cmd.face(activator) : null,
+		() => bubble(bubbleId, content, activated, options),
+		cmd.wait(1000),
+		{
+			onTick: ({ entity }) => {
+				entity.interactionLock = false;
+				return true;
+			},
+		},
+	]);
+}
+
+function wanderAround(entity: Entity, origin: { x: number; y: number }) {
+	if (!entity.brain?.runner.isIdle()) return;
+
+	const randomOffset = () => Math.floor(Math.random() * 3) - 1;
+	const pause = Math.floor(Math.random() * 2000) + 1000;
+
+	entity.brain.runner.push(cmd.wait(pause));
+
+	const dest = {
+		x: origin.x + randomOffset(),
+		y: origin.y + randomOffset(),
+		z: 0,
+	};
+
+	entity.brain.runner.push(
+		cmd.goToTile(dest, { stopAdjacentIfTargetBlocked: true }),
+	);
+}
+
 export const cmd = {
-	wait,
-	waitUntilStopped,
 	face,
 	step,
 	goToTile,
+	routeLoop,
+	wanderAround,
+	talk,
+	wait,
+	waitUntilStopped,
 };

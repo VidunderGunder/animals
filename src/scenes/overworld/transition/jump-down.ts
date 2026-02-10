@@ -1,7 +1,7 @@
 import { audio } from "../../../audio/audio-engine";
 import type { Direction } from "../../../input/input";
 import { cellToPx } from "../cells";
-import type { Entity } from "../entities";
+import type { Entity } from "../entity";
 import type { Transition } from "./transition";
 
 export function getJumpDownTransition({

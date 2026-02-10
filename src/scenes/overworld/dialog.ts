@@ -5,7 +5,7 @@ import { player } from "../../game-state";
 import { ctx } from "../../gfx/canvas";
 import type { Vec2Px } from "../../types";
 import { camera } from "./camera";
-import type { Entity } from "./entities";
+import type { Entity } from "./entity";
 
 type BubbleTok =
 	| { kind: "word"; text: string; ms: number; emphasis: number }

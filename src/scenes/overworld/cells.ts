@@ -1,7 +1,7 @@
 import { TILE_SIZE_PX } from "../../config";
 import type { Direction } from "../../input/input";
 import type { Vec2Px } from "../../types";
-import type { Entity } from "./entities";
+import type { Entity } from "./entity";
 import type { Transition } from "./transition/transition";
 
 type WorldImageLayer = {

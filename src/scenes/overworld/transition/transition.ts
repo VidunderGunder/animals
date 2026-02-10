@@ -1,5 +1,5 @@
 import type { AnimationID } from "../../../animations/animations";
-import type { Entity } from "../entities";
+import type { Entity } from "../entity";
 
 export type Transition = {
 	condition?: (entity: Entity) => boolean;

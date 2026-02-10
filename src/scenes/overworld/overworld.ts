@@ -36,7 +36,7 @@ import {
 } from "./cells";
 import { initializeArea as initializeStartArea } from "./data/start";
 import { renderDialogs } from "./dialog";
-import { type Entity, entities, isPlayerID } from "./entities";
+import { type Entity, entities, isPlayerID } from "./entity";
 import { getOccupant, occupy, vacate } from "./occupancy";
 import { getPathValues, type Transition } from "./transition/transition";
 

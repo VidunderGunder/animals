@@ -5,7 +5,7 @@ import {
 	type Entities,
 	type Entity,
 	entities,
-} from "./scenes/overworld/entities";
+} from "./scenes/overworld/entity";
 import { occupied, occupy } from "./scenes/overworld/occupancy";
 
 const DB_NAME = "animals-game";
