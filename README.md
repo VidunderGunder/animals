@@ -23,7 +23,7 @@ But you can use any tool you like, as long as the sound effects fit the style.
 - 🔊 Audio related (requires DAW or synth)
 - 🤖 Good vibe coding task
 - 🔻 Not prioritized (might be a waste of time)
-- ⬅️ My current focus 
+- ⬅️ My current focus
 
 Priority
 
@@ -32,8 +32,11 @@ Priority
 
 Character Movement & Animation
 
-- [ ] 🧠 Spin in place
-- [ ] 🧠 Slide 'n' spin
+- [ ] 🤖 Trick improvements ⬅️
+  - [ ] Occupy all tiles involved when doing a trick transition (if possible)
+  - [ ] Collide if traversing through an occupied tile
+  - [ ] Collide if traversing through an edge with a transition
+  - [ ] Allow trick through certain transtions (e.g., stairs)
 - [ ] 🤖 Make it possible to rotate while jumping (jump transitions)
 - [ ] 🤖 Ensure animation rotation, position offsets and other effects work in the overworld (only works in the menu as of now)
 - [ ] Roll & flip animation
