@@ -1,7 +1,8 @@
 // src/scenes/overworld/entities.ts
 import type {
 	AnimationEntityKey,
-	AnimationID,
+	AnimationIDStable,
+	AnimationOverride,
 } from "../../animations/animations";
 import {
 	ANIMAL_SPRITE_HEIGHT_PX,
@@ -96,9 +97,9 @@ export type Entity<ID extends string = StringWithSuggestions<"player">> = {
 	transitionPathSegmentDuration?: number;
 
 	transitionEndTile: Transition["end"] | null;
-	animationOverride: AnimationID | null;
+	animationOverride: AnimationOverride | AnimationIDStable | null;
 
-	animationCurrent: AnimationID;
+	animationCurrentId: AnimationIDStable;
 	animationFrameIndex: number;
 	animationTimer: number;
 
@@ -146,7 +147,7 @@ export function getEntityCharacterDefaults<ID extends string>({
 		width: CHARACTER_SPRITE_WIDTH_PX,
 		height: CHARACTER_SPRITE_HEIGHT_PX,
 		speed: 0,
-		animationCurrent: "idle",
+		animationCurrentId: "idle",
 		animationFrameIndex: 0,
 		animationTimer: 0,
 		transitionPath: [],

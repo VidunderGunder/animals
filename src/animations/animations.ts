@@ -6,8 +6,8 @@ import {
 	CHARACTER_SPRITE_WIDTH_PX,
 } from "../config";
 import { ctx } from "../gfx/canvas";
-import type { Direction } from "../input/input";
-import { directionToRow } from "../scenes/menu/moves";
+import { type Direction, directionToIndex } from "../input/input";
+import type { StringWithSuggestions } from "../types";
 
 type OnRenderProps = {
 	/** Destination x on the canvas */
@@ -67,7 +67,7 @@ export function renderFrameLayer({
 
 	// Force directionOffset to be within 0-3
 	const directionIndex =
-		(directionToRow[direction] + (directionOffset ?? 0)) % 4;
+		(directionToIndex[direction] + (directionOffset ?? 0)) % 4;
 
 	ctx.save();
 	onBeforeRender?.({ x, y, h, w, direction });
@@ -100,7 +100,8 @@ export function renderFrameLayers({
 	}
 }
 
-export type Animation = {
+export type AnimationStable = {
+	id: AnimationIDStable;
 	/** Frame indices in the sprite sheet (column indexes) */
 	frames: readonly (readonly FrameLayer[])[];
 	/** Seconds each frame is shown */
@@ -108,7 +109,13 @@ export type Animation = {
 	loop: boolean;
 };
 
-type Animations = Record<AnimationID, Animation>;
+export type AnimationOverride = {
+	id: StringWithSuggestions<AnimationIDStable>;
+} & Omit<AnimationStable, "id">;
+
+export type Animation = AnimationStable | AnimationOverride;
+
+type Animations = Record<AnimationIDStable, Animation>;
 type AnimalAnimations = Record<AnimalAnimationID, Animation>;
 
 export const animationIds = [
@@ -123,9 +130,14 @@ export const animationIds = [
 	"spin",
 ] as const;
 
-export type AnimationID = (typeof animationIds)[number];
+export type AnimationIDStable = (typeof animationIds)[number];
+export function isStableAnimationID(id: string): id is AnimationIDStable {
+	return animationIds.some((aid) => aid === id);
+}
 
-export const animalAnimationIds = ["walk"] as const satisfies AnimationID[];
+export const animalAnimationIds = [
+	"walk",
+] as const satisfies AnimationIDStable[];
 
 export type AnimalAnimationID = (typeof animalAnimationIds)[number];
 
@@ -200,11 +212,13 @@ function getDefaultCharacterAnimations({
 
 	return {
 		idle: {
+			id: "idle",
 			frames: [[layer({ index: 2 })]],
 			frameDuration: idleDurationDefault,
 			loop: true,
 		},
 		walk: {
+			id: "walk",
 			frames: [
 				[layer({ index: 1 })],
 				[layer({ index: 2 })],
@@ -215,6 +229,7 @@ function getDefaultCharacterAnimations({
 			loop: true,
 		},
 		run: {
+			id: "run",
 			frames: [
 				[layer({ index: 4 })],
 				[layer({ index: 5 })],
@@ -225,6 +240,7 @@ function getDefaultCharacterAnimations({
 			loop: true,
 		},
 		rideIdle: {
+			id: "rideIdle",
 			frames: [
 				[
 					layer({
@@ -238,6 +254,7 @@ function getDefaultCharacterAnimations({
 			loop: true,
 		},
 		rideSlow: {
+			id: "rideSlow",
 			frames: [
 				[
 					layer({
@@ -272,6 +289,7 @@ function getDefaultCharacterAnimations({
 			loop: true,
 		},
 		rideFast: {
+			id: "rideFast",
 			frames: [
 				[
 					layer({ sheet: skateboardSpriteSheet, index: 1 }),
@@ -294,6 +312,7 @@ function getDefaultCharacterAnimations({
 			loop: true,
 		},
 		kickflip: {
+			id: "kickflip",
 			frames: [
 				[
 					layer({
@@ -335,11 +354,13 @@ function getDefaultCharacterAnimations({
 			loop: false,
 		},
 		jump: {
+			id: "jump",
 			frames: jumpFrames,
 			frameDuration: jumpDurationDefault,
 			loop: false,
 		},
 		spin: {
+			id: "spin",
 			frames: [
 				[layer({ index: 2 })],
 				// [layer({ index: 3 })], // Charge the spin
@@ -368,22 +389,22 @@ function getDefaultAnimalAnimations({
 		frames: [[layer({ index: 1 })], [layer({ index: 2 })]],
 		frameDuration: walkDurationDefault,
 		loop: true,
-	} as const satisfies Animation;
+	} as const satisfies Omit<Animation, "id">;
 
 	return {
-		walk: walkAnimation,
-		idle: { ...walkAnimation, frameDuration: idleDurationDefault },
-		jump: walkAnimation,
-		kickflip: walkAnimation,
-		rideFast: walkAnimation,
-		rideIdle: walkAnimation,
-		rideSlow: walkAnimation,
-		run: { ...walkAnimation, frameDuration: runDurationDefault },
-		spin: walkAnimation,
+		walk: { id: "walk", ...walkAnimation },
+		idle: { id: "idle", ...walkAnimation, frameDuration: idleDurationDefault },
+		jump: { id: "jump", ...walkAnimation },
+		kickflip: { id: "kickflip", ...walkAnimation },
+		rideFast: { id: "rideFast", ...walkAnimation },
+		rideIdle: { id: "rideIdle", ...walkAnimation },
+		rideSlow: { id: "rideSlow", ...walkAnimation },
+		run: { id: "run", ...walkAnimation, frameDuration: runDurationDefault },
+		spin: { id: "spin", ...walkAnimation },
 	} satisfies Animations;
 }
 
-const sheets = {
+export const animationSheets = {
 	player: playerSpriteSheet,
 	"npc-1": createImageElement("/characters/npc-1.png"),
 	fox: createImageElement("/animals/fox.png"),
@@ -400,27 +421,27 @@ export const animations = {
 	},
 	"npc-1": {
 		...getDefaultCharacterAnimations({
-			characterSpriteSheet: sheets["npc-1"],
+			characterSpriteSheet: animationSheets["npc-1"],
 		}),
 	},
 	fox: {
 		...getDefaultAnimalAnimations({
-			spriteSheet: sheets.fox,
+			spriteSheet: animationSheets.fox,
 		}),
 	},
 	kitsune: {
 		...getDefaultAnimalAnimations({
-			spriteSheet: sheets.kitsune,
+			spriteSheet: animationSheets.kitsune,
 		}),
 	},
 	turtle: {
 		...getDefaultAnimalAnimations({
-			spriteSheet: sheets.turtle,
+			spriteSheet: animationSheets.turtle,
 		}),
 	},
 	tarasque: {
 		...getDefaultAnimalAnimations({
-			spriteSheet: sheets.tarasque,
+			spriteSheet: animationSheets.tarasque,
 		}),
 	},
 } as const satisfies Record<string, Animations | AnimalAnimations>;

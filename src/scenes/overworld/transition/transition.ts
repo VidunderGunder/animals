@@ -1,11 +1,11 @@
-import type { AnimationID } from "../../../animations/animations";
+import type { AnimationIDStable } from "../../../animations/animations";
 import type { Entity } from "../entity";
 
 export type Transition = {
 	condition?: (entity: Entity) => boolean;
 
 	/* optional: overrides current animation during the transition */
-	animation?: AnimationID;
+	animation?: AnimationIDStable;
 
 	/** Path in pixel space (tile-top-left in world pixels), INCLUDING destination. */
 	path: {

@@ -33,7 +33,7 @@ export type EntitySnapshot = {
 
 	// facing + animation state
 	direction: Entity["direction"];
-	animationCurrent: Entity["animationCurrent"];
+	animationCurrent: Entity["animationCurrentId"];
 	animationFrameIndex: Entity["animationFrameIndex"];
 
 	// misc state you likely want to persist
@@ -148,7 +148,7 @@ function toSnapshot(entity: Entity): EntitySnapshot {
 		yPx: entity.yPx,
 
 		direction: entity.direction,
-		animationCurrent: entity.animationCurrent,
+		animationCurrent: entity.animationCurrentId,
 		animationFrameIndex: entity.animationFrameIndex,
 
 		moveMode: entity.moveMode,
@@ -321,7 +321,7 @@ function applySnapshot(live: Entity, snap: EntitySnapshot) {
 	live.yPx = snap.yPx;
 
 	live.direction = snap.direction;
-	live.animationCurrent = snap.animationCurrent;
+	live.animationCurrentId = snap.animationCurrent;
 	live.animationFrameIndex = snap.animationFrameIndex;
 
 	live.moveMode = snap.moveMode ?? live.moveMode;

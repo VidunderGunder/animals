@@ -21,6 +21,29 @@ export function getInputUI(): InputUI {
 export const directions = ["down", "left", "up", "right"] as const;
 export type Direction = (typeof directions)[number];
 
+export const directionToIndex: Record<Direction, number> = {
+	down: 0,
+	left: 1,
+	up: 2,
+	right: 3,
+} as const;
+export const indexToDirection: Record<number, Direction> = {
+	0: "down",
+	1: "left",
+	2: "up",
+	3: "right",
+} as const;
+export function rotate(
+	direction: Direction,
+	rotation: "clockwise" | "counterclockwise",
+	times = 1,
+): Direction {
+	const index = directionToIndex[direction];
+	const rotationAmount = rotation === "clockwise" ? times : -times;
+	const newIndex = (index + rotationAmount + 4) % 4;
+	return indexToDirection[newIndex] ?? direction;
+}
+
 export const allActions = [
 	...directions,
 	"a",

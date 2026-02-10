@@ -23,3 +23,7 @@ export function clamp(x: number, min: number, max: number) {
 export function lerp(a: number, b: number, t: number) {
 	return a + (b - a) * t;
 }
+
+export function easeOutCubic(t: number) {
+	return 1 - (1 - t) ** 3;
+}

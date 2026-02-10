@@ -27,10 +27,13 @@ But you can use any tool you like, as long as the sound effects fit the style.
 
 Priority
 
+- [ ] 🎨 Design menu
 - [ ] 🎨 Design beastiary
 
 Character Movement & Animation
 
+- [ ] 🧠 Spin in place
+- [ ] 🧠 Slide 'n' spin
 - [ ] 🤖 Make it possible to rotate while jumping (jump transitions)
 - [ ] 🤖 Ensure animation rotation, position offsets and other effects work in the overworld (only works in the menu as of now)
 - [ ] Roll & flip animation

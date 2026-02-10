@@ -1,6 +1,6 @@
 import {
 	type AnimationEntityKey,
-	type AnimationID,
+	type AnimationIDStable,
 	animationEntityKeys,
 	animationIds,
 	animations,
@@ -14,7 +14,11 @@ import {
 	TILE_SIZE_PX,
 } from "../../config";
 import { ctx } from "../../gfx/canvas";
-import { type Direction, directions } from "../../input/input";
+import {
+	type Direction,
+	directions,
+	directionToIndex,
+} from "../../input/input";
 import { menuHeight, menuWidth } from "./menu";
 
 export type EntitiesState = {
@@ -24,17 +28,10 @@ export type EntitiesState = {
 	direction: Direction;
 
 	/** Current animation state */
-	animationCurrent: AnimationID;
+	animationCurrent: AnimationIDStable;
 	animationFrameIndex: number;
 	animationTimer: number;
 };
-
-export const directionToRow: Record<Direction, number> = {
-	down: 0,
-	left: 1,
-	up: 2,
-	right: 3,
-} as const;
 
 export type MovesState = {
 	index: number;
@@ -102,7 +99,7 @@ export function draw() {
 			);
 		}
 
-		const directionIndex = directionToRow[entity.direction];
+		const directionIndex = directionToIndex[entity.direction];
 
 		const menuOffsetX = (GAME_WIDTH_PX - menuWidth) / 2 + TILE_SIZE_PX;
 		const menuOffsetY = (GAME_HEIGHT_PX - menuHeight) / 2 + TILE_SIZE_PX * 0.5;

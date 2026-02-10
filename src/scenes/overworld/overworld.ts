@@ -1,7 +1,9 @@
 // src/scenes/overworld/overworld.ts
 import {
-	type AnimationID,
+	type Animation,
+	type AnimationIDStable,
 	animations,
+	isStableAnimationID,
 	renderFrameLayer,
 } from "../../animations/animations";
 import { updateAmbience } from "../../audio/ambience";
@@ -39,6 +41,7 @@ import { renderDialogs } from "./dialog";
 import { type Entity, entities, isPlayerID } from "./entity";
 import { getOccupant, occupy, vacate } from "./occupancy";
 import { getPathValues, type Transition } from "./transition/transition";
+import { spin } from "./transition/tricks";
 
 initializeStartArea();
 
@@ -112,48 +115,58 @@ function applyTapToTurnGate(opts: {
 	return direction;
 }
 
-function getPlayerIsMoving(): boolean {
-	const entity = player;
-	return !!entity.isMoving || !!movementIntent;
-}
-
-function getIsPlayerMoveMode(): Entity["moveMode"] {
-	const isMoving = getPlayerIsMoving();
-	if (!isMoving) return undefined;
+function getPlayerMoveMode(): Entity["moveMode"] {
 	const bPressed = activeActions.has("b");
 	const isRun = player.autoRun ? !bPressed : bPressed;
 	return isRun ? "run" : "walk";
 }
 
-function getDesiredAnimation(entity: Entity): AnimationID {
-	if (entity.animationOverride) return entity.animationOverride;
+function getDesiredAnimation(entity: Entity): Animation {
+	const anims = animations[entity.sheet];
+	if (entity.animationOverride && typeof entity.animationOverride === "string")
+		return anims[entity.animationOverride];
+	if (entity.animationOverride && typeof entity.animationOverride !== "string")
+		return entity.animationOverride;
 
 	const isTryingToMove =
 		entity.isMoving ||
 		(isPlayerID(entity.id)
 			? !!(movementIntent ?? entity.brainDesiredDirection)
 			: !!entity.brainDesiredDirection);
-	if (menuState.show && isPlayerID(entity.id)) return "idle";
-	if (isTryingToMove) return entity.moveMode === "run" ? "run" : "walk";
-	return "idle";
+	if (menuState.show && isPlayerID(entity.id)) return anims.idle;
+	if (isTryingToMove) return entity.moveMode === "run" ? anims.run : anims.walk;
+	return anims.idle;
 }
 
 function updateEntityAnimation(
 	dt: number,
 	entity: Entity,
-	animation: AnimationID,
+	animationOrId: Animation | AnimationIDStable,
 ) {
-	if (entity.animationCurrent !== animation) {
-		entity.animationCurrent = animation;
+	const animation =
+		typeof animationOrId === "string"
+			? animations[entity.sheet][animationOrId]
+			: animationOrId;
+	const animationId =
+		typeof animationOrId === "string" ? animationOrId : animation.id;
+
+	if (!animation) {
+		throw new Error(
+			`Character ${entity.sheet} is missing animation ${animationOrId}`,
+		);
+	}
+
+	if (
+		entity.animationCurrentId !== animationId &&
+		isStableAnimationID(animationId)
+	) {
+		entity.animationCurrentId = animationId;
 		entity.animationFrameIndex = 0;
 		entity.animationTimer = 0;
 		return;
 	}
 
-	const entityAnimations = animations[entity.sheet];
-
-	const anim = entityAnimations[animation];
-	if (!anim) {
+	if (!animation) {
 		throw new Error(
 			`Character ${entity.sheet} is missing animation ${animation}`,
 		);
@@ -161,11 +174,11 @@ function updateEntityAnimation(
 
 	entity.animationTimer += dt;
 
-	if (entity.animationTimer >= anim.frameDuration) {
-		entity.animationTimer -= anim.frameDuration;
+	if (entity.animationTimer >= animation.frameDuration) {
+		entity.animationTimer -= animation.frameDuration;
 
 		const nextIndex = entity.animationFrameIndex + 1;
-		if (nextIndex >= anim.frames.length) {
+		if (nextIndex >= animation.frames.length) {
 			entity.animationFrameIndex = 0;
 		} else {
 			entity.animationFrameIndex = nextIndex;
@@ -302,7 +315,7 @@ function updatePlayer(dt: number) {
 		entity.autoRun = !entity.autoRun;
 	}
 
-	entity.moveMode = getIsPlayerMoveMode();
+	entity.moveMode = getPlayerMoveMode();
 
 	// Speed based on run/walk
 	entity.speed = moveSpeeds[entity.moveMode ?? "walk"];
@@ -360,11 +373,21 @@ function updatePlayer(dt: number) {
 				: "idle"
 			: getDesiredAnimation(entity);
 
+	let trick: Transition | undefined;
+
+	if (!entity.isMoving && activeActions.has("r")) {
+		trick = spin(entity, desiredDirection);
+	}
+	if (!entity.isMoving && activeActions.has("l")) {
+		trick = spin(entity, desiredDirection, "counterclockwise");
+	}
+
 	updateEntityAndPlayer({
 		dt,
 		entity,
 		desiredDirection,
 		desiredAnimation,
+		trick,
 	});
 }
 
@@ -395,11 +418,13 @@ function updateEntityAndPlayer({
 	entity,
 	desiredDirection,
 	desiredAnimation,
+	trick,
 }: {
 	dt: number;
 	entity: Entity;
 	desiredDirection: Direction | null;
-	desiredAnimation?: AnimationID;
+	desiredAnimation?: Animation | AnimationIDStable;
+	trick?: Transition;
 }) {
 	// Speed based on run/walk
 	entity.speed = moveSpeeds[entity.moveMode ?? "walk"];
@@ -411,34 +436,36 @@ function updateEntityAndPlayer({
 
 		if (desiredDirection) {
 			entity.direction = desiredDirection;
+		}
 
-			const planned = tryPlanMove(desiredDirection, entity);
+		const planned =
+			trick ??
+			(desiredDirection ? tryPlanMove(desiredDirection, entity) : undefined);
 
-			if (planned) {
-				// Reserve destination BEFORE starting the move
-				const ok = occupy({ ...planned.end, id: entity.id });
-				if (!ok) {
-					// Someone else got there first; stay idle this tick
-				} else {
-					entity.isMoving = true;
+		if (planned) {
+			// Reserve destination BEFORE starting the move
+			const ok = occupy({ ...planned.end, id: entity.id });
+			if (!ok) {
+				// Someone else got there first; stay idle this tick
+			} else {
+				entity.isMoving = true;
 
-					entity.transitionEndTile = planned.end;
-					entity.animationOverride = planned.animation ?? null;
+				entity.transitionEndTile = planned.end;
+				entity.animationOverride = planned.animation ?? null;
 
-					entity.transitionPath = planned.path.map((p) => ({ ...p }));
+				entity.transitionPath = planned.path.map((p) => ({ ...p }));
 
-					const first = entity.transitionPath[0];
-					if (first) {
-						const prev = first.onSegmentEnd;
-						first.onSegmentEnd = (e) => {
-							// Vacate start tile once the first segment ends
-							vacate(e);
-							prev?.(e);
-						};
-					}
-
-					setCurrentSegment(entity);
+				const first = entity.transitionPath[0];
+				if (first) {
+					const prev = first.onSegmentEnd;
+					first.onSegmentEnd = (e) => {
+						// Vacate start tile once the first segment ends
+						vacate(e);
+						prev?.(e);
+					};
 				}
+
+				setCurrentSegment(entity);
 			}
 		}
 	}
@@ -501,7 +528,7 @@ function updateEntityAndPlayer({
 		}
 	}
 
-	desiredAnimation ??= entity.animationCurrent;
+	desiredAnimation ??= entity.animationCurrentId;
 
 	// Anim AFTER movement update
 	updateEntityAnimation(dt, entity, desiredAnimation);
@@ -605,8 +632,7 @@ function draw(dt: number) {
 			`facing: ${player.direction}`,
 			`moving: ${player.isMoving}`,
 			`move mode: ${player.moveMode}`,
-			`faster: ${getIsPlayerMoveMode()}`,
-			`transition animation: ${player.animationOverride ?? "-"}`,
+			`animation: ${player.animationCurrentId}${player.animationOverride ? ` (${typeof player.animationOverride === "string" ? player.animationOverride : player.animationOverride.id})` : ""}`,
 		].forEach((line, index) => {
 			ctx.fillText(line, 4, 2 + index * 8);
 		});
@@ -635,9 +661,13 @@ function drawEntity(entity: Entity) {
 	ctx.save();
 	ctx.translate(feetScreenX, feetScreenY);
 
-	const animName = entity.animationCurrent;
+	const animName = entity.animationCurrentId;
 	const entityAnimations = animations[entity.sheet];
-	const anim = entityAnimations[animName];
+	const anim =
+		typeof entity.animationOverride === "string"
+			? (entityAnimations[entity.animationOverride] ??
+				entityAnimations[animName])
+			: (entity.animationOverride ?? entityAnimations[animName]);
 
 	if (!anim) {
 		throw new Error(
