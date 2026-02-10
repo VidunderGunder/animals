@@ -123,11 +123,7 @@ export const animationIds = [
 	"walk",
 	"jump",
 	"run",
-	"rideIdle",
-	"rideSlow",
-	"rideFast",
 	"kickflip",
-	"spin",
 ] as const;
 
 export type AnimationIDStable = (typeof animationIds)[number];
@@ -239,78 +235,6 @@ function getDefaultCharacterAnimations({
 			frameDuration: runDurationDefault,
 			loop: true,
 		},
-		rideIdle: {
-			id: "rideIdle",
-			frames: [
-				[
-					layer({
-						sheet: skateboardSpriteSheet,
-						index: 0,
-					}),
-					layer({ index: 7 }),
-				],
-			],
-			frameDuration: idleDurationDefault,
-			loop: true,
-		},
-		rideSlow: {
-			id: "rideSlow",
-			frames: [
-				[
-					layer({
-						sheet: skateboardSpriteSheet,
-						index: 1,
-					}),
-					layer({ index: 8 }),
-				],
-				[
-					layer({
-						sheet: skateboardSpriteSheet,
-						index: 1,
-					}),
-					layer({ index: 9 }),
-				],
-				[
-					layer({
-						sheet: skateboardSpriteSheet,
-						index: 1,
-					}),
-					layer({ index: 10 }),
-				],
-				[
-					layer({
-						sheet: skateboardSpriteSheet,
-						index: 1,
-					}),
-					layer({ index: 9 }),
-				],
-			],
-			frameDuration: rideSlowDurationDefault,
-			loop: true,
-		},
-		rideFast: {
-			id: "rideFast",
-			frames: [
-				[
-					layer({ sheet: skateboardSpriteSheet, index: 1 }),
-					layer({ index: 10 }),
-				],
-				[
-					layer({ sheet: skateboardSpriteSheet, index: 1 }),
-					layer({ index: 8 }),
-				],
-				[
-					layer({ sheet: skateboardSpriteSheet, index: 1 }),
-					layer({ index: 9 }),
-				],
-				[
-					layer({ sheet: skateboardSpriteSheet, index: 1 }),
-					layer({ index: 8 }),
-				],
-			],
-			frameDuration: rideFastDurationDefault,
-			loop: true,
-		},
 		kickflip: {
 			id: "kickflip",
 			frames: [
@@ -359,19 +283,6 @@ function getDefaultCharacterAnimations({
 			frameDuration: jumpDurationDefault,
 			loop: false,
 		},
-		spin: {
-			id: "spin",
-			frames: [
-				[layer({ index: 2 })],
-				// [layer({ index: 3 })], // Charge the spin
-				// [layer({ index: 3 })],
-				[layer({ index: 2, directionOffset: 1 })],
-				[layer({ index: 2, directionOffset: 2 })],
-				[layer({ index: 2, directionOffset: 3 })],
-			],
-			frameDuration: 100,
-			loop: true,
-		},
 	} satisfies Animations;
 }
 
@@ -396,11 +307,7 @@ function getDefaultAnimalAnimations({
 		idle: { id: "idle", ...walkAnimation, frameDuration: idleDurationDefault },
 		jump: { id: "jump", ...walkAnimation },
 		kickflip: { id: "kickflip", ...walkAnimation },
-		rideFast: { id: "rideFast", ...walkAnimation },
-		rideIdle: { id: "rideIdle", ...walkAnimation },
-		rideSlow: { id: "rideSlow", ...walkAnimation },
 		run: { id: "run", ...walkAnimation, frameDuration: runDurationDefault },
-		spin: { id: "spin", ...walkAnimation },
 	} satisfies Animations;
 }
 
