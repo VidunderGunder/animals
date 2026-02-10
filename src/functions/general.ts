@@ -24,6 +24,58 @@ export function lerp(a: number, b: number, t: number) {
 	return a + (b - a) * t;
 }
 
-export function easeOutCubic(t: number) {
-	return 1 - (1 - t) ** 3;
+/**
+ * Reference: https://easings.net/
+ *
+ * ![image](https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR4Esswdf4HWu-UBGiUCzArG5d_bPE5xf1OvQ&s)
+ */
+export const ease = {
+	linear: (t: number) => t,
+	inQuad: (t: number) => t * t,
+	outQuad: (t: number) => 1 - (1 - t) ** 2,
+	inOutQuad: (t: number) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2),
+	inCubic: (t: number) => t ** 3,
+	outCubic: (t: number) => 1 - (1 - t) ** 3,
+	inOutCubic: (t: number) => (t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2),
+	inQuart: (t: number) => t ** 4,
+	outQuart: (t: number) => 1 - (1 - t) ** 4,
+	inOutQuart: (t: number) => (t < 0.5 ? 8 * t ** 4 : 1 - (-2 * t + 2) ** 4 / 2),
+	inQuint: (t: number) => t ** 5,
+	outQuint: (t: number) => 1 - (1 - t) ** 5,
+	inOutQuint: (t: number) =>
+		t < 0.5 ? 16 * t ** 5 : 1 - (-2 * t + 2) ** 5 / 2,
+	inSine: (t: number) => 1 - Math.cos((t * Math.PI) / 2),
+	outSine: (t: number) => Math.sin((t * Math.PI) / 2),
+	inOutSine: (t: number) => -(Math.cos(Math.PI * t) - 1) / 2,
+	inExpo: (t: number) => (t === 0 ? 0 : 2 ** (10 * t - 10)),
+	outExpo: (t: number) => (t === 1 ? 1 : 1 - 2 ** (-10 * t)),
+	inOutExpo: (t: number) =>
+		t === 0
+			? 0
+			: t === 1
+				? 1
+				: t < 0.5
+					? 2 ** (20 * t - 10) / 2
+					: (2 - 2 ** (-20 * t + 10)) / 2,
+	inBack: (t: number) => {
+		const c1 = 1.70158;
+		const c3 = c1 + 1;
+		return c3 * t ** 3 - c1 * t ** 2;
+	},
+	outBack: (t: number) => {
+		const c1 = 1.70158;
+		const c3 = c1 + 1;
+		return 1 + c3 * (t - 1) ** 3 + c1 * (t - 1) ** 2;
+	},
+	inOutBack: (t: number) => {
+		const c1 = 1.70158;
+		const c2 = c1 * 1.525;
+		return t < 0.5
+			? ((2 * t) ** 2 * ((c2 + 1) * 2 * t - c2)) / 2
+			: ((2 * t - 2) ** 2 * ((c2 + 1) * (2 * t - 2) + c2) + 2) / 2;
+	},
+} as const satisfies Record<string, (t: number) => number>;
+
+export function mix(a: number, b: number, alpha: number) {
+	return a + (b - a) * alpha;
 }
