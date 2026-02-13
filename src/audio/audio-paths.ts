@@ -1,6 +1,8 @@
 export const sfxPaths = {
 	jump: "/audio/sounds/jump.mp3",
 	thud: "/audio/sounds/thud.mp3",
+	crash: "/audio/sounds/crash.mp3",
+	swoosh: "/audio/sounds/swoosh.mp3",
 } as const;
 
 export const ambiencePaths = {

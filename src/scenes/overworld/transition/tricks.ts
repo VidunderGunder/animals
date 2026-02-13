@@ -1,6 +1,7 @@
 // src/scenes/overworld/transition/tricks.ts
 import { animationSheets, animations } from "../../../animations/animations";
 import { emptyImage } from "../../../assets/image";
+import { audio } from "../../../audio/audio-engine";
 import { moveSpeeds, TILE_SIZE_PX } from "../../../config";
 import { ease, mix } from "../../../functions/general";
 import { type Direction, rotate } from "../../../input/input";
@@ -17,13 +18,14 @@ function crashPath(args: {
 }): Transition["path"] {
 	const { xPx, yPx, z, direction } = args;
 
-	console.log("CRASH!");
-
 	const { x: dx, y: dy } = getCellInDirection({ direction });
 
 	const isHorizontal = direction === "left" || direction === "right";
 
 	const onFirstSegmentStart = (entity: Entity) => {
+		audio.playSfx("thud", {
+			volume: 0.625,
+		});
 		entity.animationFrameIndex = 0;
 		entity.animationTimer = 0;
 		entity.direction = direction;
@@ -68,6 +70,11 @@ function crashPath(args: {
 			yPx,
 			z,
 			duration: 100,
+			onSegmentEnd() {
+				audio.playSfx("thud", {
+					volume: 0.075,
+				});
+			},
 		},
 		{
 			xPx,
@@ -104,6 +111,15 @@ function crashPath(args: {
 	];
 }
 
+function playSwoosh() {
+	audio.playSfx("jump", {
+		volume: 0.05,
+	});
+	audio.playSfx("swoosh", {
+		volume: 0.4,
+	});
+}
+
 export function spin(
 	entity: Entity,
 	direction?: Direction | null,
@@ -115,74 +131,77 @@ export function spin(
 
 	const distanceTiles = entity.moveMode === "run" ? 4 : 2;
 
-	if (direction) {
-		const crashAtTile = getCrashDistanceInDirection(
-			entity,
-			direction,
-			distanceTiles,
-		);
-
-		const fullPath = getSpinTransitionPath({
-			entity,
-			rotation,
-			rounds,
-			direction,
-			distanceTiles,
-		});
-
-		if (crashAtTile === undefined) {
-			const end = getCellInDirection({
-				position: { x: entity.x, y: entity.y, z: entity.z },
-				direction,
-				distance: distanceTiles,
-			});
-
-			return { condition, path: fullPath, end };
-		}
-
-		const lastOkTiles = Math.max(0, crashAtTile - 1);
-
-		const end = getCellInDirection({
-			position: { x: entity.x, y: entity.y, z: entity.z },
-			direction,
-			distance: lastOkTiles,
-		});
-
-		const { dxTile, dyTile } = dirToDxDy(direction);
-		const crashXPx = entity.xPx + dxTile * TILE_SIZE_PX * lastOkTiles;
-		const crashYPx = entity.yPx + dyTile * TILE_SIZE_PX * lastOkTiles;
-
-		const crashedPath = truncatePathAtCrash({
-			path: fullPath,
-			direction,
-			crashXPx,
-			crashYPx,
-		});
-
-		crashedPath.push(
-			...crashPath({
-				xPx: crashXPx,
-				yPx: crashYPx,
-				z: entity.z,
-				direction,
-			}),
-		);
-
+	if (!direction) {
+		playSwoosh();
 		return {
 			condition,
-			path: crashedPath,
-			end,
+			path: getSpinTransitionPath({
+				entity,
+				rotation,
+				rounds,
+			}),
+			end: { x: entity.x, y: entity.y, z: entity.z },
 		};
 	}
 
+	const crashAtTile = getCrashDistanceInDirection(
+		entity,
+		direction,
+		distanceTiles,
+	);
+
+	if (crashAtTile === undefined || crashAtTile > 1) playSwoosh();
+
+	const fullPath = getSpinTransitionPath({
+		entity,
+		rotation,
+		rounds,
+		direction,
+		distanceTiles,
+	});
+
+	if (crashAtTile === undefined) {
+		const end = getCellInDirection({
+			position: { x: entity.x, y: entity.y, z: entity.z },
+			direction,
+			distance: distanceTiles,
+		});
+
+		return { condition, path: fullPath, end };
+	}
+
+	const lastOkTiles = Math.max(0, crashAtTile - 1);
+
+	const end = getCellInDirection({
+		position: { x: entity.x, y: entity.y, z: entity.z },
+		direction,
+		distance: lastOkTiles,
+	});
+
+	const { dxTile, dyTile } = dirToDxDy(direction);
+	const crashXPx = entity.xPx + dxTile * TILE_SIZE_PX * lastOkTiles;
+	const crashYPx = entity.yPx + dyTile * TILE_SIZE_PX * lastOkTiles;
+
+	const crashedPath = truncatePathAtCrash({
+		path: fullPath,
+		direction,
+		crashXPx,
+		crashYPx,
+	});
+
+	crashedPath.push(
+		...crashPath({
+			xPx: crashXPx,
+			yPx: crashYPx,
+			z: entity.z,
+			direction,
+		}),
+	);
+
 	return {
 		condition,
-		path: getSpinTransitionPath({
-			entity,
-			rotation,
-			rounds,
-		}),
-		end: { x: entity.x, y: entity.y, z: entity.z },
+		path: crashedPath,
+		end,
 	};
 }
 
