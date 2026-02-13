@@ -137,7 +137,7 @@ function initCellsAndEdges() {
 				dir,
 			}),
 			interact: {
-				id: `jumpable_platform`,
+				id: "jumpable_platform",
 				onActivate: () => {
 					const sentence = "I could jump down with some speed!";
 					bubble("jumpable_platform", sentence);
@@ -155,7 +155,7 @@ function initCellsAndEdges() {
 		setCell(...cell, {
 			blocked: true,
 			onActivate: () => {
-				const sentence = "Mushrooms! ... ... Let's leave them alone ❤";
+				const sentence = "Mushrooms! ... ... ❤";
 				bubble("pretty_mushrooms", sentence);
 			},
 		});
@@ -213,7 +213,7 @@ function initCellsAndEdges() {
 	setEdge(26, 52, 0, "down", {
 		transition: {
 			condition: (entity: Entity) => entity.moveMode === "run",
-			animation: "spin",
+			animation: "jump",
 			path: [{ ...cellToPx(26, 54), z: 0 }],
 			end: { x: 26, y: 54, z: 0 },
 		},
@@ -221,7 +221,7 @@ function initCellsAndEdges() {
 	setEdge(26, 53, 0, "up", {
 		transition: {
 			condition: (entity: Entity) => entity.moveMode === "run",
-			animation: "spin",
+			animation: "jump",
 			path: [{ ...cellToPx(26, 51), z: 0 }],
 			end: { x: 26, y: 51, z: 0 },
 		},
@@ -474,25 +474,6 @@ function initEntities() {
 					pitch: 0.4,
 					tempo: 1.5,
 					intensity: 1,
-				},
-			});
-		},
-	});
-
-	const tarasqueId1 = "tarasque-1";
-	const tarasquePos = { x: 26, y: 42 };
-	entities.set(tarasqueId1, {
-		...getEntityAnimalDefaults({ ...tarasquePos, id: tarasqueId1 }),
-		radius: 11,
-		sheet: "tarasque",
-		onActivate: ({ activated }) => {
-			cmd.talk({
-				activated,
-				content: "Growl",
-				options: {
-					pitch: 0.4,
-					tempo: 0.5,
-					intensity: 20,
 				},
 			});
 		},
