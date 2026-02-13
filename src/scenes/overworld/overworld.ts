@@ -269,6 +269,9 @@ function tryPlanMove(desired: Direction, entity: Entity): Transition | null {
 			const occupant = getOccupant(end.x, end.y, end.z);
 			if (occupant && occupant !== entity.id) return null;
 
+			const endCell = getCell(end.x, end.y, end.z);
+			if (endCell?.blocked) return null;
+
 			return transition;
 		}
 
@@ -627,9 +630,9 @@ function draw(dt: number) {
 			`res: ${GAME_WIDTH_PX}x${GAME_HEIGHT_PX} (${SCALE}x, ${ASPECT_RATIO.toFixed(
 				2,
 			)}:${1})`,
-			`current tile: ${player.x}, ${player.y}, ${player.z}`,
-			`move to tile: ${player.transitionEndTile?.x ?? "x"}, ${player.transitionEndTile?.y ?? "y"}, ${player.transitionEndTile?.z ?? "z"}`,
-			`facing: ${player.direction}`,
+			`tile: ${player.x}, ${player.y}, ${player.z} -> ${player.transitionEndTile?.x ?? "x"}, ${player.transitionEndTile?.y ?? "y"}, ${player.transitionEndTile?.z ?? "z"}`,
+			`px: ${player.xPx}, ${player.yPx} -> ${player.xPxf}, ${player.yPxf}`,
+			`dir: ${player.direction}`,
 			`moving: ${player.isMoving}`,
 			`move mode: ${player.moveMode}`,
 			`animation: ${player.animationCurrentId}${player.animationOverride ? ` (${typeof player.animationOverride === "string" ? player.animationOverride : player.animationOverride.id})` : ""}`,
