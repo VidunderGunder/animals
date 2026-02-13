@@ -57,6 +57,7 @@ function initCellsAndEdges() {
 	});
 
 	const trunks: [number, number][] = [
+		[24, 41],
 		[28, 44],
 		[27, 44],
 		[26, 44],
@@ -78,7 +79,6 @@ function initCellsAndEdges() {
 		...range([31, 36], 40),
 
 		// Woods
-		[24, 41, 0],
 		...range(37, [41, 57]),
 		...range(23, [41, 57]),
 
