@@ -1,6 +1,16 @@
 import type { AnimationIDStable } from "../../../animations/animations";
 import type { Entity } from "../entity";
 
+export type TransitionPathSegment = {
+	xPx: ((entity: Entity) => number) | number;
+	yPx: ((entity: Entity) => number) | number;
+	z: ((entity: Entity) => number) | number;
+	duration?: ((entity: Entity) => number) | number;
+	onSegment?: (entity: Entity) => void;
+	onSegmentEnd?: (entity: Entity) => void;
+	onSegmentStart?: (entity: Entity) => void;
+};
+
 export type Transition = {
 	condition?: (entity: Entity) => boolean;
 
@@ -8,15 +18,7 @@ export type Transition = {
 	animation?: AnimationIDStable;
 
 	/** Path in pixel space (tile-top-left in world pixels), INCLUDING destination. */
-	path: {
-		xPx: ((entity: Entity) => number) | number;
-		yPx: ((entity: Entity) => number) | number;
-		z: ((entity: Entity) => number) | number;
-		duration?: ((entity: Entity) => number) | number;
-		onSegment?: (entity: Entity) => void;
-		onSegmentEnd?: (entity: Entity) => void;
-		onSegmentStart?: (entity: Entity) => void;
-	}[];
+	path: TransitionPathSegment[];
 
 	/* Final snapped logical state once path completes */
 	end: { x: number; y: number; z: number };

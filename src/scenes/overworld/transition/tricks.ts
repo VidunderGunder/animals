@@ -3,10 +3,36 @@ import { animationSheets } from "../../../animations/animations";
 import { moveSpeeds, TILE_SIZE_PX } from "../../../config";
 import { ease, mix } from "../../../functions/general";
 import { type Direction, rotate } from "../../../input/input";
-import { getCell, worldBounds } from "../cells";
+import { getCell, getEdge, worldBounds } from "../cells";
 import type { Entity } from "../entity";
 import { getOccupant } from "../occupancy";
-import type { Transition } from "./transition";
+import type { Transition, TransitionPathSegment } from "./transition";
+
+function crashPath(args: {
+	xPx: number;
+	yPx: number;
+	z: number;
+	direction: Direction;
+}): Transition["path"] {
+	const { xPx, yPx, z, direction } = args;
+
+	console.log("CRASH at", { xPx, yPx, z, direction });
+
+	return [
+		{
+			xPx,
+			yPx,
+			z,
+			duration: 200,
+			onSegmentStart(e) {
+				// TODO: Ma
+				e.animationFrameIndex = 0;
+				e.animationTimer = 0;
+				e.direction = direction;
+			},
+		},
+	];
+}
 
 export function spin(
 	entity: Entity,
@@ -17,37 +43,68 @@ export function spin(
 
 	const rounds = entity.moveMode === "run" ? 2 : 1;
 
-	// Slide distance matches your existing intent:
-	// - walk: 1 tile
-	// - run: 2 tiles
 	const distanceTiles = entity.moveMode === "run" ? 4 : 2;
 
-	// If a direction is provided, try slide+spin. If invalid, fall back to spin-in-place.
 	if (direction) {
-		const canSlide = canSlideInDirection(entity, direction, distanceTiles);
+		const crashAtTile = getCrashDistanceInDirection(
+			entity,
+			direction,
+			distanceTiles,
+		);
 
-		if (canSlide) {
-			const end = getCellInDirection(
-				{ x: entity.x, y: entity.y, z: entity.z },
+		const fullPath = getSpinTransitionPath({
+			entity,
+			rotation,
+			rounds,
+			direction,
+			distanceTiles,
+		});
+
+		if (crashAtTile === undefined) {
+			const end = getCellInDirection({
+				position: { x: entity.x, y: entity.y, z: entity.z },
 				direction,
-				distanceTiles,
-			);
+				distance: distanceTiles,
+			});
 
-			return {
-				condition,
-				path: getSpinTransitionPath({
-					entity,
-					rotation,
-					rounds,
-					direction,
-					distanceTiles,
-				}),
-				end,
-			};
+			return { condition, path: fullPath, end };
 		}
+
+		const lastOkTiles = Math.max(0, crashAtTile - 1);
+
+		const end = getCellInDirection({
+			position: { x: entity.x, y: entity.y, z: entity.z },
+			direction,
+			distance: lastOkTiles,
+		});
+
+		const { dxTile, dyTile } = dirToDxDy(direction);
+		const crashXPx = entity.xPx + dxTile * TILE_SIZE_PX * lastOkTiles;
+		const crashYPx = entity.yPx + dyTile * TILE_SIZE_PX * lastOkTiles;
+
+		const crashedPath = truncatePathAtCrash({
+			path: fullPath,
+			direction,
+			crashXPx,
+			crashYPx,
+		});
+
+		crashedPath.push(
+			...crashPath({
+				xPx: crashXPx,
+				yPx: crashYPx,
+				z: entity.z,
+				direction,
+			}),
+		);
+
+		return {
+			condition,
+			path: crashedPath,
+			end,
+		};
 	}
 
-	// Spin in place (your current “works exactly as we want” behavior)
 	return {
 		condition,
 		path: getSpinTransitionPath({
@@ -57,6 +114,60 @@ export function spin(
 		}),
 		end: { x: entity.x, y: entity.y, z: entity.z },
 	};
+}
+
+function truncatePathAtCrash(args: {
+	path: Transition["path"];
+	direction: Direction;
+	crashXPx: number;
+	crashYPx: number;
+}): Transition["path"] {
+	const { path, direction, crashXPx, crashYPx } = args;
+
+	if (path.length === 0) return [];
+
+	const { dxTile, dyTile } = dirToDxDy(direction);
+
+	const isPastCrash = (seg: TransitionPathSegment) => {
+		if (typeof seg.xPx !== "number" || typeof seg.yPx !== "number") {
+			throw new Error("Expected numeric xPx/yPx in transition path segment");
+		}
+		if (dxTile > 0) return seg.xPx >= crashXPx;
+		if (dxTile < 0) return seg.xPx <= crashXPx;
+		if (dyTile > 0) return seg.yPx >= crashYPx;
+		if (dyTile < 0) return seg.yPx <= crashYPx;
+		return true;
+	};
+
+	const out: Transition["path"] = [];
+
+	for (let i = 0; i < path.length; i++) {
+		const _seg = path[i];
+		if (typeof _seg?.xPx !== "number" || typeof _seg?.yPx !== "number") {
+			throw new Error("Expected numeric xPx/yPx in transition path segment");
+		}
+		const seg = { ..._seg };
+
+		if (isPastCrash(seg)) {
+			seg.xPx = crashXPx;
+			seg.yPx = crashYPx;
+			out.push(seg);
+			break;
+		}
+
+		out.push(seg);
+	}
+
+	if (out.length > 0) {
+		const last = out[out.length - 1];
+		if (!last) {
+			throw new Error("Expected at least one segment in truncated path");
+		}
+		last.xPx = crashXPx;
+		last.yPx = crashYPx;
+	}
+
+	return out;
 }
 
 function getSpinTransitionPath({
@@ -72,10 +183,7 @@ function getSpinTransitionPath({
 	direction?: Direction | null;
 	distanceTiles?: number;
 }): Transition["path"] {
-	// Guardrails
 	const safeRounds = Math.max(0, Math.floor(rounds));
-
-	// You rotate once per segment. 4 segments per round = 4 direction changes.
 	const steps = safeRounds * 4;
 	if (steps === 0) return [];
 
@@ -97,30 +205,21 @@ function getSpinTransitionPath({
 		yPx: entity.yPx,
 	};
 
-	// ------------------------------------------------------------------
-	// Timing: overall should be only slightly faster than normal movement
-	// ------------------------------------------------------------------
 	const hasSlide = !!direction && (distanceTiles ?? 0) > 0;
 
-	// Baseline movement duration for the same displacement:
-	// moveDuration = distancePx / entity.speed  (your overworld logic)
 	const distancePx = hasSlide ? (distanceTiles ?? 0) * TILE_SIZE_PX : 0;
 	const baselineMoveMs = hasSlide
 		? distancePx / Math.max(0.0001, entity.speed)
 		: 0;
 
-	// We want "combined transition only slightly faster than movement otherwise".
-	// This is the *total* spin+slide time when sliding.
 	const totalSlideSpinMs = hasSlide ? baselineMoveMs * 0.92 : 0;
 
-	// Per-step decel curve (start fast -> end slow):
-	// Build raw step durations, then (if sliding) scale to totalSlideSpinMs.
 	const rawMin = 70;
 	const rawMax = 120;
 
 	const rawDurations: number[] = [];
 	for (let i = 0; i < steps; i++) {
-		const t = steps === 1 ? 1 : i / (steps - 1); // 0..1
+		const t = steps === 1 ? 1 : i / (steps - 1);
 		const eased = ease.outCubic(t);
 		rawDurations.push(rawMin + (rawMax - rawMin) * eased);
 	}
@@ -128,12 +227,9 @@ function getSpinTransitionPath({
 	let scale = 1;
 	if (hasSlide) {
 		const sum = rawDurations.reduce((a, b) => a + b, 0);
-		// If totalSlideSpinMs is tiny for some reason, keep it sane.
 		const target = Math.max(60, totalSlideSpinMs);
 		scale = sum > 0 ? target / sum : 1;
 	} else {
-		// Keep the old “feel” but loosely responsive to moveMode speed.
-		// (Faster moveMode => a bit faster spin)
 		const speedFactor = Math.max(
 			0.6,
 			Math.min(1.2, entity.speed / moveSpeeds.walk),
@@ -141,9 +237,6 @@ function getSpinTransitionPath({
 		scale = 1 / speedFactor;
 	}
 
-	// ------------------------------------------------------------------
-	// Slide path: ease position (fast early) + ease time (fast early)
-	// ------------------------------------------------------------------
 	const { dxTile, dyTile } = direction
 		? dirToDxDy(direction)
 		: { dxTile: 0, dyTile: 0 };
@@ -157,9 +250,7 @@ function getSpinTransitionPath({
 		const linear = (i + 1) / steps;
 		const curve = ease.inOutSine(linear);
 
-		// alpha = 0 => fully linear (most even slide speed)
-		// alpha = 1 => full eased (fast start, slow end)
-		const alpha = 0.5; // try 0.15–0.35
+		const alpha = 0.5;
 		const posEase = mix(linear, curve, alpha);
 
 		const xPx = hasSlide ? start.xPx + totalDxPx * posEase : start.xPx;
@@ -184,8 +275,6 @@ function getSpinTransitionPath({
 		});
 	}
 
-	// Ensure the very last segment lands *exactly* on the target tile top-left
-	// (prevents fractional drift from easing math).
 	if (hasSlide) {
 		const endXPx = start.xPx + totalDxPx;
 		const endYPx = start.yPx + totalDyPx;
@@ -212,49 +301,68 @@ function dirToDxDy(direction: Direction): { dxTile: number; dyTile: number } {
 	}
 }
 
-function getCellInDirection(
-	pos: { x: number; y: number; z: number },
-	direction: Direction,
-	distance: number = 1,
-) {
-	if (distance === 0) return pos;
+function getCellInDirection({
+	direction,
+	position,
+	distance: d = 1,
+}: {
+	direction: Direction;
+	position?: { x: number; y: number; z: number };
+	distance?: number;
+}) {
+	position ??= { x: 0, y: 0, z: 0 };
+	const { x, y, z } = position;
+	d ??= 1;
+
+	if (d === 0) return position;
 	switch (direction) {
 		case "up":
-			return { x: pos.x, y: pos.y - distance, z: pos.z };
+			return { x, y: y - d, z };
 		case "down":
-			return { x: pos.x, y: pos.y + distance, z: pos.z };
+			return { x, y: y + d, z };
 		case "left":
-			return { x: pos.x - distance, y: pos.y, z: pos.z };
+			return { x: x - d, y, z };
 		case "right":
-			return { x: pos.x + distance, y: pos.y, z: pos.z };
+			return { x: x + d, y, z };
 	}
 }
 
-function canSlideInDirection(
+function getCrashDistanceInDirection(
 	entity: Entity,
-	dir: Direction,
-	distanceTiles: number,
-): boolean {
-	if (distanceTiles <= 0) return false;
+	direction: Direction,
+	distance: number,
+): number | undefined {
+	if (distance <= 0) return undefined;
 
-	const { dxTile, dyTile } = dirToDxDy(dir);
+	const { x: dx, y: dy } = getCellInDirection({ direction });
 
-	for (let step = 1; step <= distanceTiles; step++) {
-		const x = entity.x + dxTile * step;
-		const y = entity.y + dyTile * step;
+	for (let tile = 0; tile <= distance; tile++) {
+		const x = entity.x + dx * tile;
+		const y = entity.y + dy * tile;
 		const z = entity.z;
 
-		// bounds
-		if (x < 0 || y < 0 || x >= worldBounds.x || y >= worldBounds.y)
-			return false;
+		if (x < 0 || y < 0 || x >= worldBounds.x || y >= worldBounds.y) {
+			return tile;
+		}
 
-		// blocked cell
-		if (getCell(x, y, z)?.blocked) return false;
+		if (getCell(x, y, z)?.blocked) {
+			return tile;
+		}
 
-		// occupied by other (block both intermediate + end)
 		const occ = getOccupant(x, y, z);
-		if (occ && occ !== entity.id) return false;
+		if (occ && occ !== entity.id) {
+			return tile;
+		}
+
+		if (tile === distance) break;
+		const edge = getEdge(x, y, z, direction);
+		if (edge?.blocked) {
+			return tile + 1;
+		}
+		if (edge?.transition) {
+			return tile + 1;
+		}
 	}
 
-	return true;
+	return undefined;
 }
