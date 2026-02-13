@@ -111,12 +111,13 @@ function crashPath(args: {
 	];
 }
 
-function playSwoosh() {
+function spinSFX() {
 	audio.playSfx("jump", {
-		volume: 0.05,
+		volume: 0.15,
+		playbackRate: 0.5,
 	});
 	audio.playSfx("swoosh", {
-		volume: 0.4,
+		volume: 0.3,
 	});
 }
 
@@ -132,7 +133,7 @@ export function spin(
 	const distanceTiles = entity.moveMode === "run" ? 4 : 2;
 
 	if (!direction) {
-		playSwoosh();
+		spinSFX();
 		return {
 			condition,
 			path: getSpinTransitionPath({
@@ -150,7 +151,7 @@ export function spin(
 		distanceTiles,
 	);
 
-	if (crashAtTile === undefined || crashAtTile > 1) playSwoosh();
+	if (crashAtTile === undefined || crashAtTile > 1) spinSFX();
 
 	const fullPath = getSpinTransitionPath({
 		entity,
