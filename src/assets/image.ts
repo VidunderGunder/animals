@@ -20,3 +20,11 @@ export function createImageElement(src: string): HTMLImageElement {
 	img.src = src;
 	return img;
 }
+
+export function createEmptyImageElement(): HTMLImageElement {
+	const img = new Image();
+	img.src = "/empty.png";
+	return img;
+}
+
+export const emptyImage = createEmptyImageElement();

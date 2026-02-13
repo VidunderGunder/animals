@@ -1,5 +1,6 @@
 // src/scenes/overworld/transition/tricks.ts
-import { animationSheets } from "../../../animations/animations";
+import { animationSheets, animations } from "../../../animations/animations";
+import { emptyImage } from "../../../assets/image";
 import { moveSpeeds, TILE_SIZE_PX } from "../../../config";
 import { ease, mix } from "../../../functions/general";
 import { type Direction, rotate } from "../../../input/input";
@@ -16,19 +17,88 @@ function crashPath(args: {
 }): Transition["path"] {
 	const { xPx, yPx, z, direction } = args;
 
-	console.log("CRASH at", { xPx, yPx, z, direction });
+	console.log("CRASH!");
+
+	const { x: dx, y: dy } = getCellInDirection({ direction });
+
+	const isHorizontal = direction === "left" || direction === "right";
+
+	const onFirstSegmentStart = (entity: Entity) => {
+		entity.animationFrameIndex = 0;
+		entity.animationTimer = 0;
+		entity.direction = direction;
+		entity.animationOverride = isHorizontal ? "jump" : "jump";
+		entity.direction = direction;
+	};
 
 	return [
+		...((isHorizontal
+			? [
+					{
+						onSegmentStart: onFirstSegmentStart,
+						xPx: xPx + dx * 4,
+						yPx,
+						z,
+						duration: (e) => (e.moveMode === "walk" ? 40 : 30),
+					},
+					{
+						xPx: xPx + dx * 2,
+						yPx: yPx - 8,
+						z,
+						duration: (e) => (e.moveMode === "walk" ? 60 : 40),
+					},
+				]
+			: [
+					{
+						onSegmentStart: onFirstSegmentStart,
+						xPx,
+						yPx: yPx - Math.abs(dy * 4),
+						z,
+						duration: (e) => (e.moveMode === "walk" ? 40 : 30),
+					},
+					{
+						xPx,
+						yPx: yPx - Math.abs(dy * 6),
+						z,
+						duration: (e) => (e.moveMode === "walk" ? 60 : 40),
+					},
+				]) satisfies Transition["path"]),
 		{
 			xPx,
 			yPx,
 			z,
-			duration: 200,
-			onSegmentStart(e) {
-				// TODO: Ma
-				e.animationFrameIndex = 0;
-				e.animationTimer = 0;
-				e.direction = direction;
+			duration: 100,
+		},
+		{
+			xPx,
+			yPx,
+			z,
+			duration: 3 * 2 * 80,
+			onSegmentStart: (entity: Entity) => {
+				entity.animationCurrentId = "idle";
+				entity.animationFrameIndex = 0;
+				entity.animationTimer = 0;
+				entity.direction = direction;
+				entity.animationOverride = {
+					id: "crash",
+					frameDuration: 80,
+					loop: true,
+					frames: [
+						[
+							{
+								...animations[entity.sheet].idle.frames[0]?.[0],
+								sheet: emptyImage,
+							},
+						],
+						animations[entity.sheet].idle.frames[0],
+					],
+				};
+			},
+			onSegmentEnd: (entity: Entity) => {
+				entity.animationTimer = 0;
+				entity.animationFrameIndex = 0;
+				entity.animationCurrentId = "idle";
+				entity.animationOverride = null;
 			},
 		},
 	];

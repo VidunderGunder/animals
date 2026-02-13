@@ -636,6 +636,7 @@ function draw(dt: number) {
 			`moving: ${player.isMoving}`,
 			`move mode: ${player.moveMode}`,
 			`animation: ${player.animationCurrentId}${player.animationOverride ? ` (${typeof player.animationOverride === "string" ? player.animationOverride : player.animationOverride.id})` : ""}`,
+			`row: ${drawList.find((d) => d.entity.id === "player")?.row}`,
 		].forEach((line, index) => {
 			ctx.fillText(line, 4, 2 + index * 8);
 		});
@@ -678,8 +679,8 @@ function drawEntity(entity: Entity) {
 		);
 	}
 
-	const frameLayers = anim.frames[entity.animationFrameIndex];
-	if (frameLayers === undefined) {
+	const frameLayer = anim.frames[entity.animationFrameIndex]?.[0];
+	if (frameLayer === undefined) {
 		throw new Error(
 			`Invalid animation frame index for ${animName}, index ${entity.animationFrameIndex} but frames are ${anim.frames.length} long`,
 		);
@@ -688,7 +689,7 @@ function drawEntity(entity: Entity) {
 	const dw = entity.width;
 	const dh = entity.height;
 
-	if (!frameLayers[0]) return;
+	if (!frameLayer) return;
 
 	ctx.fillStyle = "#00000013";
 	ctx.beginPath();
@@ -700,8 +701,7 @@ function drawEntity(entity: Entity) {
 	ctx.fill();
 
 	renderFrameLayer({
-		sheet: frameLayers[0].sheet,
-		index: frameLayers[0].index,
+		...frameLayer,
 		direction: entity.direction,
 		x: -dw / 2,
 		y: -dh,
