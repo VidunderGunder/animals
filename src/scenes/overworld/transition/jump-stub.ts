@@ -1,15 +1,19 @@
 import { audio } from "../../../audio/audio-engine";
 import { moveSpeeds, TILE_SIZE_PX } from "../../../config";
 import type { Direction } from "../../../input/input";
-import { cellToPx, setEdge } from "../cells";
+import { cellToPx, setCell, setEdge } from "../cells";
 import type { Entity } from "../entity";
 import type { Transition } from "./transition";
+
+const HALF_TILE_PX = TILE_SIZE_PX / 2;
+const TOP_Y = -6;
 
 export function setStubJumpTransitions(
 	stubs: [number, number][],
 	z: number = 0,
 ) {
 	for (const [x, y] of stubs) {
+		setCell(x, y, z, { offset: { xPx: 0, yPx: TOP_Y } });
 		const neighbors: Record<Direction, boolean> = {
 			up: stubs.some(([nx, ny]) => nx === x && ny === y - 1),
 			right: stubs.some(([nx, ny]) => nx === x + 1 && ny === y),
@@ -47,8 +51,6 @@ function setStubJumpTransitionsSingle(
 		left: cellToPx(x - 1, y),
 	} satisfies Record<Direction, { xPx: number; yPx: number }>;
 
-	const TOP_Y = -6;
-
 	const jumpLiftHorizontal = (entity: Entity) =>
 		entity.moveMode === "run" ? -TOP_Y : 10;
 	const jumpLiftUp = (entity: Entity) =>
@@ -58,8 +60,6 @@ function setStubJumpTransitionsSingle(
 
 	const duration = (entity: Entity) =>
 		entity.moveMode === "run" ? 0.5 * (TILE_SIZE_PX / moveSpeeds.run) : 115;
-
-	const HALF_TILE_PX = TILE_SIZE_PX / 2;
 
 	// ============================================================
 	// Right jump edges (always)

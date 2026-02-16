@@ -1,5 +1,7 @@
 import type { AnimationIDStable } from "../../../animations/animations";
+import { getCell } from "../cells";
 import type { Entity } from "../entity";
+import { getOccupant } from "../occupancy";
 
 export type TransitionPathSegment = {
 	xPx: ((entity: Entity) => number) | number;
@@ -84,4 +86,14 @@ export function snapToSegmentEnd(entity: Entity) {
 	entity.xPx = entity.xPxf;
 	entity.yPx = entity.yPxf;
 	entity.z = entity.zf;
+}
+
+export function isTransitionEndBlocked(end: Transition["end"]): boolean {
+	const occupant = getOccupant(end.x, end.y, end.z);
+	if (occupant) return true;
+
+	const cell = getCell(end.x, end.y, end.z);
+	if (cell?.blocked) return true;
+
+	return false;
 }

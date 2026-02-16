@@ -117,6 +117,27 @@ function crashPath(args: {
 	];
 }
 
+function injectPlayOnceOnFirstSegmentStart(
+	path: Transition["path"],
+	play: (e: Entity) => void,
+) {
+	if (path.length === 0) return;
+
+	let played = false;
+	const first = path[0];
+	if (!first) return;
+
+	const prev = first.onSegmentStart;
+
+	first.onSegmentStart = (e) => {
+		if (!played) {
+			played = true;
+			play(e);
+		}
+		prev?.(e);
+	};
+}
+
 function spinSFX() {
 	audio.playSfx("jump", {
 		volume: 0.075,
@@ -137,43 +158,28 @@ export function spin(
 	const rounds = entity.moveMode === "run" ? 2 : 1;
 	const distance = entity.moveMode === "run" ? 4 : 2;
 
-	// spin-in-place: always play
-	if (!direction) {
-		spinSFX();
-		return {
-			condition,
-			path: getSpinTransitionPath({
-				entity,
-				rotation,
-				rounds,
-			}),
-			end: { x: entity.x, y: entity.y, z: entity.z },
-		};
-	}
-
-	// slide spin: only play if we are not about to crash immediately (tile 1)
-	const crashAtTile = getCrashDistanceInDirection(entity, direction, distance);
-	const willCrashImmediately = crashAtTile !== undefined && crashAtTile <= 1;
-
-	if (!willCrashImmediately) spinSFX();
-
-	const end = getCellInDirection({
-		position: { x: entity.x, y: entity.y, z: entity.z },
-		direction,
-		distance: distance,
+	// build the path first (no side effects)
+	const path = getSpinTransitionPath({
+		entity,
+		rotation,
+		rounds,
+		direction: direction ?? null,
+		distance: direction ? distance : undefined,
 	});
 
-	return {
-		condition,
-		path: getSpinTransitionPath({
-			entity,
-			rotation,
-			rounds,
-			direction,
-			distance: distance,
-		}),
-		end,
-	};
+	// SFX only if/when the transition actually starts
+	injectPlayOnceOnFirstSegmentStart(path, () => spinSFX());
+
+	// Keep end purely as “intended end” (collisions may override mid-path)
+	const end = direction
+		? getCellInDirection({
+				position: { x: entity.x, y: entity.y, z: entity.z },
+				direction,
+				distance,
+			})
+		: { x: entity.x, y: entity.y, z: entity.z };
+
+	return { condition, path, end };
 }
 
 function triggerCrashForEntity(args: {
@@ -517,52 +523,17 @@ function crashAnchorPx(
 		curTile.y === crashTile.y &&
 		curTile.z === crashTile.z;
 
+	const endCell = sameTile
+		? getCell(curTile.x, curTile.y, curTile.z)
+		: getCell(crashTile.x, crashTile.y, crashTile.z);
+	const offset = endCell?.offset ?? { xPx: 0, yPx: 0 };
+
 	return {
 		xPx: sameTile
-			? pxToTile(entity.xPx) * TILE_SIZE_PX
-			: crashTile.x * TILE_SIZE_PX,
+			? pxToTile(entity.xPx) * TILE_SIZE_PX + offset.xPx
+			: crashTile.x * TILE_SIZE_PX + offset.xPx,
 		yPx: sameTile
-			? pxToTile(entity.yPx) * TILE_SIZE_PX
-			: crashTile.y * TILE_SIZE_PX,
+			? pxToTile(entity.yPx) * TILE_SIZE_PX + offset.yPx
+			: crashTile.y * TILE_SIZE_PX + offset.yPx,
 	};
-}
-
-function getCrashDistanceInDirection(
-	entity: Entity,
-	direction: Direction,
-	distance: number,
-): number | undefined {
-	if (distance <= 0) return undefined;
-
-	const { x: dx, y: dy } = getCellInDirection({ direction });
-
-	for (let tile = 0; tile <= distance; tile++) {
-		const x = entity.x + dx * tile;
-		const y = entity.y + dy * tile;
-		const z = entity.z;
-
-		if (x < 0 || y < 0 || x >= worldBounds.x || y >= worldBounds.y) {
-			return tile;
-		}
-
-		if (getCell(x, y, z)?.blocked) {
-			return tile;
-		}
-
-		const occ = getOccupant(x, y, z);
-		if (occ && occ !== entity.id) {
-			return tile;
-		}
-
-		if (tile === distance) break;
-		const edge = getEdge(x, y, z, direction);
-		if (edge?.blocked) {
-			return tile + 1;
-		}
-		if (edge?.transition) {
-			return tile + 1;
-		}
-	}
-
-	return undefined;
 }

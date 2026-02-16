@@ -222,7 +222,6 @@ function tryPlanMove(desired: Direction, entity: Entity): Transition | null {
 	const edge = getEdge(entity.x, entity.y, entity.z, desired);
 	if (edge?.blocked) return null;
 
-	// --- transitions ---
 	if (edge?.transition) {
 		const transitions = Array.isArray(edge.transition)
 			? edge.transition
@@ -230,14 +229,6 @@ function tryPlanMove(desired: Direction, entity: Entity): Transition | null {
 
 		for (const transition of transitions) {
 			if (transition.condition && !transition.condition(entity)) continue;
-
-			// Block if destination is occupied by someone else
-			const end = transition.end;
-			const occupant = getOccupant(end.x, end.y, end.z);
-			if (occupant && occupant !== entity.id) return null;
-
-			const endCell = getCell(end.x, end.y, end.z);
-			if (endCell?.blocked) return null;
 
 			return transition;
 		}
@@ -258,8 +249,8 @@ function tryPlanMove(desired: Direction, entity: Entity): Transition | null {
 	if (destination?.blocked) return null;
 
 	// Block if destination is occupied by someone else
-	const occupant = getOccupant(nx, ny, nz);
-	if (occupant && occupant !== entity.id) return null;
+	// const occupant = getOccupant(nx, ny, nz);
+	// if (occupant && occupant !== entity.id) return null;
 
 	return {
 		path: [{ xPx: nx * TILE_SIZE_PX, yPx: ny * TILE_SIZE_PX, z: nz }],
@@ -415,8 +406,8 @@ function updateEntityAndPlayer({
 		if (planned) {
 			// Reserve destination BEFORE starting the move
 			const ok = occupy({ ...planned.end, id: entity.id });
-			if (!ok) {
-				// Someone else got there first; stay idle this tick
+			if (!ok && !trick) {
+				// Someone else got there first; stay idle this tick, but attempt trick (will probably crash)
 			} else {
 				entity.isMoving = true;
 

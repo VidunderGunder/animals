@@ -41,6 +41,10 @@ export type Cell = {
 		xPx: number;
 		yPx: number;
 	};
+	offset?: {
+		xPx: number;
+		yPx: number;
+	};
 };
 
 export type Edge = {

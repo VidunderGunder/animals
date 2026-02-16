@@ -2,7 +2,7 @@ import { audio } from "../../../audio/audio-engine";
 import type { Direction } from "../../../input/input";
 import { cellToPx } from "../cells";
 import type { Entity } from "../entity";
-import type { Transition } from "./transition";
+import { isTransitionEndBlocked, type Transition } from "./transition";
 
 export function getJumpDownTransition({
 	x,
@@ -124,7 +124,10 @@ export function getJumpDownTransition({
 	return {
 		end,
 		path,
-		condition: (entity) => entity.moveMode === "run",
+		condition: (entity) => {
+			if (isTransitionEndBlocked(end)) return false;
+			return entity.moveMode === "run";
+		},
 		animation: "jump",
 	} satisfies Transition;
 }
