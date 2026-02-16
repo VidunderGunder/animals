@@ -510,7 +510,6 @@ function update(dt: number) {
 	for (const [id, entity] of entities.entries()) {
 		if (id === "player") continue;
 		void updateEntity(dt, entity);
-		if (entity.variant === "effect") console.log(entity);
 	}
 
 	updatePlayer(dt);
