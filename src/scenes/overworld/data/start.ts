@@ -134,7 +134,7 @@ function initCellsAndEdges() {
 				x,
 				y,
 				z,
-				dir,
+				direction: dir,
 			}),
 			interact: {
 				id: "jumpable_platform",
@@ -221,7 +221,7 @@ function initCellsAndEdges() {
 					x: 32,
 					y: 45,
 					z: 1,
-					dir: "left",
+					direction: "left",
 				}),
 				condition: (entity: Entity) => entity.moveMode === "run",
 			},
@@ -262,10 +262,22 @@ function initCellsAndEdges() {
 		},
 	});
 	setEdge(32, 49, 1, "right", {
-		transition: {
-			path: [{ ...cellToPx(33, 50), z: 0 }],
-			end: { x: 33, y: 50, z: 0 },
-		},
+		transition: [
+			{
+				...getJumpDownTransition({
+					x: 32,
+					y: 49,
+					z: 1,
+					distance: 2,
+					direction: "right",
+				}),
+				condition: (entity: Entity) => entity.moveMode === "run",
+			},
+			{
+				path: [{ ...cellToPx(33, 50), z: 0 }],
+				end: { x: 33, y: 50, z: 0 },
+			},
+		],
 	});
 
 	setEdge(27, 50, 0, "right", {
@@ -275,10 +287,22 @@ function initCellsAndEdges() {
 		},
 	});
 	setEdge(28, 49, 1, "left", {
-		transition: {
-			path: [{ ...cellToPx(27, 50), z: 0 }],
-			end: { x: 27, y: 50, z: 0 },
-		},
+		transition: [
+			{
+				...getJumpDownTransition({
+					x: 28,
+					y: 49,
+					z: 1,
+					distance: 2,
+					direction: "left",
+				}),
+				condition: (entity: Entity) => entity.moveMode === "run",
+			},
+			{
+				path: [{ ...cellToPx(27, 50), z: 0 }],
+				end: { x: 27, y: 50, z: 0 },
+			},
+		],
 	});
 
 	setCell(28, 50, 0, {

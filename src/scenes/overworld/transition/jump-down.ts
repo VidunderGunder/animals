@@ -9,13 +9,15 @@ export function getJumpDownTransition({
 	x,
 	y,
 	z,
-	dir,
+	direction,
+	distance,
 	drop,
 }: {
 	x: number;
 	y: number;
 	z: number;
-	dir: Direction;
+	direction: Direction;
+	distance?: number;
 	/**
 	 * How many z-levels to drop down during the jump and adjust y accordingly
 	 *
@@ -23,45 +25,46 @@ export function getJumpDownTransition({
 	 */
 	drop?: number;
 }) {
+	distance ??= 1;
 	drop ??= 1;
 
 	let end: Transition["end"] | undefined;
 	let path: Transition["path"] | undefined;
 
-	const durUp = 100;
-	const durDown = 200;
+	const durUp = 60 + distance * 40;
+	const durDown = 110 + distance * 50;
 
-	if (dir === "left") {
+	if (direction === "left") {
 		path = [
 			{
-				...cellToPx(x - 0.85, y - 0.25),
+				...cellToPx(x - (0.4 + 0.3 * distance), y - distance * 0.3),
 				z,
 				duration: durUp,
 				onSegmentStart: onJumpStart,
 			},
 			{
-				...cellToPx(x - 1, y + 1),
+				...cellToPx(x - 1 * distance, y + 1),
 				z: z - drop,
 				duration: durDown,
 				onSegmentEnd: (e) => onJumpEnd(e, drop),
 			},
 		];
 		end = {
-			x: x - 1,
+			x: x - 1 * distance,
 			y: y + 1,
 			z: z - drop,
 		};
 	}
-	if (dir === "down") {
+	if (direction === "down") {
 		path = [
 			{
-				...cellToPx(x, y - 0.25),
+				...cellToPx(x, y - 0.25 * distance),
 				z,
 				duration: durUp,
 				onSegmentStart: onJumpStart,
 			},
 			{
-				...cellToPx(x, y + 2),
+				...cellToPx(x, y + 2 * distance),
 				z,
 				duration: durDown,
 				onSegmentEnd: (e) => onJumpEnd(e, drop),
@@ -69,41 +72,41 @@ export function getJumpDownTransition({
 		];
 		end = {
 			x,
-			y: y + 1 + drop,
+			y: y + 1 * distance + drop,
 			z: z - drop,
 		};
 	}
-	if (dir === "right") {
+	if (direction === "right") {
 		path = [
 			{
-				...cellToPx(x + 0.85, y - 0.25),
+				...cellToPx(x + (0.4 + 0.3 * distance), y - distance * 0.3),
 				z,
 				duration: durUp,
 				onSegmentStart: onJumpStart,
 			},
 			{
-				...cellToPx(x + 1, y + drop),
+				...cellToPx(x + 1 * distance, y + drop),
 				z: z - drop,
 				duration: durDown,
 				onSegmentEnd: (e) => onJumpEnd(e, drop),
 			},
 		];
 		end = {
-			x: x + 1,
+			x: x + 1 * distance,
 			y: y + 1,
 			z: z - drop,
 		};
 	}
-	if (dir === "up") {
+	if (direction === "up") {
 		path = [
 			{
-				...cellToPx(x, y - 0.75),
+				...cellToPx(x, y - 0.75 * distance),
 				z,
 				duration: durUp,
 				onSegmentStart: onJumpStart,
 			},
 			{
-				...cellToPx(x, y - 1 + drop),
+				...cellToPx(x, y - 1 * distance + drop),
 				z: z - drop,
 				duration: durDown,
 				onSegmentEnd: (e) => onJumpEnd(e, drop),
@@ -111,14 +114,14 @@ export function getJumpDownTransition({
 		];
 		end = {
 			x,
-			y,
+			y: y - 1 * distance,
 			z: z - drop,
 		};
 	}
 
 	if (!path || !end) {
 		throw new Error(
-			`Could not create jump transition for dir=${dir} at ${x},${y},${z}`,
+			`Could not create jump transition for dir=${direction} at ${x},${y},${z}`,
 		);
 	}
 
