@@ -233,6 +233,14 @@ function tryPlanMove(desired: Direction, entity: Entity): Transition | null {
 		for (const transition of transitions) {
 			if (transition.condition && !transition.condition(entity)) continue;
 
+			// Block if destination is occupied by someone else
+			const end = transition.end;
+			const occupant = getOccupant(end.x, end.y, end.z);
+			if (occupant && occupant !== entity.id) return null;
+
+			const endCell = getCell(end.x, end.y, end.z);
+			if (endCell?.blocked) return null;
+
 			return transition;
 		}
 
