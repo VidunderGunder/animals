@@ -43,7 +43,7 @@ export function getJumpDownTransition({
 				...cellToPx(x - 1, y + 1),
 				z: z - drop,
 				duration: durDown,
-				onSegmentEnd: onJumpEnd,
+				onSegmentEnd: (e) => onJumpEnd(e, drop),
 			},
 		];
 		end = {
@@ -64,7 +64,7 @@ export function getJumpDownTransition({
 				...cellToPx(x, y + 2),
 				z,
 				duration: durDown,
-				onSegmentEnd: onJumpEnd,
+				onSegmentEnd: (e) => onJumpEnd(e, drop),
 			},
 		];
 		end = {
@@ -85,7 +85,7 @@ export function getJumpDownTransition({
 				...cellToPx(x + 1, y + drop),
 				z: z - drop,
 				duration: durDown,
-				onSegmentEnd: onJumpEnd,
+				onSegmentEnd: (e) => onJumpEnd(e, drop),
 			},
 		];
 		end = {
@@ -106,7 +106,7 @@ export function getJumpDownTransition({
 				...cellToPx(x, y - 1 + drop),
 				z: z - drop,
 				duration: durDown,
-				onSegmentEnd: onJumpEnd,
+				onSegmentEnd: (e) => onJumpEnd(e, drop),
 			},
 		];
 		end = {
@@ -139,10 +139,14 @@ function onJumpStart(entity: Entity) {
 	audio.playSfx("jump", { volume: 0.33 * volumeFactor, detuneCents: -100 });
 }
 
-function onJumpEnd(entity: Entity) {
+function onJumpEnd(entity: Entity, drop: number = 1) {
 	entity.interactionLock = false;
 	playThudSfx(entity);
-	impact(entity.transitionEndTile ?? { x: entity.x, y: entity.y });
+	impact({
+		xPx: entity.xPx,
+		yPx: entity.yPx,
+		z: entity.transitionEndTile?.z ?? drop,
+	});
 }
 
 function playThudSfx(entity: Entity) {

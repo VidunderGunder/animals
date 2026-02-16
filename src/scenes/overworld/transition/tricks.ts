@@ -4,7 +4,7 @@ import { impact } from "../../../animation/effect";
 import { emptyImage } from "../../../assets/image";
 import { audio } from "../../../audio/audio-engine";
 import { moveSpeeds, TILE_SIZE_PX } from "../../../config";
-import { ease, mix } from "../../../functions/general";
+import { ease, mix, pxToTile } from "../../../functions/general";
 import { type Direction, rotate } from "../../../input/input";
 import { getCell, getEdge, worldBounds } from "../cells";
 import { type Entity, entities } from "../entity";
@@ -82,8 +82,8 @@ function crashPath(args: {
 			onSegmentEnd(entity) {
 				if (!mute) audio.playSfx("thud", { volume: 0.1 });
 				impact({
-					x: pxToTile(entity.xPx),
-					y: pxToTile(entity.yPx),
+					xPx,
+					yPx,
 					z: entity.z,
 				});
 			},
@@ -279,10 +279,6 @@ function checkTileStepAllowed(args: {
 	}
 
 	return { ok: true };
-}
-
-function pxToTile(px: number) {
-	return Math.floor((px + TILE_SIZE_PX / 2) / TILE_SIZE_PX);
 }
 
 function getSpinTransitionPath({

@@ -1,3 +1,5 @@
+import { TILE_SIZE_PX } from "../config";
+
 export function clamp(x: number, min: number, max: number) {
 	return Math.max(min, Math.min(max, x));
 }
@@ -78,4 +80,8 @@ export const ease = {
 
 export function mix(a: number, b: number, alpha: number) {
 	return a + (b - a) * alpha;
+}
+
+export function pxToTile(px: number) {
+	return Math.floor((px + TILE_SIZE_PX / 2) / TILE_SIZE_PX);
 }

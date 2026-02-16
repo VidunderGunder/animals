@@ -1,4 +1,5 @@
 import { createImageElement } from "../assets/image";
+import { pxToTile } from "../functions/general";
 import { entities, getEntityItemDefaults } from "../scenes/overworld/entity";
 import { type Animation, layerFactory } from "./animation";
 
@@ -14,7 +15,11 @@ export const effects = {
 /**
  * Creates a temporary entity, which renders a one-off animation, and then deletes itself.
  */
-export function impact(position: { x: number; y: number; z: number }): void {
+export function impact(position: {
+	xPx: number;
+	yPx: number;
+	z: number;
+}): void {
 	const sheet = effects.impact.sheet;
 	const frames = effects.impact.frames;
 
@@ -28,9 +33,13 @@ export function impact(position: { x: number; y: number; z: number }): void {
 		h: 16,
 	});
 
-	const id = ["impact", position.x, position.y, position.z, Date.now()].join(
-		"-",
-	);
+	const id = [
+		"impact",
+		position.xPx,
+		position.yPx,
+		position.z,
+		Date.now(),
+	].join("-");
 
 	const impactAnimation: Animation = {
 		id,
@@ -42,8 +51,11 @@ export function impact(position: { x: number; y: number; z: number }): void {
 	entities.set(impactAnimation.id, {
 		...getEntityItemDefaults({
 			id,
-			...position,
+			x: pxToTile(position.xPx),
+			y: pxToTile(position.yPx),
 		}),
+		xPx: position.xPx,
+		yPx: position.yPx,
 		z: position.z,
 		variant: "effect",
 		animationFrameIndex: 0,
