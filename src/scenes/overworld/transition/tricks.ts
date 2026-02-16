@@ -113,11 +113,11 @@ function crashPath(args: {
 
 function spinSFX() {
 	audio.playSfx("jump", {
-		volume: 0.15,
+		volume: 0.075,
 		playbackRate: 0.5,
 	});
 	audio.playSfx("swoosh", {
-		volume: 0.3,
+		volume: 0.15,
 	});
 }
 
