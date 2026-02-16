@@ -114,7 +114,7 @@ export function getJumpDownTransition({
 		];
 		end = {
 			x,
-			y: y - 1 * distance,
+			y: y - 1 * distance + drop,
 			z: z - drop,
 		};
 	}
