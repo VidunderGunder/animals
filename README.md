@@ -50,6 +50,7 @@ Bugs (clearly defined issues)
   - [ ] 🤖 Current ambience implementation hijacks audio on iOS, stopping music playback from other apps—we want to allow both to play simultaneously
   - [ ] 🤖 Ambience can be muted by pressing play/pause on iOS
   - [ ] 🤖 Ambience may keep playing when changing tabs
+  - [ ] 🤖 I suspect there's a bug causing the same track to be triggered multiple time (weird distortions/phasing can happen during longer sessions)
 - [ ] 🤖 Getting stuck in a zoom-in on iOS Safari is still happening occasionally when using the touch controller (primarily on the d-pad)
 - [ ] 🔻 Blurry menu (pause menu will be remade soon, so will probably not fix)
 
