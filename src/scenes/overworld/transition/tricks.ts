@@ -4,7 +4,14 @@ import { impact } from "../../../animation/effect";
 import { emptyImage } from "../../../assets/image";
 import { audio } from "../../../audio/audio-engine";
 import { moveSpeeds, TILE_SIZE_PX } from "../../../config";
-import { ease, mix, pxToTile } from "../../../functions/general";
+import {
+	directionToDxDy,
+	ease,
+	getCellInDirection,
+	mix,
+	oppositeDirection,
+	pxToTile,
+} from "../../../functions/general";
 import { type Direction, rotate } from "../../../input/input";
 import { getCell, getEdge, worldBounds } from "../cells";
 import { type Entity, entities } from "../entity";
@@ -21,7 +28,7 @@ function crashPath(args: {
 	const mute = args.mute ?? false;
 	const { xPx, yPx, z, direction } = args;
 
-	const { dx, dy } = dirToDxDy(direction);
+	const { dx, dy } = directionToDxDy(direction);
 
 	const isHorizontal = direction === "left" || direction === "right";
 
@@ -348,7 +355,7 @@ function getSpinTransitionPath({
 		scale = 1 / speedFactor;
 	}
 
-	const { dx, dy } = slideDir ? dirToDxDy(slideDir) : { dx: 0, dy: 0 };
+	const { dx, dy } = slideDir ? directionToDxDy(slideDir) : { dx: 0, dy: 0 };
 
 	const totalDxPx = hasSlide ? dx * TILE_SIZE_PX * (distance ?? 0) : 0;
 	const totalDyPx = hasSlide ? dy * TILE_SIZE_PX * (distance ?? 0) : 0;
@@ -373,6 +380,12 @@ function getSpinTransitionPath({
 			yPx,
 			duration: rawDuration * scale,
 			onSegmentStart(e) {
+				if (i === 0 && hasSlide)
+					impact({
+						xPx: start.xPx,
+						yPx: start.yPx,
+						z: start.z,
+					});
 				if (slideDir) {
 					const from = {
 						x: pxToTile(e.xPx),
@@ -428,58 +441,6 @@ function getSpinTransitionPath({
 	return path;
 }
 
-function dirToDxDy(direction: Direction): { dx: number; dy: number } {
-	switch (direction) {
-		case "up":
-			return { dx: 0, dy: -1 };
-		case "down":
-			return { dx: 0, dy: 1 };
-		case "left":
-			return { dx: -1, dy: 0 };
-		case "right":
-			return { dx: 1, dy: 0 };
-	}
-}
-
-function getCellInDirection({
-	direction,
-	position,
-	distance: d = 1,
-}: {
-	direction: Direction;
-	position?: { x: number; y: number; z: number };
-	distance?: number;
-}) {
-	position ??= { x: 0, y: 0, z: 0 };
-	const { x, y, z } = position;
-	d ??= 1;
-
-	if (d === 0) return position;
-	switch (direction) {
-		case "up":
-			return { x, y: y - d, z };
-		case "down":
-			return { x, y: y + d, z };
-		case "left":
-			return { x: x - d, y, z };
-		case "right":
-			return { x: x + d, y, z };
-	}
-}
-
-function oppositeDir(direction: Direction): Direction {
-	switch (direction) {
-		case "up":
-			return "down";
-		case "down":
-			return "up";
-		case "left":
-			return "right";
-		case "right":
-			return "left";
-	}
-}
-
 function crashBothOnCollision(args: {
 	collider: Entity;
 	collided?: Entity;
@@ -511,7 +472,7 @@ function crashBothOnCollision(args: {
 	triggerCrashForEntity({
 		entity: collided,
 		crashTile: collidedTile,
-		crashDir: oppositeDir(slideDir),
+		crashDir: oppositeDirection(slideDir),
 		mute: true,
 	});
 }

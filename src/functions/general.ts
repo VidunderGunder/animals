@@ -1,4 +1,5 @@
 import { TILE_SIZE_PX } from "../config";
+import type { Direction } from "../input/input";
 
 export function clamp(x: number, min: number, max: number) {
 	return Math.max(min, Math.min(max, x));
@@ -84,4 +85,59 @@ export function mix(a: number, b: number, alpha: number) {
 
 export function pxToTile(px: number) {
 	return Math.floor((px + TILE_SIZE_PX / 2) / TILE_SIZE_PX);
+}
+
+export function directionToDxDy(direction: Direction): {
+	dx: number;
+	dy: number;
+} {
+	switch (direction) {
+		case "up":
+			return { dx: 0, dy: -1 };
+		case "down":
+			return { dx: 0, dy: 1 };
+		case "left":
+			return { dx: -1, dy: 0 };
+		case "right":
+			return { dx: 1, dy: 0 };
+	}
+}
+
+export function getCellInDirection({
+	direction,
+	position,
+	distance: d = 1,
+}: {
+	direction: Direction;
+	position?: { x: number; y: number; z: number };
+	distance?: number;
+}) {
+	position ??= { x: 0, y: 0, z: 0 };
+	const { x, y, z } = position;
+	d ??= 1;
+
+	if (d === 0) return position;
+	switch (direction) {
+		case "up":
+			return { x, y: y - d, z };
+		case "down":
+			return { x, y: y + d, z };
+		case "left":
+			return { x: x - d, y, z };
+		case "right":
+			return { x: x + d, y, z };
+	}
+}
+
+export function oppositeDirection(direction: Direction): Direction {
+	switch (direction) {
+		case "up":
+			return "down";
+		case "down":
+			return "up";
+		case "left":
+			return "right";
+		case "right":
+			return "left";
+	}
 }

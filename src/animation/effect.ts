@@ -12,9 +12,6 @@ export const effects = {
 	},
 };
 
-/**
- * Creates a temporary entity, which renders a one-off animation, and then deletes itself.
- */
 export function impact(position: {
 	xPx: number;
 	yPx: number;
@@ -33,13 +30,8 @@ export function impact(position: {
 		h: 16,
 	});
 
-	const id = [
-		"impact",
-		position.xPx,
-		position.yPx,
-		position.z,
-		Date.now(),
-	].join("-");
+	const id = ["impact", position.xPx, position.yPx, position.z].join("-");
+	if (entities.has(id)) return;
 
 	const impactAnimation: Animation = {
 		id,
