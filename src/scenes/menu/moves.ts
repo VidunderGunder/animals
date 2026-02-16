@@ -5,7 +5,7 @@ import {
 	animationIds,
 	animations,
 	renderFrameLayers,
-} from "../../animations/animations";
+} from "../../animation/animation";
 import {
 	CHARACTER_SPRITE_HEIGHT_PX,
 	CHARACTER_SPRITE_WIDTH_PX,

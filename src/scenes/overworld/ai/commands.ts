@@ -278,12 +278,11 @@ function goToTile(
 }
 
 export type Route = { x: number; y: number; z: number; moveMode: MoveMode }[];
+type RouteState = { routeIndex?: number };
 
 function routeLoop(entity: Entity, route: Route) {
-	type RouteBrainState = { routeIndex?: number };
-
-	entity.brainState ??= { routeIndex: 0 };
-	const state: RouteBrainState = entity.brainState;
+	entity.state ??= { routeIndex: 0 };
+	const state: RouteState = entity.state;
 
 	entity.moveMode = "run";
 	if (!entity.brain?.runner.isIdle()) return;
@@ -324,8 +323,8 @@ function routeLoop(entity: Entity, route: Route) {
 
 	entity.brain.runner.push({
 		onTick() {
-			entity.brainState ??= {};
-			const s2 = entity.brainState;
+			entity.state ??= {};
+			const s2 = entity.state;
 			const i2 = (typeof s2.routeIndex === "number" ? s2.routeIndex : 0) | 0;
 			s2.routeIndex = (i2 + 1) % route.length;
 			return true;

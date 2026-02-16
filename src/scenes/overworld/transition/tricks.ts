@@ -1,5 +1,6 @@
 // src/scenes/overworld/transition/tricks.ts
-import { animationSheets, animations } from "../../../animations/animations";
+import { animationSheets, animations } from "../../../animation/animation";
+import { impact } from "../../../animation/effect";
 import { emptyImage } from "../../../assets/image";
 import { audio } from "../../../audio/audio-engine";
 import { moveSpeeds, TILE_SIZE_PX } from "../../../config";
@@ -78,8 +79,13 @@ function crashPath(args: {
 			yPx,
 			z,
 			duration: 100,
-			onSegmentEnd() {
+			onSegmentEnd(entity) {
 				if (!mute) audio.playSfx("thud", { volume: 0.1 });
+				impact({
+					x: pxToTile(entity.xPx),
+					y: pxToTile(entity.yPx),
+					z: entity.z,
+				});
 			},
 		},
 		{
@@ -227,6 +233,7 @@ function triggerCrashForEntity(args: {
 				yPx: crashYPx,
 				z: crashTile.z,
 				direction: crashDir,
+				mute,
 			}),
 		);
 

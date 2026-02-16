@@ -1,3 +1,4 @@
+import { impact } from "../../../animation/effect";
 import { audio } from "../../../audio/audio-engine";
 import type { Direction } from "../../../input/input";
 import { cellToPx } from "../cells";
@@ -141,6 +142,7 @@ function onJumpStart(entity: Entity) {
 function onJumpEnd(entity: Entity) {
 	entity.interactionLock = false;
 	playThudSfx(entity);
+	impact(entity.transitionEndTile ?? { x: entity.x, y: entity.y });
 }
 
 function playThudSfx(entity: Entity) {

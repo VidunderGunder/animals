@@ -1,9 +1,8 @@
 // src/storage.ts
-
-import type { BrainState } from "./scenes/overworld/ai/brain";
 import {
 	type Entities,
 	type Entity,
+	type EntityState,
 	entities,
 } from "./scenes/overworld/entity";
 import { occupied, occupy } from "./scenes/overworld/occupancy";
@@ -42,7 +41,7 @@ export type EntitySnapshot = {
 
 	// stable runtime wiring
 	brainId?: string | null;
-	brainState?: BrainState | null;
+	state?: EntityState | null;
 };
 
 // Serializable format for IndexedDB (Map can't be stored directly)
@@ -155,7 +154,7 @@ function toSnapshot(entity: Entity): EntitySnapshot {
 		autoRun: entity.autoRun,
 
 		brainId: entity.brainId ?? null,
-		brainState: entity.brainState ?? null,
+		state: entity.state ?? null,
 	};
 }
 
@@ -309,7 +308,7 @@ function resetTransientMovement(e: Entity) {
 function applySnapshot(live: Entity, snap: EntitySnapshot) {
 	// stable wiring
 	live.brainId = snap.brainId ?? live.brainId ?? null;
-	live.brainState = snap.brainState ?? live.brainState ?? null;
+	live.state = snap.state ?? live.state ?? null;
 
 	// core state
 	live.x = snap.x;
@@ -350,6 +349,7 @@ export async function load() {
 	// ✅ Rebuild occupancy (fix "ghost occupants" / wrong interaction targets)
 	occupied.clear();
 	for (const e of entities.values()) {
+		if (e.variant === "effect") continue;
 		occupy(e);
 	}
 }

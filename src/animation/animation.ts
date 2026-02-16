@@ -147,7 +147,7 @@ export const jumpDurationDefault = 140;
 const playerSpriteSheet = createImageElement("/characters/player.png");
 const skateboardSpriteSheet = createImageElement("/characters/skateboard.png");
 
-function layerFactory(
+export function layerFactory(
 	sheet: HTMLImageElement,
 	options: {
 		w: number;

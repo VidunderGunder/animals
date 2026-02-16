@@ -5,7 +5,7 @@ import {
 	animations,
 	isStableAnimationID,
 	renderFrameLayer,
-} from "../../animations/animations";
+} from "../../animation/animation";
 import { updateAmbience } from "../../audio/ambience";
 import { updateMusic } from "../../audio/music";
 import {
@@ -183,7 +183,10 @@ function updateEntityAnimation(
 
 		const nextIndex = entity.animationFrameIndex + 1;
 		if (nextIndex >= animation.frames.length) {
-			entity.animationFrameIndex = 0;
+			if (animation.loop) entity.animationFrameIndex = 0;
+			if (entity.variant === "effect" && !animation.loop) {
+				entities.delete(entity.id);
+			}
 		} else {
 			entity.animationFrameIndex = nextIndex;
 		}
@@ -393,7 +396,7 @@ function updateEntityAndPlayer({
 	// Movement start
 	if (!entity.isMoving) {
 		// Ensure idle entities keep occupying their standing tile
-		occupy(entity);
+		if (entity.variant !== "effect") occupy(entity);
 
 		if (desiredDirection) {
 			entity.direction = desiredDirection;
@@ -405,7 +408,10 @@ function updateEntityAndPlayer({
 
 		if (planned) {
 			// Reserve destination BEFORE starting the move
-			const ok = occupy({ ...planned.end, id: entity.id });
+			const ok =
+				entity.variant === "effect"
+					? true
+					: occupy({ ...planned.end, id: entity.id });
 			if (!ok && !trick) {
 				// Someone else got there first; stay idle this tick, but attempt trick (will probably crash)
 			} else {
@@ -421,7 +427,7 @@ function updateEntityAndPlayer({
 					const prev = first.onSegmentEnd;
 					first.onSegmentEnd = (e) => {
 						// Vacate start tile once the first segment ends
-						vacate(e);
+						if (e.variant !== "effect") vacate(e);
 						prev?.(e);
 					};
 				}
@@ -504,6 +510,7 @@ function update(dt: number) {
 	for (const [id, entity] of entities.entries()) {
 		if (id === "player") continue;
 		void updateEntity(dt, entity);
+		if (entity.variant === "effect") console.log(entity);
 	}
 
 	updatePlayer(dt);

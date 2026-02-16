@@ -32,12 +32,12 @@ Priority
 
 Character Movement & Animation
 
+- [ ] 🎨 Create Roll & Flip sprites ⬅️
+- [ ] 🎨 Smoke effect for jumps, drops, tricks etc.
 - [ ] 🤖 Ensure animation rotation, position offsets and other effects work in the overworld (only works in the menu as of now)
-- [ ] 🎨 Create Roll & Flip sprites
 - [ ] 🧠 Trick system
   - [ ] 🤖 Make it possible to rotate (spin/flip) while jumping (jump transitions)
   - [ ] 🤖 Don't allow jump/flip if navigation is one z-layer above (and y + 1), as the entity is probably blocked
-- [ ] 🎨 Smoke effect for jumps, drops, tricks etc.
 - [ ] 🎨 Terrain dependant rendering
   Cut off lower part of sprite (dynamic height), add animated overlay (e.g., water, grass, mud)
 - [ ] 🤖 Camera control for transitions (e.g., remove vertical camera motion for slow/walking stub-to-stub-jumps)

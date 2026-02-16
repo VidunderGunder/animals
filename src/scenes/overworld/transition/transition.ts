@@ -1,4 +1,4 @@
-import type { AnimationIDStable } from "../../../animations/animations";
+import type { AnimationIDStable } from "../../../animation/animation";
 import { getCell } from "../cells";
 import type { Entity } from "../entity";
 import { getOccupant } from "../occupancy";

@@ -3,7 +3,7 @@ import type {
 	AnimationEntityKey,
 	AnimationIDStable,
 	AnimationOverride,
-} from "../../animations/animations";
+} from "../../animation/animation";
 import {
 	ANIMAL_SPRITE_HEIGHT_PX,
 	ANIMAL_SPRITE_WIDTH_PX,
@@ -14,7 +14,7 @@ import {
 } from "../../config";
 import type { Direction } from "../../input/input";
 import type { StringWithSuggestions } from "../../types";
-import type { Brain, BrainState } from "./ai/brain";
+import type { Brain } from "./ai/brain";
 import type { Transition } from "./transition/transition";
 
 export const entities = new Map<string, Entity>();
@@ -37,7 +37,12 @@ export function entitiesSet<ID extends string>(
 	entities.set(id, entity);
 }
 
-export const entityVariants = ["character", "animal"] as const;
+export const entityVariants = [
+	"character",
+	"animal",
+	"item",
+	"effect",
+] as const;
 export type EntityVariant = (typeof entityVariants)[number];
 
 export const playerIds = ["player"] as const;
@@ -48,6 +53,8 @@ export function isPlayerID(id: string): id is PlayerID {
 export function isPlayer(entity: Entity): entity is Entity<PlayerID> {
 	return isPlayerID(entity.id);
 }
+
+export type EntityState = Record<string, number | string | boolean>;
 
 export type Entity<ID extends string = StringWithSuggestions<"player">> = {
 	id: ID;
@@ -115,7 +122,7 @@ export type Entity<ID extends string = StringWithSuggestions<"player">> = {
 
 	/** Runtime brain (behaviour + script runner) */
 	brain: Brain | null;
-	brainState: BrainState | null;
+	state: EntityState | null;
 
 	/** Temporary desired direction set by brain for a single tick */
 	brainDesiredDirection: Direction | null;
@@ -166,7 +173,7 @@ export function getEntityCharacterDefaults<ID extends string>({
 		moveMode: "walk",
 		brainDesiredDirection: null,
 		interactionLock: false,
-		brainState: null,
+		state: null,
 	};
 }
 
@@ -185,6 +192,24 @@ export function getEntityAnimalDefaults({
 		sheet: "fox",
 		width: ANIMAL_SPRITE_WIDTH_PX,
 		height: ANIMAL_SPRITE_HEIGHT_PX,
+	};
+}
+
+export function getEntityItemDefaults({
+	id,
+	x,
+	y,
+}: {
+	id: string;
+	x: number;
+	y: number;
+}): Entity {
+	return {
+		...getEntityCharacterDefaults({ id, x, y }),
+		variant: "item",
+		width: 16,
+		height: 16,
+		radius: 0,
 	};
 }
 
