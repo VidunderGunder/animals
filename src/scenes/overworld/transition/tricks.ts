@@ -154,11 +154,11 @@ function injectPlayOnceOnFirstSegmentStart(
 
 function spinSFX() {
 	audio.playSfx("jump", {
-		volume: 0.07,
+		volume: 0.02,
 		playbackRate: 0.5,
 	});
 	audio.playSfx("swoosh", {
-		volume: 0.1,
+		volume: 0.125,
 		playbackRate: 1.5,
 	});
 }
