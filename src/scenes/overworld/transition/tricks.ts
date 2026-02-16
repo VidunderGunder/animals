@@ -15,7 +15,9 @@ function crashPath(args: {
 	yPx: number;
 	z: number;
 	direction: Direction;
+	mute?: boolean;
 }): Transition["path"] {
+	const mute = args.mute ?? false;
 	const { xPx, yPx, z, direction } = args;
 
 	const { dx, dy } = dirToDxDy(direction);
@@ -24,7 +26,7 @@ function crashPath(args: {
 
 	const onFirstSegmentStart = (entity: Entity) => {
 		entity.interactionLock = true;
-		audio.playSfx("thud", { volume: 0.625 });
+		if (!mute) audio.playSfx("thud", { volume: 0.625 });
 		entity.animationFrameIndex = 0;
 		entity.animationTimer = 0;
 		entity.direction = direction;
@@ -60,13 +62,13 @@ function crashPath(args: {
 					{
 						onSegmentStart: onFirstSegmentStart,
 						xPx,
-						yPx: yPx - dy1, // `yPx - dy1` should have a `+`, but this just feels better
+						yPx: yPx + dy1,
 						z,
 						duration: (e) => (e.moveMode === "walk" ? 40 : 30),
 					},
 					{
 						xPx,
-						yPx: yPx - dy2 - 8, // `yPx - dy2` should have a `+`, but this just feels better
+						yPx: yPx + dy2 - 8,
 						z,
 						duration: (e) => (e.moveMode === "walk" ? 60 : 40),
 					},
@@ -77,7 +79,7 @@ function crashPath(args: {
 			z,
 			duration: 100,
 			onSegmentEnd() {
-				audio.playSfx("thud", { volume: 0.075 });
+				if (!mute) audio.playSfx("thud", { volume: 0.1 });
 			},
 		},
 		{
@@ -185,7 +187,9 @@ function triggerCrashForEntity(args: {
 	entity: Entity;
 	crashTile: { x: number; y: number; z: number };
 	crashDir: Direction;
+	mute?: boolean;
 }) {
+	const mute = args.mute ?? false;
 	const { entity, crashTile, crashDir } = args;
 
 	if (entity.interactionLock) return;
@@ -238,6 +242,7 @@ function triggerCrashForEntity(args: {
 		yPx: crashYPx,
 		z: crashTile.z,
 		direction: crashDir,
+		mute,
 	}).map((p) => ({ ...p }));
 
 	setCurrentSegment(entity);
@@ -504,6 +509,7 @@ function crashBothOnCollision(args: {
 		entity: collided,
 		crashTile: collidedTile,
 		crashDir: oppositeDir(slideDir),
+		mute: true,
 	});
 }
 
