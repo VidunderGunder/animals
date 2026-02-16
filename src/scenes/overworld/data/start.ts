@@ -83,8 +83,8 @@ function initCellsAndEdges() {
 		...range(23, [41, 57]),
 
 		// Fence Woods
-		...range([0, 22], 57),
-		...range([38, 60], 57),
+		// ...range([0, 22], 57),
+		// ...range([38, 60], 57),
 	] as const;
 
 	for (const xyz of blockedCells) {
