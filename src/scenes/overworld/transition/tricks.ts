@@ -6,9 +6,9 @@ import { moveSpeeds, TILE_SIZE_PX } from "../../../config";
 import { ease, mix } from "../../../functions/general";
 import { type Direction, rotate } from "../../../input/input";
 import { getCell, getEdge, worldBounds } from "../cells";
-import type { Entity } from "../entity";
-import { getOccupant } from "../occupancy";
-import type { Transition, TransitionPathSegment } from "./transition";
+import { type Entity, entities } from "../entity";
+import { getOccupant, occupy, vacate } from "../occupancy";
+import { setCurrentSegment, type Transition } from "./transition";
 
 function crashPath(args: {
 	xPx: number;
@@ -18,62 +18,67 @@ function crashPath(args: {
 }): Transition["path"] {
 	const { xPx, yPx, z, direction } = args;
 
-	const { x: dx, y: dy } = getCellInDirection({ direction });
+	const { dx, dy } = dirToDxDy(direction);
 
 	const isHorizontal = direction === "left" || direction === "right";
 
 	const onFirstSegmentStart = (entity: Entity) => {
-		audio.playSfx("thud", {
-			volume: 0.625,
-		});
+		entity.interactionLock = true;
+		audio.playSfx("thud", { volume: 0.625 });
 		entity.animationFrameIndex = 0;
 		entity.animationTimer = 0;
 		entity.direction = direction;
-		entity.animationOverride = isHorizontal ? "jump" : "jump";
-		entity.direction = direction;
+		entity.animationOverride = "jump";
 	};
 
+	// small pixel nudges for the "bonk" feel
+	const bump1 = 4;
+	const bump2 = 2;
+
+	const dx1 = dx * bump1;
+	const dx2 = dx * bump2;
+	const dy1 = dy * bump1;
+	const dy2 = dy * bump2;
+
 	return [
-		...((isHorizontal
-			? [
+		...(isHorizontal
+			? ([
 					{
 						onSegmentStart: onFirstSegmentStart,
-						xPx: xPx + dx * 4,
+						xPx: xPx + dx1,
 						yPx,
 						z,
 						duration: (e) => (e.moveMode === "walk" ? 40 : 30),
 					},
 					{
-						xPx: xPx + dx * 2,
+						xPx: xPx + dx2,
 						yPx: yPx - 8,
 						z,
 						duration: (e) => (e.moveMode === "walk" ? 60 : 40),
 					},
-				]
-			: [
+				] satisfies Transition["path"])
+			: ([
 					{
 						onSegmentStart: onFirstSegmentStart,
 						xPx,
-						yPx: yPx - Math.abs(dy * 4),
+						yPx: yPx + dy1,
 						z,
 						duration: (e) => (e.moveMode === "walk" ? 40 : 30),
 					},
 					{
 						xPx,
-						yPx: yPx - Math.abs(dy * 6),
+						yPx: yPx + dy2 - 8,
 						z,
 						duration: (e) => (e.moveMode === "walk" ? 60 : 40),
 					},
-				]) satisfies Transition["path"]),
+				] satisfies Transition["path"])),
 		{
 			xPx,
 			yPx,
 			z,
 			duration: 100,
 			onSegmentEnd() {
-				audio.playSfx("thud", {
-					volume: 0.075,
-				});
+				audio.playSfx("thud", { volume: 0.075 });
 			},
 		},
 		{
@@ -106,6 +111,7 @@ function crashPath(args: {
 				entity.animationFrameIndex = 0;
 				entity.animationCurrentId = "idle";
 				entity.animationOverride = null;
+				entity.interactionLock = false;
 			},
 		},
 	];
@@ -129,9 +135,9 @@ export function spin(
 	const condition = (entity: Entity) => !entity.isMoving;
 
 	const rounds = entity.moveMode === "run" ? 2 : 1;
+	const distance = entity.moveMode === "run" ? 4 : 2;
 
-	const distanceTiles = entity.moveMode === "run" ? 4 : 2;
-
+	// spin-in-place: always play
 	if (!direction) {
 		spinSFX();
 		return {
@@ -145,119 +151,121 @@ export function spin(
 		};
 	}
 
-	const crashAtTile = getCrashDistanceInDirection(
-		entity,
-		direction,
-		distanceTiles,
-	);
+	// slide spin: only play if we are not about to crash immediately (tile 1)
+	const crashAtTile = getCrashDistanceInDirection(entity, direction, distance);
+	const willCrashImmediately = crashAtTile !== undefined && crashAtTile <= 1;
 
-	if (crashAtTile === undefined || crashAtTile > 1) spinSFX();
-
-	const fullPath = getSpinTransitionPath({
-		entity,
-		rotation,
-		rounds,
-		direction,
-		distanceTiles,
-	});
-
-	if (crashAtTile === undefined) {
-		const end = getCellInDirection({
-			position: { x: entity.x, y: entity.y, z: entity.z },
-			direction,
-			distance: distanceTiles,
-		});
-
-		return { condition, path: fullPath, end };
-	}
-
-	const lastOkTiles = Math.max(0, crashAtTile - 1);
+	if (!willCrashImmediately) spinSFX();
 
 	const end = getCellInDirection({
 		position: { x: entity.x, y: entity.y, z: entity.z },
 		direction,
-		distance: lastOkTiles,
+		distance: distance,
 	});
-
-	const { dxTile, dyTile } = dirToDxDy(direction);
-	const crashXPx = entity.xPx + dxTile * TILE_SIZE_PX * lastOkTiles;
-	const crashYPx = entity.yPx + dyTile * TILE_SIZE_PX * lastOkTiles;
-
-	const crashedPath = truncatePathAtCrash({
-		path: fullPath,
-		direction,
-		crashXPx,
-		crashYPx,
-	});
-
-	crashedPath.push(
-		...crashPath({
-			xPx: crashXPx,
-			yPx: crashYPx,
-			z: entity.z,
-			direction,
-		}),
-	);
 
 	return {
 		condition,
-		path: crashedPath,
+		path: getSpinTransitionPath({
+			entity,
+			rotation,
+			rounds,
+			direction,
+			distance: distance,
+		}),
 		end,
 	};
 }
 
-function truncatePathAtCrash(args: {
-	path: Transition["path"];
-	direction: Direction;
-	crashXPx: number;
-	crashYPx: number;
-}): Transition["path"] {
-	const { path, direction, crashXPx, crashYPx } = args;
+function triggerCrashForEntity(args: {
+	entity: Entity;
+	crashTile: { x: number; y: number; z: number };
+	crashDir: Direction;
+}) {
+	const { entity, crashTile, crashDir } = args;
 
-	if (path.length === 0) return [];
+	if (entity.interactionLock) return;
 
-	const { dxTile, dyTile } = dirToDxDy(direction);
+	entity.interactionLock = true;
 
-	const isPastCrash = (seg: TransitionPathSegment) => {
-		if (typeof seg.xPx !== "number" || typeof seg.yPx !== "number") {
-			throw new Error("Expected numeric xPx/yPx in transition path segment");
-		}
-		if (dxTile > 0) return seg.xPx >= crashXPx;
-		if (dxTile < 0) return seg.xPx <= crashXPx;
-		if (dyTile > 0) return seg.yPx >= crashYPx;
-		if (dyTile < 0) return seg.yPx <= crashYPx;
-		return true;
-	};
+	const { xPx: crashXPx, yPx: crashYPx } = crashAnchorPx(entity, crashTile);
 
-	const out: Transition["path"] = [];
+	if (entity.isMoving) {
+		vacate({ id: entity.id });
+		occupy({ ...crashTile, id: entity.id });
+		entity.transitionEndTile = { ...crashTile };
 
-	for (let i = 0; i < path.length; i++) {
-		const _seg = path[i];
-		if (typeof _seg?.xPx !== "number" || typeof _seg?.yPx !== "number") {
-			throw new Error("Expected numeric xPx/yPx in transition path segment");
-		}
-		const seg = { ..._seg };
+		entity.xPxf = crashXPx;
+		entity.yPxf = crashYPx;
+		entity.zf = crashTile.z;
+		entity.transitionPathSegmentDuration = 0;
+		entity.transitionPathSegmentProgress = 0;
 
-		if (isPastCrash(seg)) {
-			seg.xPx = crashXPx;
-			seg.yPx = crashYPx;
-			out.push(seg);
-			break;
+		const curSeg = entity.transitionPath[0];
+		if (curSeg) {
+			curSeg.xPx = crashXPx;
+			curSeg.yPx = crashYPx;
+			curSeg.z = crashTile.z;
+			curSeg.duration = 0;
+			curSeg.onSegmentStart = undefined;
+			curSeg.onSegment = undefined;
 		}
 
-		out.push(seg);
+		entity.transitionPath.splice(
+			1,
+			entity.transitionPath.length,
+			...crashPath({
+				xPx: crashXPx,
+				yPx: crashYPx,
+				z: crashTile.z,
+				direction: crashDir,
+			}),
+		);
+
+		return;
 	}
 
-	if (out.length > 0) {
-		const last = out[out.length - 1];
-		if (!last) {
-			throw new Error("Expected at least one segment in truncated path");
-		}
-		last.xPx = crashXPx;
-		last.yPx = crashYPx;
+	entity.isMoving = true;
+	entity.transitionEndTile = { ...crashTile };
+	entity.animationOverride = null;
+
+	entity.transitionPath = crashPath({
+		xPx: crashXPx,
+		yPx: crashYPx,
+		z: crashTile.z,
+		direction: crashDir,
+	}).map((p) => ({ ...p }));
+
+	setCurrentSegment(entity);
+}
+
+function checkTileStepAllowed(args: {
+	entity: Entity;
+	from: { x: number; y: number; z: number };
+	to: { x: number; y: number; z: number };
+	dir: Direction;
+}): { ok: true } | { ok: false; collided?: Entity } {
+	const { entity, from, to, dir } = args;
+
+	if (to.x < 0 || to.y < 0 || to.x >= worldBounds.x || to.y >= worldBounds.y) {
+		return { ok: false };
 	}
 
-	return out;
+	const edge = getEdge(from.x, from.y, from.z, dir);
+	if (edge?.blocked) return { ok: false };
+	if (edge?.transition) return { ok: false };
+
+	if (getCell(to.x, to.y, to.z)?.blocked) return { ok: false };
+
+	const occId = getOccupant(to.x, to.y, to.z);
+	if (occId && occId !== entity.id) {
+		return { ok: false, collided: entities.get(occId) };
+	}
+
+	return { ok: true };
+}
+
+function pxToTile(px: number) {
+	return Math.floor((px + TILE_SIZE_PX / 2) / TILE_SIZE_PX);
 }
 
 function getSpinTransitionPath({
@@ -265,13 +273,13 @@ function getSpinTransitionPath({
 	rotation,
 	rounds,
 	direction,
-	distanceTiles,
+	distance,
 }: {
 	entity: Entity;
 	rotation: "clockwise" | "counterclockwise";
 	rounds: number;
 	direction?: Direction | null;
-	distanceTiles?: number;
+	distance?: number;
 }): Transition["path"] {
 	const safeRounds = Math.max(0, Math.floor(rounds));
 	const steps = safeRounds * 4;
@@ -295,13 +303,13 @@ function getSpinTransitionPath({
 		yPx: entity.yPx,
 	};
 
-	const hasSlide = !!direction && (distanceTiles ?? 0) > 0;
+	const slideDir = direction ?? null;
+	const hasSlide = !!slideDir && (distance ?? 0) > 0;
 
-	const distancePx = hasSlide ? (distanceTiles ?? 0) * TILE_SIZE_PX : 0;
+	const distancePx = hasSlide ? (distance ?? 0) * TILE_SIZE_PX : 0;
 	const baselineMoveMs = hasSlide
 		? distancePx / Math.max(0.0001, entity.speed)
 		: 0;
-
 	const totalSlideSpinMs = hasSlide ? baselineMoveMs * 0.92 : 0;
 
 	const rawMin = 70;
@@ -327,12 +335,10 @@ function getSpinTransitionPath({
 		scale = 1 / speedFactor;
 	}
 
-	const { dxTile, dyTile } = direction
-		? dirToDxDy(direction)
-		: { dxTile: 0, dyTile: 0 };
+	const { dx, dy } = slideDir ? dirToDxDy(slideDir) : { dx: 0, dy: 0 };
 
-	const totalDxPx = hasSlide ? dxTile * TILE_SIZE_PX * (distanceTiles ?? 0) : 0;
-	const totalDyPx = hasSlide ? dyTile * TILE_SIZE_PX * (distanceTiles ?? 0) : 0;
+	const totalDxPx = hasSlide ? dx * TILE_SIZE_PX * (distance ?? 0) : 0;
+	const totalDyPx = hasSlide ? dy * TILE_SIZE_PX * (distance ?? 0) : 0;
 
 	const path: Transition["path"] = [];
 
@@ -354,6 +360,37 @@ function getSpinTransitionPath({
 			yPx,
 			duration: rawDuration * scale,
 			onSegmentStart(e) {
+				if (slideDir) {
+					const from = {
+						x: pxToTile(e.xPx),
+						y: pxToTile(e.yPx),
+						z: e.z,
+					};
+					const to = {
+						x: pxToTile(xPx),
+						y: pxToTile(yPx),
+						z: e.z,
+					};
+
+					if (from.x !== to.x || from.y !== to.y) {
+						const res = checkTileStepAllowed({
+							entity: e,
+							from,
+							to,
+							dir: slideDir,
+						});
+
+						if (!res.ok) {
+							crashBothOnCollision({
+								collider: e,
+								collided: res.collided,
+								slideDir,
+							});
+							return;
+						}
+					}
+				}
+
 				e.animationFrameIndex = 0;
 				e.animationTimer = 0;
 				e.direction = rotate(e.direction, rotation);
@@ -378,16 +415,16 @@ function getSpinTransitionPath({
 	return path;
 }
 
-function dirToDxDy(direction: Direction): { dxTile: number; dyTile: number } {
+function dirToDxDy(direction: Direction): { dx: number; dy: number } {
 	switch (direction) {
 		case "up":
-			return { dxTile: 0, dyTile: -1 };
+			return { dx: 0, dy: -1 };
 		case "down":
-			return { dxTile: 0, dyTile: 1 };
+			return { dx: 0, dy: 1 };
 		case "left":
-			return { dxTile: -1, dyTile: 0 };
+			return { dx: -1, dy: 0 };
 		case "right":
-			return { dxTile: 1, dyTile: 0 };
+			return { dx: 1, dy: 0 };
 	}
 }
 
@@ -415,6 +452,79 @@ function getCellInDirection({
 		case "right":
 			return { x: x + d, y, z };
 	}
+}
+
+function oppositeDir(direction: Direction): Direction {
+	switch (direction) {
+		case "up":
+			return "down";
+		case "down":
+			return "up";
+		case "left":
+			return "right";
+		case "right":
+			return "left";
+	}
+}
+
+function crashBothOnCollision(args: {
+	collider: Entity;
+	collided?: Entity;
+	slideDir: Direction;
+}) {
+	const { collider, collided, slideDir } = args;
+
+	const colliderTile = {
+		x: pxToTile(collider.xPx),
+		y: pxToTile(collider.yPx),
+		z: collider.z,
+	};
+
+	triggerCrashForEntity({
+		entity: collider,
+		crashTile: colliderTile,
+		crashDir: slideDir,
+	});
+
+	if (!collided) return;
+	if (collided.interactionLock) return;
+
+	const collidedTile = {
+		x: pxToTile(collided.xPx),
+		y: pxToTile(collided.yPx),
+		z: collided.z,
+	};
+
+	triggerCrashForEntity({
+		entity: collided,
+		crashTile: collidedTile,
+		crashDir: oppositeDir(slideDir),
+	});
+}
+
+function crashAnchorPx(
+	entity: Entity,
+	crashTile: { x: number; y: number; z: number },
+) {
+	const curTile = {
+		x: pxToTile(entity.xPx),
+		y: pxToTile(entity.yPx),
+		z: entity.z,
+	};
+
+	const sameTile =
+		curTile.x === crashTile.x &&
+		curTile.y === crashTile.y &&
+		curTile.z === crashTile.z;
+
+	return {
+		xPx: sameTile
+			? pxToTile(entity.xPx) * TILE_SIZE_PX
+			: crashTile.x * TILE_SIZE_PX,
+		yPx: sameTile
+			? pxToTile(entity.yPx) * TILE_SIZE_PX
+			: crashTile.y * TILE_SIZE_PX,
+	};
 }
 
 function getCrashDistanceInDirection(

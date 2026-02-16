@@ -50,3 +50,38 @@ export function getPathValues(
 		onSegmentStart: segment.onSegmentStart,
 	};
 }
+
+export function startSegment(
+	entity: Entity,
+	toXPx: number,
+	toYPx: number,
+	toZ: number,
+	duration?: number,
+) {
+	entity.xPxi = entity.xPx;
+	entity.yPxi = entity.yPx;
+	entity.zi = entity.z;
+
+	entity.xPxf = toXPx;
+	entity.yPxf = toYPx;
+	entity.zf = toZ;
+
+	entity.transitionPathSegmentProgress = 0;
+	entity.transitionPathSegmentDuration = duration;
+}
+
+export function setCurrentSegment(entity: Entity): boolean {
+	const next = entity.transitionPath[0];
+	if (!next) return false;
+
+	const seg = getPathValues(next, entity);
+	startSegment(entity, seg.xPx, seg.yPx, seg.z, seg.duration);
+
+	return true;
+}
+
+export function snapToSegmentEnd(entity: Entity) {
+	entity.xPx = entity.xPxf;
+	entity.yPx = entity.yPxf;
+	entity.z = entity.zf;
+}

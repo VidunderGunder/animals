@@ -33,14 +33,14 @@ Priority
 Character Movement & Animation
 
 - [ ] 🤖 Trick improvements ⬅️
-  - [ ] 🔊 Spin sound effect
-  - [ ] 🔊 Crash sound effect
-  - [ ] 🤖 Occupy all tiles involved when doing a trick transition (if possible)
+  - [x] 🔊 Spin sound effect
+  - [x] 🔊 Crash sound effect
+  - [x] 🤖 Crash `trick` transition for collisions (must support animals and characters)  
+  - [x] 🤖 Crash at final cell if about to traverse through an edge with a transition
+  - [x] 🤖 Crash if traversing through an occupied tile (both collider and collided)
+  - [x] 🤖 Crash both collider and collided
   - [ ] 🤖 Interaction lock on for all tricks
-  - [ ] 🤖 Crash `trick` transition for collisions (must support animals and characters)  
-  Stays in cell, plays crash animation there
-  - [ ] 🤖 Crash if traversing through an occupied tile (both collider and collided)
-  - [ ] 🤖 Crash at final cell if about to traverse through an edge with a transition
+  - [ ] 🤖 Occupy all tiles involved when doing a trick transition (if possible)
   - [ ] 🤖 Allow trick through certain transtions (e.g., stairs)
 - [ ] 🤖 Make it possible to rotate while jumping (jump transitions)
 - [ ] 🤖 Ensure animation rotation, position offsets and other effects work in the overworld (only works in the menu as of now)

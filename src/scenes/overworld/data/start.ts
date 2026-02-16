@@ -165,8 +165,20 @@ function initCellsAndEdges() {
 	setEdge(31, 46, 0, "right", {
 		transition: {
 			path: [
-				{ ...cellToPx(31, 45), z: 1 },
-				{ ...cellToPx(32, 45), z: 1 },
+				{
+					...cellToPx(31, 45),
+					z: 1,
+					onSegmentStart(entity) {
+						entity.interactionLock = true;
+					},
+				},
+				{
+					...cellToPx(32, 45),
+					z: 1,
+					onSegmentEnd(entity) {
+						entity.interactionLock = false;
+					},
+				},
 			],
 			end: { x: 32, y: 45, z: 1 },
 		},
@@ -184,12 +196,21 @@ function initCellsAndEdges() {
 			{
 				condition: (entity: Entity) => entity.moveMode === "walk",
 				path: [
-					{ ...cellToPx(31, 45), z: 1 },
+					{
+						...cellToPx(31, 45),
+						z: 1,
+						onSegmentStart(entity) {
+							entity.interactionLock = true;
+						},
+					},
 					{
 						...cellToPx(31, 46),
 						z: 0,
 						onSegmentStart: (entity: Entity) => {
 							entity.direction = "right";
+						},
+						onSegmentEnd: (entity: Entity) => {
+							entity.interactionLock = false;
 						},
 					},
 				],

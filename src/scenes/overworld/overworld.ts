@@ -40,7 +40,11 @@ import { initializeArea as initializeStartArea } from "./data/start";
 import { renderDialogs } from "./dialog";
 import { type Entity, entities, isPlayerID } from "./entity";
 import { getOccupant, occupy, vacate } from "./occupancy";
-import { getPathValues, type Transition } from "./transition/transition";
+import {
+	setCurrentSegment,
+	snapToSegmentEnd,
+	type Transition,
+} from "./transition/transition";
 import { spin } from "./transition/tricks";
 
 initializeStartArea();
@@ -212,43 +216,6 @@ function isWorldImagesReady() {
 			: true;
 		return backReady && frontReady;
 	});
-}
-
-// --- path mover helpers ---
-function startSegment(
-	entity: Entity,
-	toXPx: number,
-	toYPx: number,
-	toZ: number,
-	duration?: number,
-) {
-	entity.xPxi = entity.xPx;
-	entity.yPxi = entity.yPx;
-	entity.zi = entity.z;
-
-	entity.xPxf = toXPx;
-	entity.yPxf = toYPx;
-	entity.zf = toZ;
-
-	entity.transitionPathSegmentProgress = 0;
-	entity.transitionPathSegmentDuration = duration;
-}
-
-function setCurrentSegment(entity: Entity): boolean {
-	const next = entity.transitionPath[0];
-
-	if (!next) return false;
-
-	const path = getPathValues(next, entity);
-	startSegment(entity, path.xPx, path.yPx, path.z, path.duration);
-
-	return true;
-}
-
-function snapToSegmentEnd(entity: Entity) {
-	entity.xPx = entity.xPxf;
-	entity.yPx = entity.yPxf;
-	entity.z = entity.zf;
 }
 
 function tryPlanMove(desired: Direction, entity: Entity): Transition | null {

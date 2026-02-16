@@ -36,13 +36,13 @@ export function getJumpDownTransition({
 				...cellToPx(x - 0.85, y - 0.25),
 				z,
 				duration: durUp,
-				onSegmentStart,
+				onSegmentStart: onJumpStart,
 			},
 			{
 				...cellToPx(x - 1, y + 1),
 				z: z - drop,
 				duration: durDown,
-				onSegmentEnd: playThudSfx,
+				onSegmentEnd: onJumpEnd,
 			},
 		];
 		end = {
@@ -57,13 +57,13 @@ export function getJumpDownTransition({
 				...cellToPx(x, y - 0.25),
 				z,
 				duration: durUp,
-				onSegmentStart,
+				onSegmentStart: onJumpStart,
 			},
 			{
 				...cellToPx(x, y + 2),
 				z,
 				duration: durDown,
-				onSegmentEnd: playThudSfx,
+				onSegmentEnd: onJumpEnd,
 			},
 		];
 		end = {
@@ -78,13 +78,13 @@ export function getJumpDownTransition({
 				...cellToPx(x + 0.85, y - 0.25),
 				z,
 				duration: durUp,
-				onSegmentStart,
+				onSegmentStart: onJumpStart,
 			},
 			{
 				...cellToPx(x + 1, y + drop),
 				z: z - drop,
 				duration: durDown,
-				onSegmentEnd: playThudSfx,
+				onSegmentEnd: onJumpEnd,
 			},
 		];
 		end = {
@@ -99,13 +99,13 @@ export function getJumpDownTransition({
 				...cellToPx(x, y - 0.75),
 				z,
 				duration: durUp,
-				onSegmentStart,
+				onSegmentStart: onJumpStart,
 			},
 			{
 				...cellToPx(x, y - 1 + drop),
 				z: z - drop,
 				duration: durDown,
-				onSegmentEnd: playThudSfx,
+				onSegmentEnd: onJumpEnd,
 			},
 		];
 		end = {
@@ -129,9 +129,15 @@ export function getJumpDownTransition({
 	} satisfies Transition;
 }
 
-function onSegmentStart(entity: Entity) {
+function onJumpStart(entity: Entity) {
+	entity.interactionLock = true;
 	const volumeFactor = entity.id === "player" ? 0.5 : 0.1;
 	audio.playSfx("jump", { volume: 0.33 * volumeFactor, detuneCents: -100 });
+}
+
+function onJumpEnd(entity: Entity) {
+	entity.interactionLock = false;
+	playThudSfx(entity);
 }
 
 function playThudSfx(entity: Entity) {
