@@ -33,7 +33,6 @@ Priority
 Character Movement & Animation
 
 - [ ] 🎨 Create Roll & Flip sprites ⬅️
-- [ ] 🎨 Smoke effect for jumps, drops, tricks etc.
 - [ ] 🤖 Ensure animation rotation, position offsets and other effects work in the overworld (only works in the menu as of now)
 - [ ] 🧠 Trick system
   - [ ] 🤖 Make it possible to rotate (spin/flip) while jumping (jump transitions)
