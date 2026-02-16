@@ -32,33 +32,24 @@ Priority
 
 Character Movement & Animation
 
-- [ ] 🤖 Trick improvements ⬅️
-  - [x] 🔊 Spin sound effect
-  - [x] 🔊 Crash sound effect
-  - [x] 🤖 Crash `trick` transition for collisions (must support animals and characters)  
-  - [x] 🤖 Crash at final cell if about to traverse through an edge with a transition
-  - [x] 🤖 Crash if traversing through an occupied tile (both collider and collided)
-  - [x] 🤖 Crash both collider and collided
-  - [ ] 🤖 Interaction lock on for all tricks
-  - [ ] 🤖 Occupy all tiles involved when doing a trick transition (if possible)
-  - [ ] 🤖 Allow trick through certain transtions (e.g., stairs)
-- [ ] 🤖 Make it possible to rotate while jumping (jump transitions)
 - [ ] 🤖 Ensure animation rotation, position offsets and other effects work in the overworld (only works in the menu as of now)
-- [ ] Roll & flip tricks
-  - [ ] 🎨 Create new sprites
-  - [ ] 🤖 Possible to roll and flip whenever (pressing A)
-  - [ ] 🤖 Crash animation on collision or any non-rollable/flipable transition (e.g., blocked cells or ladder)
+- [ ] 🎨 Create Roll & Flip sprites
+- [ ] 🧠 Trick system
+  - [ ] 🤖 Make it possible to rotate (spin/flip) while jumping (jump transitions)
   - [ ] 🤖 Don't allow jump/flip if navigation is one z-layer above (and y + 1), as the entity is probably blocked
 - [ ] 🎨 Smoke effect for jumps, drops, tricks etc.
 - [ ] 🎨 Terrain dependant rendering
   Cut off lower part of sprite (dynamic height), add animated overlay (e.g., water, grass, mud)
-- [ ] 🤖 Camera control for transitions (e.g., remove vertical camera motion for stub-to-stub-jumps)
+- [ ] 🤖 Camera control for transitions (e.g., remove vertical camera motion for slow/walking stub-to-stub-jumps)
 
 Bugs (clearly defined issues)
 
-- [ ] 🤖 Loaded entities are not snapped to the beginning or end of a transition that was in progress when saving
+- [ ] 🤖 Loaded entities are not snapped to the beginning or end of a transition that was in progress when saving (causing noclipping if mid ladder or jump)
 - [ ] 🔊 Looping ambience (forest definitely, beach maybe) has a small gap/pause when looping
-- [ ] 🤖 Current ambience implementation hijacks audio on iOS, stopping music playback from other apps—we want to allow both to play simultaneously
+- [ ] Browser audio issues
+  - [ ] 🤖 Current ambience implementation hijacks audio on iOS, stopping music playback from other apps—we want to allow both to play simultaneously
+  - [ ] 🤖 Ambience can be muted by pressing play/pause on iOS
+  - [ ] 🤖 Ambience may keep playing when changing tabs
 - [ ] 🤖 Getting stuck in a zoom-in on iOS Safari is still happening occasionally when using the touch controller (primarily on the d-pad)
 - [ ] 🔻 Blurry menu (pause menu will be remade soon, so will probably not fix)
 

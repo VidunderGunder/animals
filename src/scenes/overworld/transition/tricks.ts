@@ -31,7 +31,6 @@ function crashPath(args: {
 		entity.animationOverride = "jump";
 	};
 
-	// small pixel nudges for the "bonk" feel
 	const bump1 = 4;
 	const bump2 = 2;
 
@@ -61,13 +60,13 @@ function crashPath(args: {
 					{
 						onSegmentStart: onFirstSegmentStart,
 						xPx,
-						yPx: yPx + dy1,
+						yPx: yPx - dy1, // `yPx - dy1` should have a `+`, but this just feels better
 						z,
 						duration: (e) => (e.moveMode === "walk" ? 40 : 30),
 					},
 					{
 						xPx,
-						yPx: yPx + dy2 - 8,
+						yPx: yPx - dy2 - 8, // `yPx - dy2` should have a `+`, but this just feels better
 						z,
 						duration: (e) => (e.moveMode === "walk" ? 60 : 40),
 					},
