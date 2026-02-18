@@ -5,12 +5,72 @@ import { type Animation, layerFactory } from "./animation";
 
 export const effects = {
 	impact: {
-		sheet: createImageElement("/items/impact.png"),
-		w: 16,
-		h: 16,
+		sheet: createImageElement("/animations/impact.png"),
+		w: 20,
+		h: 20,
 		frames: 5,
 	},
+	"butterfly-white": {
+		sheet: createImageElement("/animations/butterfly-white.png"),
+		w: 16,
+		h: 16,
+		frames: 17,
+	},
+	"butterfly-pink": {
+		sheet: createImageElement("/animations/butterfly-pink.png"),
+		w: 16,
+		h: 16,
+		frames: 17,
+	},
+	"butterfly-blue": {
+		sheet: createImageElement("/animations/butterfly-blue.png"),
+		w: 16,
+		h: 16,
+		frames: 11,
+	},
 };
+
+export function butterfly(
+	position: { x: number; y: number; z: number },
+	color: "white" | "pink" | "blue" = "white",
+): void {
+	const sheet = effects[`butterfly-${color}`].sheet;
+	const frames = effects[`butterfly-${color}`].frames;
+
+	if (!sheet.complete) {
+		sheet.onload = () => setTimeout(() => butterfly(position, color), 100);
+		return;
+	}
+
+	const layer = layerFactory(sheet, {
+		w: 16,
+		h: 16,
+	});
+
+	const id = ["butterfly", position.x, position.y, position.z].join("-");
+	if (entities.has(id)) return;
+
+	entities.set(id, {
+		...getEntityItemDefaults({
+			id,
+			x: position.x,
+			y: position.y,
+		}),
+		z: position.z,
+		variant: "effect",
+		animationFrameIndex: Math.floor(Math.random() * frames),
+		width: effects[`butterfly-${color}`].w,
+		height: effects[`butterfly-${color}`].h,
+		radius: 3,
+		renderPriority: 10,
+		animationOverride: {
+			id,
+			loop: true,
+			frameDuration: Math.random() * 20 + 90,
+			frames: Array.from({ length: frames }, (_, i) => [layer({ index: i })]),
+		},
+	});
+}
 
 export function impact(position: {
 	xPx: number;
@@ -33,14 +93,7 @@ export function impact(position: {
 	const id = ["impact", position.xPx, position.yPx, position.z].join("-");
 	if (entities.has(id)) return;
 
-	const impactAnimation: Animation = {
-		id,
-		loop: false,
-		frameDuration: 75,
-		frames: Array.from({ length: frames }, (_, i) => [layer({ index: i })]),
-	};
-
-	entities.set(impactAnimation.id, {
+	entities.set(id, {
 		...getEntityItemDefaults({
 			id,
 			x: pxToTile(position.xPx),
@@ -53,12 +106,13 @@ export function impact(position: {
 		animationFrameIndex: 0,
 		width: effects.impact.w,
 		height: effects.impact.h,
-		id: impactAnimation.id,
 		renderPriority: -1,
 		radius: 0,
-		state: {
-			timer: 0,
+		animationOverride: {
+			id,
+			loop: false,
+			frameDuration: 70,
+			frames: Array.from({ length: frames }, (_, i) => [layer({ index: i })]),
 		},
-		animationOverride: impactAnimation,
 	});
 }

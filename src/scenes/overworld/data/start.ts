@@ -1,3 +1,4 @@
+import { butterfly } from "../../../animation/effect";
 import { createImageElement } from "../../../assets/image";
 import { setAmbienceFields } from "../../../audio/ambience";
 import { TILE_SIZE_PX } from "../../../config";
@@ -19,6 +20,7 @@ import {
 	getEntityCharacterDefaults,
 	getEntityFacingTile,
 } from "../entity";
+import { getOccupant } from "../occupancy";
 import { getJumpDownTransition } from "../transition/jump-down";
 import { setStubJumpTransitions } from "../transition/jump-stub";
 
@@ -233,7 +235,10 @@ function initCellsAndEdges() {
 	// Fence roll
 	setEdge(26, 52, 0, "down", {
 		transition: {
-			condition: (entity: Entity) => entity.moveMode === "run",
+			condition: (entity: Entity) => {
+				if (getOccupant(26, 53, 0)) return false;
+				return entity.moveMode === "run";
+			},
 			animation: "jump",
 			path: [{ ...cellToPx(26, 54), z: 0 }],
 			end: { x: 26, y: 54, z: 0 },
@@ -241,7 +246,10 @@ function initCellsAndEdges() {
 	});
 	setEdge(26, 53, 0, "up", {
 		transition: {
-			condition: (entity: Entity) => entity.moveMode === "run",
+			condition: (entity: Entity) => {
+				if (getOccupant(26, 52, 0)) return false;
+				return entity.moveMode === "run";
+			},
 			animation: "jump",
 			path: [{ ...cellToPx(26, 51), z: 0 }],
 			end: { x: 26, y: 51, z: 0 },
@@ -523,4 +531,8 @@ function initEntities() {
 			});
 		},
 	});
+
+	butterfly({ x: 36, y: 43, z: 0 }, "white");
+	butterfly({ x: 23, y: 52, z: 0 }, "blue");
+	butterfly({ x: 39, y: 57, z: 0 }, "pink");
 }

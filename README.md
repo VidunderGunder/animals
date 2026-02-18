@@ -27,6 +27,8 @@ But you can use any tool you like, as long as the sound effects fit the style.
 
 Priority
 
+- [ ] 🎨 Add some butterflies, bugs, other effects (temporary and interactive—e.g., squishing bugs?)
+- [ ] 🧠 Obstacle course mini-game (checkpoints, timer, leaderboard)
 - [ ] 🎨 Design menu
 - [ ] 🎨 Design beastiary
 

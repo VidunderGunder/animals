@@ -132,6 +132,10 @@ function getDesiredAnimation(entity: Entity): Animation {
 	if (entity.animationOverride && typeof entity.animationOverride !== "string")
 		return entity.animationOverride;
 
+	if (entity.id.includes("butterfly")) {
+		console.log("AAA");
+	}
+
 	const isTryingToMove =
 		entity.isMoving ||
 		(isPlayerID(entity.id)
