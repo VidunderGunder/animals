@@ -147,7 +147,7 @@ export function oppositeDirection(direction: Direction): Direction {
  *
  * For example, `jitter(100, 10)` will return a number between 90 and 110.
  *
- * Defaults to 25% jitter.
+ * Defaults to 25% jitter (`percent = 25`).
  */
 export function jitter(num: number, percent: number = 25) {
 	return num + (Math.random() * 2 - 1) * ((num * percent) / 100);
