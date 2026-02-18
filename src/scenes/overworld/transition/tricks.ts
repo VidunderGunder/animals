@@ -8,6 +8,7 @@ import {
 	directionToDxDy,
 	ease,
 	getCellInDirection,
+	jitter,
 	mix,
 	oppositeDirection,
 	pxToTile,
@@ -154,23 +155,23 @@ function injectPlayOnceOnFirstSegmentStart(
 
 function spinStartSFX() {
 	audio.playSfx("jump", {
-		volume: 0.01,
-		playbackRate: 0.5,
+		volume: jitter(0.01),
+		playbackRate: jitter(0.5),
 	});
 	audio.playSfx("swoosh", {
-		volume: 0.15,
-		playbackRate: 1.5,
+		volume: jitter(0.125),
+		playbackRate: jitter(1.5),
 	});
 	audio.playSfx("swoosh", {
-		volume: 0.075,
-		playbackRate: 0.5,
+		volume: jitter(0.0675),
+		playbackRate: jitter(0.5),
 	});
 }
 
 function spinDelaySFX() {
 	audio.playSfx("swoosh", {
-		volume: 0.08,
-		playbackRate: 1.3,
+		volume: jitter(0.06),
+		playbackRate: jitter(1.25),
 	});
 }
 

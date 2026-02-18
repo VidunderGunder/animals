@@ -141,3 +141,14 @@ export function oppositeDirection(direction: Direction): Direction {
 			return "left";
 	}
 }
+
+/**
+ * Applies a +/- percentage jitter to a number.
+ *
+ * For example, `jitter(100, 10)` will return a number between 90 and 110.
+ *
+ * Defaults to 25% jitter.
+ */
+export function jitter(num: number, percent: number = 25) {
+	return num + (Math.random() * 2 - 1) * ((num * percent) / 100);
+}
