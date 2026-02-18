@@ -1,7 +1,7 @@
 import { createImageElement } from "../assets/image";
 import { pxToTile } from "../functions/general";
 import { entities, getEntityItemDefaults } from "../scenes/overworld/entity";
-import { type Animation, layerFactory } from "./animation";
+import { layerFactory } from "./animation";
 
 export const effects = {
 	impact: {
