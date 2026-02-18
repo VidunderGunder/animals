@@ -152,7 +152,7 @@ function injectPlayOnceOnFirstSegmentStart(
 	};
 }
 
-function spinSFX() {
+function spinStartSFX() {
 	audio.playSfx("jump", {
 		volume: 0.01,
 		playbackRate: 0.5,
@@ -164,6 +164,13 @@ function spinSFX() {
 	audio.playSfx("swoosh", {
 		volume: 0.075,
 		playbackRate: 0.5,
+	});
+}
+
+function spinDelaySFX() {
+	audio.playSfx("swoosh", {
+		volume: 0.09,
+		playbackRate: 1.25,
 	});
 }
 
@@ -187,7 +194,7 @@ export function spin(
 	});
 
 	// SFX only if/when the transition actually starts
-	injectPlayOnceOnFirstSegmentStart(path, () => spinSFX());
+	injectPlayOnceOnFirstSegmentStart(path, () => spinStartSFX());
 
 	// Keep end purely as “intended end” (collisions may override mid-path)
 	const end = direction
@@ -368,6 +375,8 @@ function getSpinTransitionPath({
 	const path: Transition["path"] = [];
 
 	for (let i = 0; i < steps; i++) {
+		const isStartOfNewRound = i % 4 === 0;
+
 		const linear = (i + 1) / steps;
 		const curve = ease.inOutSine(linear);
 
@@ -385,6 +394,7 @@ function getSpinTransitionPath({
 			yPx,
 			duration: rawDuration * scale,
 			onSegmentStart(e) {
+				if (isStartOfNewRound) spinDelaySFX();
 				if (i === 0 && hasSlide)
 					impact({
 						xPx: start.xPx,
