@@ -169,8 +169,8 @@ function spinStartSFX() {
 
 function spinDelaySFX() {
 	audio.playSfx("swoosh", {
-		volume: 0.09,
-		playbackRate: 1.25,
+		volume: 0.08,
+		playbackRate: 1.3,
 	});
 }
 
