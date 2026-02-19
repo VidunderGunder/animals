@@ -27,7 +27,6 @@ But you can use any tool you like, as long as the sound effects fit the style.
 
 Priority
 
-- [ ] 🎨 Add some butterflies, bugs, other effects (temporary and interactive—e.g., squishing bugs?)
 - [ ] 🧠 Obstacle course mini-game (checkpoints, timer, leaderboard)
 - [ ] 🎨 Design menu
 - [ ] 🎨 Design beastiary
@@ -46,6 +45,7 @@ Character Movement & Animation
 
 Bugs (clearly defined issues)
 
+- [ ] 🤖 Re-opening Chrome with the app as the current tab opens a new tab
 - [ ] 🤖 Loaded entities are not snapped to the beginning or end of a transition that was in progress when saving (causing noclipping if mid ladder or jump)
 - [ ] 🔊 Looping ambience (forest definitely, beach maybe) has a small gap/pause when looping
 - [ ] Browser audio issues
