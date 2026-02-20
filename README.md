@@ -27,7 +27,7 @@ But you can use any tool you like, as long as the sound effects fit the style.
 
 Priority
 
-- [ ] 🧠 Obstacle course mini-game (checkpoints, timer, leaderboard)
+- [ ] 🧠 Obstacle course mini-game (checkpoints, timer, leaderboard) ⬅️
 - [ ] 🎨 Design menu
 - [ ] 🎨 Design beastiary
 
@@ -57,4 +57,5 @@ Bugs (clearly defined issues)
 - [ ] 🔻 Blurry menu (pause menu will be remade soon, so will probably not fix)
 
 Spikes (investigation tasks)
+
 - [ ] 🧠 Maybe we should properly pause the game (now animations and sound still play, and the current transition continues—but we should probably freeze everything), but it could be fine the way it is for now?
