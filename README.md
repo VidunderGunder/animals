@@ -27,6 +27,7 @@ But you can use any tool you like, as long as the sound effects fit the style.
 
 Priority
 
+- [ ] 🤖🧠 Activities
 - [ ] 🧠 Obstacle course mini-game (checkpoints, timer, leaderboard)
 - [ ] 🎨 Design menu
 - [ ] 🎨 Design beastiary

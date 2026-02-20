@@ -36,9 +36,9 @@ import {
 	worldBounds,
 	worldImageLayers,
 } from "./cells";
-import { initializeArea as initializeStartArea } from "./data/start";
 import { renderDialogs } from "./dialog";
 import { type Entity, entities, isPlayerID } from "./entity";
+import { initializeArea as initializeStartArea } from "./generator/start";
 import { getOccupant, occupy, vacate } from "./occupancy";
 import {
 	setCurrentSegment,

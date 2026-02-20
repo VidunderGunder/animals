@@ -21,7 +21,60 @@
     "editor.defaultFormatter": "biomejs.biome"
   },
   "htmltagwrap.tag": "div",
-  "[rust]": {
-    "editor.defaultFormatter": "rust-lang.rust-analyzer"
+  "material-icon-theme.files.customClones": [
+    {
+      "name": "typescript-gray",
+      "base": "typescript",
+      "color": "gray-400",
+      "fileNames": ["main.ts", "overworld.ts", "input/input.ts"]
+    }
+  ],
+  "material-icon-theme.folders.customClones": [
+    {
+      "name": "folder-overworld",
+      "base": "app",
+      "color": "green-400",
+      "folderNames": ["overworld"]
+    },
+    {
+      "name": "folder-scenes",
+      "base": "animation",
+      "color": "blue-400",
+      "folderNames": ["scene", "scenes"]
+    },
+    {
+      "name": "folder-gfx",
+      "base": "images",
+      "color": "purple-400",
+      "folderNames": ["gfx"]
+    },
+    {
+      "name": "folder-activities",
+      "base": "tasks",
+      "color": "orange-400",
+      "folderNames": ["activity", "activities"]
+    },
+    {
+      "name": "folder-ai",
+      "base": "robot",
+      "color": "red-400",
+      "folderNames": ["ai", "ais", "brain", "brains"]
+    },
+    {
+      "name": "folder-console-input",
+      "base": "console",
+      "color": "cyan-400",
+      "folderNames": ["src/input"]
+    }
+  ],
+
+  "material-icon-theme.folders.associations": {
+    "public/world": "images",
+    "public/items": "images",
+    "public/animals": "images",
+    "public/characters": "images",
+    "menu": "ui",
+    "input": "console",
+    "src/scenes": "layout"
   }
 }
