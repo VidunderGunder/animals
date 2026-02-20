@@ -89,10 +89,11 @@
   ],
 
   "material-icon-theme.folders.associations": {
-    "public/world": "images",
-    "public/items": "images",
-    "public/animals": "images",
-    "public/characters": "images",
+    "images/world": "app",
+    "images/items": "other",
+    "images/animals": "admin",
+    "images/characters": "admin",
+    "images/controller": "console",
     "menu": "ui",
     "input": "console",
     "src/scenes": "layout"
