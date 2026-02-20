@@ -163,7 +163,8 @@ function goToTile(
 		stopAdjacentIfTargetBlocked?: boolean;
 	},
 ): Command {
-	const stopAdjacentIfTargetBlocked = opts?.stopAdjacentIfTargetBlocked ?? true;
+	const stopAdjacentIfTargetBlocked =
+		opts?.stopAdjacentIfTargetBlocked ?? false;
 
 	let cached: Direction[] | null = null;
 	let repathCooldownMs = 0;
@@ -363,7 +364,11 @@ function talk({
 	activated.brain?.runner.interrupt([
 		onTalk ?? null,
 		cmd.waitUntilStopped(),
-		activator ? cmd.goToTile(getEntityFacingTile(activator)) : null,
+		activator
+			? cmd.goToTile(getEntityFacingTile(activator), {
+					stopAdjacentIfTargetBlocked: true,
+				})
+			: null,
 		activator ? cmd.face(activator) : null,
 		() => bubble(bubbleId, content, activated, options),
 		cmd.wait(1000),

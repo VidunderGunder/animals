@@ -2,8 +2,8 @@ import { butterfly } from "../../../animation/effect";
 import { createImageElement } from "../../../assets/image";
 import { setAmbienceFields } from "../../../audio/ambience";
 import { TILE_SIZE_PX } from "../../../config";
-import { activities, toggleActivity } from "../activity/activities";
-import { pushActivity } from "../activity/activity-stack";
+import { toggleActivity } from "../activity/activities";
+import { isActivityRunning } from "../activity/activity";
 import { CommandRunner } from "../ai/brain";
 import { cmd, type Route } from "../ai/commands";
 import {
@@ -31,9 +31,6 @@ export function initializeArea() {
 	initCellsAndEdges();
 	initAudio();
 	initEntities();
-
-	// Temporary activity experiment
-	pushActivity(activities.welcomeBack);
 }
 
 function initCellsAndEdges() {
@@ -442,11 +439,12 @@ function initEntities() {
 			},
 		},
 		onActivate: ({ activator, activated }) => {
-			if (activated.interactionLock) return;
 			cmd.talk({
 				activator,
 				activated,
-				content: "Hello!",
+				content: isActivityRunning("startObstacleCourse")
+					? "Back to it!"
+					: "We'll move out of the way!",
 				onAnswer() {
 					toggleActivity("startObstacleCourse");
 				},
@@ -465,7 +463,6 @@ function initEntities() {
 			},
 		},
 		onActivate: ({ activator, activated }) => {
-			if (activated.interactionLock) return;
 			cmd.talk({
 				activator,
 				activated,
@@ -502,6 +499,7 @@ function initEntities() {
 			activated.brain?.runner.interrupt([
 				cmd.waitUntilStopped(),
 				cmd.goToTile(getEntityFacingTile(activator)),
+				cmd.waitUntilStopped(),
 				cmd.face(activator),
 				() => {
 					bubble(bubbleId, "♫", activated, {

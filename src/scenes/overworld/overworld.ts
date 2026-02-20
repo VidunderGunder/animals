@@ -28,7 +28,11 @@ import {
 } from "../../input/input";
 import { requestAutosave } from "../../storage";
 import { menuState, openMenu } from "../menu/menu";
-import { _activities, updateActivity } from "./activity/activity-stack";
+import {
+	_activities,
+	isActivityRunning,
+	updateActivity,
+} from "./activity/activity";
 import { camera, updateCamera } from "./camera";
 import {
 	getCell,
@@ -497,7 +501,9 @@ function updateEntityAndPlayer({
 				// Destination was reserved earlier; this is idempotent.
 				occupy(entity);
 
-				if (entity.id === "player") requestAutosave("player-settled");
+				if (entity.id === "player" && !isActivityRunning()) {
+					requestAutosave("player-settled");
+				}
 			}
 		} else {
 			const t = entity.transitionPathSegmentProgress;

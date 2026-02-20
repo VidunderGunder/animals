@@ -4,11 +4,7 @@ import { cmd } from "../ai/commands";
 import { bubble } from "../dialog";
 import { entities } from "../entity";
 import type { Activity } from "./activity";
-import {
-	exitActivity,
-	isActivityRunning,
-	pushActivity,
-} from "./activity-stack";
+import { exitActivity, isActivityRunning, pushActivity } from "./activity";
 
 let elapsed = 0;
 let hasStarted = false;
@@ -60,11 +56,11 @@ export const activities = {
 
 				npc.brain?.runner.interrupt([
 					cmd.waitUntilStopped(),
-					cmd.goToTile({ x: 32, y: 52 + i, z: 0 }),
-					cmd.face("left"),
 					() => {
 						npc.interactionLock = false;
 					},
+					cmd.goToTile({ x: 32, y: 52 + i, z: 0 }),
+					cmd.face("left"),
 					{
 						onTick() {
 							if (!isActivityRunning("startObstacleCourse")) {
@@ -77,14 +73,21 @@ export const activities = {
 				]);
 			}
 		},
+		onExit() {
+			const npcIds = ["fox-1", "npc-1"];
+			for (const id of npcIds) {
+				const npc = entities.get(id);
+				if (!npc) continue;
+				npc.interactionLock = false;
+				npc.brain?.runner.clear();
+			}
+		},
 	},
 } as const satisfies Record<string, Activity>;
 
 type ActivityID = keyof typeof activities;
 
 export function toggleActivity(id: ActivityID) {
-	console.log("AA");
-
 	if (isActivityRunning(id)) {
 		exitActivity(id);
 		return;
