@@ -87,7 +87,6 @@
       "folderNames": ["src/input"]
     }
   ],
-
   "material-icon-theme.folders.associations": {
     "images/world": "app",
     "images/items": "other",
