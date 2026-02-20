@@ -13,66 +13,70 @@ export type InputDecision =
 
 export type Activity = {
 	id: string;
-
-	/** E.g., for “modal” overlays */
-	priority?: number;
+	stackable?: boolean;
 
 	onEnter?: () => void;
 	onExit?: () => void;
-
-	beforeUpdate?: (dt: number) => void;
+	onUpdate?: (dt: number) => void;
+	onDraw?: () => void;
 
 	getCameraTarget?: () => Vec2Px | null;
 
 	isDone?: () => boolean;
 };
 
-const stack: Activity[] = [];
-
 /**
- * Public readonly list of activities, for debugging purposes. Do not modify directly.
+ * DO NOT directly mutate this array. Use the methods located in the same file.
  */
-export const _activities = stack as ReadonlyArray<Activity>;
+export const activityStack: Activity[] = [];
 
-export function getActiveActivity(): Activity | null {
-	return stack[stack.length - 1] ?? null;
+export function getLatestActivity(): Activity | null {
+	return activityStack[activityStack.length - 1] ?? null;
 }
 
 export function pushActivity(a: Activity) {
-	stack.push(a);
+	if (!a.stackable && isActivityRunning()) {
+		if (import.meta.env.DEV) {
+			console.warn(
+				`Attempted to start activity ${a.id} while another activity is active. This activity is not stackable, so the request was ignored.`,
+			);
+		}
+		return;
+	}
+	activityStack.push(a);
 	a.onEnter?.();
 }
 
 export function exitActivity(id: string) {
-	const index = stack.findIndex((a) => a.id === id);
+	const index = activityStack.findIndex((a) => a.id === id);
 	if (index === -1) return;
-	const [a] = stack.splice(index, 1);
+	const [a] = activityStack.splice(index, 1);
 	a?.onExit?.();
 }
 
 export function popActivity() {
-	const a = stack.pop();
+	const a = activityStack.pop();
 	if (!a) return;
 	a.onExit?.();
 }
 
 export function clearActivities() {
-	while (stack.length) popActivity();
+	while (activityStack.length) popActivity();
 }
 
 export function updateActivity(dt: number) {
-	const a = getActiveActivity();
-	a?.beforeUpdate?.(dt);
+	const a = getLatestActivity();
+	a?.onUpdate?.(dt);
 
 	if (a?.isDone?.()) popActivity();
 }
 
 export function activityCameraTarget() {
-	const a = getActiveActivity();
+	const a = getLatestActivity();
 	return a?.getCameraTarget?.() ?? null;
 }
 
 export function isActivityRunning(id?: string) {
-	if (!id) return stack.length > 0;
-	return stack.some((a) => a.id === id);
+	if (!id) return activityStack.length > 0;
+	return activityStack.some((a) => a.id === id);
 }

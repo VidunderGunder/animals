@@ -1,43 +1,13 @@
-import { gameState, player } from "../../../game-state";
-import type { Direction } from "../../../input/input";
+import { GAME_HEIGHT_PX, GAME_WIDTH_PX } from "../../../config";
+import { distanceChebyshev } from "../../../functions/general";
+import { player } from "../../../game-state";
+import { ctx } from "../../../gfx/canvas";
 import { cmd } from "../ai/commands";
-import { bubble } from "../dialog";
 import { entities } from "../entity";
 import type { Activity } from "./activity";
 import { exitActivity, isActivityRunning, pushActivity } from "./activity";
 
-let elapsed = 0;
-let hasStarted = false;
-let previousDirection: Direction | null = null;
-
 export const activities = {
-	welcomeBack: {
-		id: "welcomeBack",
-		onEnter() {
-			/* maybe face npc, start bubble */
-			gameState.disabled = true;
-		},
-		beforeUpdate(dt) {
-			elapsed += dt;
-
-			if (elapsed < 500) return;
-
-			if (!hasStarted) {
-				previousDirection = player.direction;
-				if (player.direction !== "down") player.direction = "down";
-				bubble("start_cutscene", "Welcome back!");
-				hasStarted = true;
-			}
-		},
-		isDone() {
-			return elapsed > 2000;
-		},
-		onExit() {
-			elapsed = 0;
-			gameState.disabled = false;
-			if (previousDirection) player.direction = previousDirection;
-		},
-	},
 	startObstacleCourse: {
 		id: "startObstacleCourse",
 		onEnter() {
@@ -62,7 +32,11 @@ export const activities = {
 					cmd.goToTile({ x: 32, y: 52 + i, z: 0 }),
 					cmd.face("left"),
 					{
-						onTick() {
+						onUpdate() {
+							const playerOutOfRange =
+								distanceChebyshev(player, { x: 30, y: 49 }) > 10;
+
+							if (playerOutOfRange) exitActivity("startObstacleCourse");
 							if (!isActivityRunning("startObstacleCourse")) {
 								return true;
 							}
@@ -85,7 +59,7 @@ export const activities = {
 	},
 } as const satisfies Record<string, Activity>;
 
-type ActivityID = keyof typeof activities;
+export type ActivityID = keyof typeof activities;
 
 export function toggleActivity(id: ActivityID) {
 	if (isActivityRunning(id)) {

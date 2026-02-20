@@ -11,13 +11,13 @@ export type Command = {
 	/**
 	 * Returns true if command is finished, false to continue next tick.
 	 */
-	onTick: (props: { entity: Entity; dt: number }) => boolean;
+	onUpdate: (props: { entity: Entity; dt: number }) => boolean;
 };
 
 function wait(ms: number): Command {
 	let elapsed = 0;
 	return {
-		onTick({ dt }) {
+		onUpdate({ dt }) {
 			elapsed += dt;
 			return elapsed >= ms;
 		},
@@ -27,7 +27,7 @@ function wait(ms: number): Command {
 /** Wait until entity is fully stopped (not mid-path segment). */
 function waitUntilStopped(): Command {
 	return {
-		onTick({ entity }) {
+		onUpdate({ entity }) {
 			return !entity.isMoving;
 		},
 	};
@@ -56,7 +56,7 @@ function face(
 		  },
 ): Command {
 	return {
-		onTick({ entity }) {
+		onUpdate({ entity }) {
 			if (typeof dir === "object") dir = dirToward(entity, dir);
 			entity.direction = dir;
 			return true;
@@ -117,7 +117,7 @@ function step(dir: Direction): Command {
 	const tries: Direction[] = [dir, leftOf(dir), rightOf(dir), backOf(dir)];
 
 	return {
-		onTick({ entity, dt }) {
+		onUpdate({ entity, dt }) {
 			// If we started moving, wait for finish.
 			if (phase === "moving") {
 				return !entity.isMoving;
@@ -188,7 +188,7 @@ function goToTile(
 	}
 
 	return {
-		onTick({ entity, dt }) {
+		onUpdate({ entity, dt }) {
 			if (
 				entity.x === target.x &&
 				entity.y === target.y &&
@@ -311,7 +311,7 @@ function routeLoop(entity: Entity, route: Route) {
 	}
 
 	entity.brain.runner.push({
-		onTick({ entity }) {
+		onUpdate({ entity }) {
 			if (entity.moveMode !== target.moveMode)
 				entity.moveMode = target.moveMode;
 			return true;
@@ -323,7 +323,7 @@ function routeLoop(entity: Entity, route: Route) {
 	);
 
 	entity.brain.runner.push({
-		onTick() {
+		onUpdate() {
 			entity.state ??= {};
 			const s2 = entity.state;
 			const i2 = (typeof s2.routeIndex === "number" ? s2.routeIndex : 0) | 0;
@@ -374,7 +374,7 @@ function talk({
 		cmd.wait(1000),
 		onAnswer ?? null,
 		{
-			onTick: ({ entity }) => {
+			onUpdate: ({ entity }) => {
 				entity.interactionLock = false;
 				return true;
 			},

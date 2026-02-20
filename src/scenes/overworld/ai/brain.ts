@@ -15,7 +15,7 @@ export class CommandRunner {
 	push(cmd: Command | (() => void)) {
 		if (typeof cmd === "function") {
 			this.queue.push({
-				onTick: () => {
+				onUpdate: () => {
 					cmd();
 					return true;
 				},
@@ -33,7 +33,7 @@ export class CommandRunner {
 				const c = cmd[i];
 				if (typeof c === "function") {
 					this.queue.unshift({
-						onTick: () => {
+						onUpdate: () => {
 							c();
 							return true;
 						},
@@ -46,7 +46,7 @@ export class CommandRunner {
 		}
 		if (typeof cmd === "function") {
 			this.queue.unshift({
-				onTick: () => {
+				onUpdate: () => {
 					cmd();
 					return true;
 				},
@@ -68,7 +68,7 @@ export class CommandRunner {
 	tick(entity: Entity, dt: number): boolean {
 		while (this.queue.length) {
 			const cmd = this.queue[0];
-			const res = cmd?.onTick({ entity, dt });
+			const res = cmd?.onUpdate({ entity, dt });
 			if (!res) return true;
 			this.queue.shift();
 		}

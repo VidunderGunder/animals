@@ -152,3 +152,17 @@ export function oppositeDirection(direction: Direction): Direction {
 export function jitter(num: number, percent: number = 25) {
 	return num + (Math.random() * 2 - 1) * ((num * percent) / 100);
 }
+
+/**
+ * [Chebyshev distance](https://en.wikipedia.org/wiki/Chebyshev_distance) between two points.
+ *
+ * ![image](https://pbs.twimg.com/media/EIDaKQLUwAEqtei.png)
+ */
+export function distanceChebyshev(
+	position1: { x: number; y: number },
+	position2: { x: number; y: number },
+) {
+	const dx = position2.x - position1.x;
+	const dy = position2.y - position1.y;
+	return Math.max(Math.abs(dx), Math.abs(dy));
+}

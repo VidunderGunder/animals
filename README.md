@@ -27,8 +27,10 @@ But you can use any tool you like, as long as the sound effects fit the style.
 
 Priority
 
-- [ ] 🧠 Obstacle course mini-game (checkpoints, timer, leaderboard) ⬅️
 - [ ] 🎨 Design menu
+  - [ ] Bag, Crew, Beastiary, Save, Settings
+- [ ] 🧠 Obstacle course mini-game (checkpoints, timer, leaderboard) ⬅️
+  - [ ] 🎨 UI overlay
 - [ ] 🎨 Design beastiary
 
 Character Movement & Animation

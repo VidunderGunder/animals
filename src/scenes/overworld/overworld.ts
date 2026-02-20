@@ -29,7 +29,7 @@ import {
 import { requestAutosave } from "../../storage";
 import { menuState, openMenu } from "../menu/menu";
 import {
-	_activities,
+	activityStack,
 	isActivityRunning,
 	updateActivity,
 } from "./activity/activity";
@@ -597,6 +597,11 @@ function draw(dt: number) {
 		}
 	}
 
+	for (let i = activityStack.length - 1; i >= 0; i--) {
+		const a = activityStack[i];
+		a?.onDraw?.();
+	}
+
 	if (DEBUG_OVERLAY) {
 		ctx.save();
 		ctx.fillStyle = "#ffffff";
@@ -619,7 +624,7 @@ function draw(dt: number) {
 			`move mode: ${player.moveMode}`,
 			`animation: ${player.animationCurrentId}${player.animationOverride ? ` (${typeof player.animationOverride === "string" ? player.animationOverride : player.animationOverride.id})` : ""}`,
 			`row: ${drawList.find((d) => d.entity.id === "player")?.row}`,
-			`activities: ${_activities.map((a) => a.id).join(", ")}`,
+			`activities: ${activityStack.map((a) => a.id).join(", ")}`,
 		].forEach((line, index) => {
 			ctx.fillText(line, 4, 2 + index * 8);
 		});

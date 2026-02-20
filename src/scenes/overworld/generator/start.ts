@@ -510,7 +510,7 @@ function initEntities() {
 				},
 				cmd.wait(1000),
 				{
-					onTick: ({ entity }) => {
+					onUpdate: ({ entity }) => {
 						entity.interactionLock = false;
 						return true;
 					},
