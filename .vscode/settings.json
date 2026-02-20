@@ -57,7 +57,7 @@
     {
       "name": "folder-ai",
       "base": "robot",
-      "color": "red-400",
+      "color": "pink-400",
       "folderNames": ["ai", "ais", "brain", "brains"]
     },
     {
