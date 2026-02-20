@@ -23,10 +23,28 @@
   "htmltagwrap.tag": "div",
   "material-icon-theme.files.customClones": [
     {
-      "name": "typescript-gray",
+      "name": "typescript-light",
       "base": "typescript",
-      "color": "gray-400",
-      "fileNames": ["main.ts", "overworld.ts", "input/input.ts"]
+      "color": "blue-100",
+      "fileNames": [
+        "main.ts",
+        "overworld/overworld.ts",
+        "input/input.ts",
+        "transition/transition.ts",
+        "animation/animation.ts"
+      ]
+    },
+    {
+      "name": "typescript-config",
+      "base": "settings",
+      "color": "blue-400",
+      "fileNames": ["config.ts"]
+    },
+    {
+      "name": "typescript-declaration",
+      "base": "typescript-def",
+      "color": "blue-400",
+      "fileNames": ["types.ts"]
     }
   ],
   "material-icon-theme.folders.customClones": [
