@@ -33,7 +33,8 @@
         "transition/transition.ts",
         "animation/animation.ts",
         "audio/audio-engine.ts",
-        "ai/brain.ts"
+        "ai/brain.ts",
+        "activity/activity.ts"
       ]
     },
     {
@@ -85,6 +86,12 @@
       "base": "console",
       "color": "cyan-400",
       "folderNames": ["src/input"]
+    },
+    {
+      "name": "scenes",
+      "base": "layout",
+      "color": "green-400",
+      "folderNames": ["src/scenes"]
     }
   ],
   "material-icon-theme.folders.associations": {
@@ -95,7 +102,6 @@
     "images/controller": "console",
     "menu": "ui",
     "input": "console",
-    "src/scenes": "layout",
     "ambience": "audio"
   }
 }

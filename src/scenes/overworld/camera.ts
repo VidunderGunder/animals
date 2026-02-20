@@ -2,6 +2,7 @@ import { GAME_HEIGHT_PX, GAME_WIDTH_PX, TILE_SIZE_PX } from "../../config";
 import { clamp, lerp } from "../../functions/general";
 import { player } from "../../game-state";
 import type { Vec2Px } from "../../types";
+import { activityCameraTarget } from "./activity/activity-stack";
 import { getCell } from "./cells";
 
 export const camera: Vec2Px = {
@@ -67,7 +68,8 @@ export function getCameraTarget(): Vec2Px {
 }
 
 export function updateCamera() {
-	const target = getCameraTarget();
+	const override = activityCameraTarget();
+	const target = override ?? getCameraTarget();
 	camera.xPx = Math.round(target.xPx);
 	camera.yPx = Math.round(target.yPx);
 }

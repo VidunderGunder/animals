@@ -1,3 +1,4 @@
+import { gameState } from "../game-state";
 import { gamepadButtonToAction, getGamepadUI } from "./gamepad";
 import { initKeyboard, reverseKeyMap } from "./keyboard";
 
@@ -123,7 +124,7 @@ export function input() {
 
 	// Prioritize the last pressed direction for movement intent
 	const activeMoves = Array.from(nextActiveActions).filter(isMove);
-	if (activeMoves.length > 0) {
+	if (!gameState.disabled && activeMoves.length > 0) {
 		const temp = activeMoves[activeMoves.length - 1];
 		if (isMove(temp)) movementIntent = temp;
 	} else {
@@ -148,4 +149,20 @@ export function input() {
 	for (const action of nextActiveActions) {
 		activeActions.add(action);
 	}
+}
+
+export type InputSnapshot = {
+	actions: ReadonlySet<Action>;
+	actionsOnDown: ReadonlySet<Action>;
+	actionsOnUp: ReadonlySet<Action>;
+	movementIntent: Direction | null;
+};
+
+export function getInputSnapshot(): InputSnapshot {
+	return {
+		actions: activeActions,
+		actionsOnDown: activeActionsOnDown,
+		actionsOnUp: activeActionsOnUp,
+		movementIntent,
+	};
 }

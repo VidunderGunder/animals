@@ -2,6 +2,8 @@ import { butterfly } from "../../../animation/effect";
 import { createImageElement } from "../../../assets/image";
 import { setAmbienceFields } from "../../../audio/ambience";
 import { TILE_SIZE_PX } from "../../../config";
+import { activities, toggleActivity } from "../activity/activities";
+import { pushActivity } from "../activity/activity-stack";
 import { CommandRunner } from "../ai/brain";
 import { cmd, type Route } from "../ai/commands";
 import {
@@ -29,6 +31,9 @@ export function initializeArea() {
 	initCellsAndEdges();
 	initAudio();
 	initEntities();
+
+	// Temporary activity experiment
+	pushActivity(activities.welcomeBack);
 }
 
 function initCellsAndEdges() {
@@ -437,10 +442,14 @@ function initEntities() {
 			},
 		},
 		onActivate: ({ activator, activated }) => {
+			if (activated.interactionLock) return;
 			cmd.talk({
 				activator,
 				activated,
 				content: "Hello!",
+				onAnswer() {
+					toggleActivity("startObstacleCourse");
+				},
 			});
 		},
 	});
@@ -456,12 +465,16 @@ function initEntities() {
 			},
 		},
 		onActivate: ({ activator, activated }) => {
+			if (activated.interactionLock) return;
 			cmd.talk({
 				activator,
 				activated,
 				content: "Yip!",
 				options: {
 					pitch: 3.5,
+				},
+				onAnswer() {
+					toggleActivity("startObstacleCourse");
 				},
 			});
 		},
@@ -490,12 +503,13 @@ function initEntities() {
 				cmd.waitUntilStopped(),
 				cmd.goToTile(getEntityFacingTile(activator)),
 				cmd.face(activator),
-				() =>
+				() => {
 					bubble(bubbleId, "♫", activated, {
 						pitch: 4,
 						tempo: 0.4,
 						intensity: 0.5,
-					}),
+					});
+				},
 				cmd.wait(1000),
 				{
 					onTick: ({ entity }) => {
@@ -519,6 +533,7 @@ function initEntities() {
 			},
 		},
 		onActivate: ({ activator, activated }) => {
+			if (activated.interactionLock) return;
 			cmd.talk({
 				activator,
 				activated,

@@ -2,11 +2,6 @@
 import type { Entity } from "../entity";
 import type { Command } from "./commands";
 
-/**
- * A tiny deterministic command-runner. You can push() sequences
- * and call tick(dt) each frame. It maintains internal state and
- * returns whether still running.
- */
 export class CommandRunner {
 	private queue: Command[] = [];
 

@@ -28,6 +28,7 @@ import {
 } from "../../input/input";
 import { requestAutosave } from "../../storage";
 import { menuState, openMenu } from "../menu/menu";
+import { _activities, updateActivity } from "./activity/activity-stack";
 import { camera, updateCamera } from "./camera";
 import {
 	getCell,
@@ -131,10 +132,6 @@ function getDesiredAnimation(entity: Entity): Animation {
 		return anims[entity.animationOverride];
 	if (entity.animationOverride && typeof entity.animationOverride !== "string")
 		return entity.animationOverride;
-
-	if (entity.id.includes("butterfly")) {
-		console.log("AAA");
-	}
 
 	const isTryingToMove =
 		entity.isMoving ||
@@ -317,7 +314,9 @@ function updatePlayer(dt: number) {
 		);
 		if (occId) {
 			const target = entities.get(occId);
-			target?.onActivate?.({ activator: entity, activated: target });
+			if (!target?.interactionLock) {
+				target?.onActivate?.({ activator: entity, activated: target });
+			}
 		} else {
 			// 2) Otherwise, fallback to cell/edge interactions
 			getCell(
@@ -524,6 +523,7 @@ function update(dt: number) {
 		void updateEntity(dt, entity);
 	}
 
+	updateActivity(dt);
 	updatePlayer(dt);
 	updateCamera();
 	updateAmbience(dt);
@@ -613,6 +613,7 @@ function draw(dt: number) {
 			`move mode: ${player.moveMode}`,
 			`animation: ${player.animationCurrentId}${player.animationOverride ? ` (${typeof player.animationOverride === "string" ? player.animationOverride : player.animationOverride.id})` : ""}`,
 			`row: ${drawList.find((d) => d.entity.id === "player")?.row}`,
+			`activities: ${_activities.map((a) => a.id).join(", ")}`,
 		].forEach((line, index) => {
 			ctx.fillText(line, 4, 2 + index * 8);
 		});

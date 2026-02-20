@@ -336,11 +336,15 @@ function talk({
 	activator,
 	activated,
 	content,
+	onTalk,
+	onAnswer,
 	options,
 }: {
 	activator?: Entity;
 	activated: Entity;
 	content: string;
+	onTalk?: () => void;
+	onAnswer?: () => void;
 	options?: SpeechOptions;
 }) {
 	const bubbleId = `${activated.id}_interact`;
@@ -356,13 +360,14 @@ function talk({
 
 	activated.interactionLock = true;
 
-	// Preempt whatever it was doing, then continue its queued routine.
 	activated.brain?.runner.interrupt([
+		onTalk ?? null,
 		cmd.waitUntilStopped(),
 		activator ? cmd.goToTile(getEntityFacingTile(activator)) : null,
 		activator ? cmd.face(activator) : null,
 		() => bubble(bubbleId, content, activated, options),
 		cmd.wait(1000),
+		onAnswer ?? null,
 		{
 			onTick: ({ entity }) => {
 				entity.interactionLock = false;

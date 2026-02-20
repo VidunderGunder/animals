@@ -7,11 +7,9 @@ import { initFullscreenSupport } from "./gfx/fullscreen";
 import { activeActions, initInput, input, inputCleanUp } from "./input/input";
 import { initVirtualGamepad } from "./input/touch";
 import { menu } from "./scenes/menu/menu";
-import { initializeArea as initializeStartArea } from "./scenes/overworld/generator/start";
 import { overworld } from "./scenes/overworld/overworld";
 import { initAutosave, load } from "./storage";
 
-initializeStartArea();
 initScreen();
 initInput();
 initVirtualGamepad();
