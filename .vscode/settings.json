@@ -96,6 +96,7 @@
     "images/controller": "console",
     "menu": "ui",
     "input": "console",
-    "src/scenes": "layout"
+    "src/scenes": "layout",
+    "ambience": "audio"
   }
 }
