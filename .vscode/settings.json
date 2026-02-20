@@ -31,7 +31,9 @@
         "overworld/overworld.ts",
         "input/input.ts",
         "transition/transition.ts",
-        "animation/animation.ts"
+        "animation/animation.ts",
+        "audio/audio-engine.ts",
+        "ai/brain.ts"
       ]
     },
     {
