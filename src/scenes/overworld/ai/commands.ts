@@ -1,6 +1,7 @@
 // src/scenes/overworld/ai/commands.ts
 import type { SpeechOptions } from "../../../audio/speak";
 import type { MoveMode } from "../../../config";
+import { distanceChebyshev } from "../../../functions/general";
 import type { Direction } from "../../../input/input";
 import { bubble, bubbles } from "../dialog";
 import { type Entity, getEntityFacingTile } from "../entity";
@@ -401,6 +402,38 @@ function wanderAround(entity: Entity, origin: { x: number; y: number }) {
 	);
 }
 
+function follow({
+	follower,
+	target,
+	condition,
+}: {
+	follower: Entity;
+	target: Entity;
+	condition?: () => boolean;
+}): Command {
+	console.log("follow start");
+
+	const done = !(condition?.() ?? true);
+
+	follower.solid = false; // don't block the target
+
+	return {
+		onUpdate() {
+			if (done) {
+				console.log("follow done");
+				follower.solid = true;
+				return true;
+			}
+
+			follower.moveMode = target.moveMode;
+
+			// TODO: Follow logic
+
+			return false;
+		},
+	};
+}
+
 export const cmd = {
 	face,
 	step,
@@ -410,4 +443,5 @@ export const cmd = {
 	talk,
 	wait,
 	waitUntilStopped,
+	follow,
 };

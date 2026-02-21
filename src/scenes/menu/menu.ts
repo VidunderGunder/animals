@@ -9,6 +9,7 @@ import { moves } from "./moves";
 export function openMenu() {
 	activeActionsOnDown.delete("start");
 	gameState.disabled = true;
+	gameState.paused = true;
 	menuState.show = true;
 }
 

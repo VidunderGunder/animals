@@ -77,7 +77,7 @@ function applyTapToTurnGate(opts: {
 	entity: Entity;
 	direction?: Direction | null;
 }): Direction | null {
-	const nowMs = performance.now();
+	const nowMs = gameState.ms;
 
 	if (gameState.disabled) return null;
 
@@ -211,8 +211,6 @@ function getVisibleTileRange() {
 		maxTileY,
 	};
 }
-
-const sublayers = ["back", "front"] as const;
 
 function isWorldImagesReady() {
 	return worldImageLayers.every((layer) => {
@@ -411,7 +409,7 @@ function updateEntityAndPlayer({
 	// Movement start
 	if (!entity.isMoving) {
 		// Ensure idle entities keep occupying their standing tile
-		if (entity.variant !== "effect") occupy(entity);
+		if (entity.solid) occupy(entity);
 
 		if (desiredDirection) {
 			entity.direction = desiredDirection;
@@ -423,10 +421,9 @@ function updateEntityAndPlayer({
 
 		if (planned) {
 			// Reserve destination BEFORE starting the move
-			const ok =
-				entity.variant === "effect"
-					? true
-					: occupy({ ...planned.end, id: entity.id });
+			const ok = entity.solid
+				? occupy({ ...planned.end, id: entity.id })
+				: true;
 			if (!ok && !trick) {
 				// Someone else got there first; stay idle this tick, but attempt trick (will probably crash)
 			} else {
@@ -442,7 +439,7 @@ function updateEntityAndPlayer({
 					const prev = first.onSegmentEnd;
 					first.onSegmentEnd = (e) => {
 						// Vacate start tile once the first segment ends
-						if (e.variant !== "effect") vacate(e);
+						if (e.solid) vacate(e);
 						prev?.(e);
 					};
 				}
@@ -524,6 +521,9 @@ function update(dt: number) {
 
 	setTilesCountsAndSetWorldBounds();
 
+	if (gameState.paused) return;
+	gameState.ms += dt;
+
 	for (const [id, entity] of entities.entries()) {
 		if (id === "player") continue;
 		void updateEntity(dt, entity);
@@ -567,32 +567,70 @@ function draw(dt: number) {
 		});
 
 	for (const layer of worldImageLayers) {
+		const sx = startX * TILE_SIZE_PX;
+		const dx = Math.round(sx - camera.xPx);
+		const w = (endX - startX + 1) * TILE_SIZE_PX;
+
+		// Resolve images ONCE per layer per sublayer (not per row)
+		const nowSec = Math.floor(gameState.ms / 1000);
+
+		const backImages = layer.back;
+		const backImage =
+			backImages && backImages.length > 0
+				? backImages[nowSec % backImages.length]
+				: undefined;
+
+		const frontImages = layer.front;
+		const frontImage =
+			frontImages && frontImages.length > 0
+				? frontImages[nowSec % frontImages.length]
+				: undefined;
+
+		// 1) Draw ALL rows of the "back" sublayer first
+		if (backImage) {
+			for (let ty = startY; ty <= endY; ty++) {
+				const sy = ty * TILE_SIZE_PX;
+				const dy = Math.round(sy - camera.yPx);
+
+				ctx.drawImage(
+					backImage,
+					sx,
+					sy,
+					w,
+					TILE_SIZE_PX,
+					dx,
+					dy,
+					w,
+					TILE_SIZE_PX,
+				);
+			}
+		}
+
+		// 2) Then draw entities + "front" (row by row)
 		for (let ty = startY; ty <= endY; ty++) {
-			const sy = ty * TILE_SIZE_PX;
-			const dy = Math.round(sy - camera.yPx);
+			// Entities in this row, for this z-layer
+			for (const it of drawList) {
+				if (layer.z !== it.renderZ) continue;
+				if (ty !== it.row) continue;
+				drawEntity(it.entity);
+			}
 
-			const sx = startX * TILE_SIZE_PX;
-			const dx = Math.round(sx - camera.xPx);
+			// Front tiles for this row
+			if (frontImage) {
+				const sy = ty * TILE_SIZE_PX;
+				const dy = Math.round(sy - camera.yPx);
 
-			const w = (endX - startX + 1) * TILE_SIZE_PX;
-
-			for (const sublayer of sublayers) {
-				const images = layer[sublayer];
-
-				const frameIndex =
-					Math.floor(performance.now() / 1000) % (images?.length ?? 1);
-				const image = images ? images[frameIndex] : undefined;
-
-				if (!image) continue;
-
-				for (const it of drawList) {
-					if (sublayer !== "front") continue;
-					if (layer.z !== it.renderZ) continue;
-					if (ty !== it.row) continue;
-					drawEntity(it.entity);
-				}
-
-				ctx.drawImage(image, sx, sy, w, TILE_SIZE_PX, dx, dy, w, TILE_SIZE_PX);
+				ctx.drawImage(
+					frontImage,
+					sx,
+					sy,
+					w,
+					TILE_SIZE_PX,
+					dx,
+					dy,
+					w,
+					TILE_SIZE_PX,
+				);
 			}
 		}
 	}

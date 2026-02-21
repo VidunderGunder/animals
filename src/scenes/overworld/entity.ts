@@ -63,6 +63,7 @@ export type Entity<ID extends string = StringWithSuggestions<"player">> = {
 	variant: EntityVariant;
 	radius: number;
 	renderPriority: number;
+	solid: boolean;
 
 	/* Tile position */
 	x: number;
@@ -142,6 +143,7 @@ export function getEntityCharacterDefaults<ID extends string>({
 	return {
 		renderPriority: 0,
 		variant: "character",
+		solid: true,
 		radius: 6,
 		id,
 		sheet: "player",

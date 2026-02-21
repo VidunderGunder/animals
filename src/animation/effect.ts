@@ -103,6 +103,7 @@ export function impact(position: {
 		yPx: position.yPx,
 		z: position.z,
 		variant: "effect",
+		solid: false,
 		animationFrameIndex: 0,
 		width: effects.impact.w,
 		height: effects.impact.h,

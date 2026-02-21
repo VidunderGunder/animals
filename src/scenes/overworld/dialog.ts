@@ -1,7 +1,7 @@
 import { type SpeechOptions, speak } from "../../audio/speak";
 import { TILE_SIZE_PX } from "../../config";
 import { clamp } from "../../functions/general";
-import { player } from "../../game-state";
+import { gameState, player } from "../../game-state";
 import { ctx } from "../../gfx/canvas";
 import type { Vec2Px } from "../../types";
 import { camera } from "./camera";
@@ -113,11 +113,7 @@ function getPlayerBubblePosition(): Vec2Px {
 export const bubbles = new Map<string, BubbleState>();
 
 // Internal clock (no dt passed around)
-let lastNowMs = typeof performance !== "undefined" ? performance.now() : 0;
-
-function getNowMs() {
-	return typeof performance !== "undefined" ? performance.now() : Date.now();
-}
+let lastNowMs = gameState.ms;
 
 type Vec2PxWidth = Pick<Entity, "xPx" | "yPx" | "width">;
 
@@ -143,7 +139,7 @@ export function bubble(
 	position?: Vec2PxWidth | (() => Vec2Px),
 	options: BubbleOptions & SpeechOptions = {},
 ) {
-	const now = getNowMs();
+	const now = gameState.ms;
 	const opts: Required<BubbleOptions> & SpeechOptions = {
 		...DEFAULT_OPTS,
 		...options,
@@ -210,11 +206,9 @@ export function bubble(
 /**
  * Call once per frame (e.g. at the end of `overworld()` draw),
  * after you’ve rendered the world.
- *
- * This advances internal time using `performance.now()` and renders all bubbles.
  */
 export function renderDialogs() {
-	const now = getNowMs();
+	const now = gameState.ms;
 	const dtMs = clamp(now - lastNowMs, 0, 100); // clamp big tab-switch spikes
 	lastNowMs = now;
 

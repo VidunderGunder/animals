@@ -1,4 +1,5 @@
 // src/storage.ts
+import { type GameState, gameState } from "./game-state";
 import {
 	type Entities,
 	type Entity,
@@ -47,6 +48,11 @@ export type EntitySnapshot = {
 // Serializable format for IndexedDB (Map can't be stored directly)
 type SerializedEntities = [string, EntitySnapshot][];
 
+type GameStateSnapshot = {
+	ms: GameState["ms"];
+};
+type SerializedGameState = GameState;
+
 export type User = {
 	id: number;
 	name: string;
@@ -57,7 +63,8 @@ export type SaveSlot = {
 	id: number;
 	userId: number;
 	name: string;
-	entitiesData: SerializedEntities;
+	entities: SerializedEntities;
+	gameState?: SerializedGameState;
 	createdAt: number;
 	updatedAt: number;
 };
@@ -165,17 +172,17 @@ function serializeEntities(map: Entities): SerializedEntities {
 	]);
 }
 
+function serializeGameState(state: GameState): SerializedGameState {
+	return state;
+}
+
 function deserializeEntities(
 	arr: SerializedEntities,
 ): Map<string, EntitySnapshot> {
 	return new Map(arr);
 }
 
-async function createSave(
-	userId: number,
-	name: string,
-	entitiesData: Entities,
-): Promise<SaveSlot> {
+async function createSave(userId: number, name: string): Promise<SaveSlot> {
 	const database = await openDB();
 	return new Promise((resolve, reject) => {
 		const tx = database.transaction(SAVES_STORE, "readwrite");
@@ -184,7 +191,8 @@ async function createSave(
 		const save: Omit<SaveSlot, "id"> = {
 			userId,
 			name,
-			entitiesData: serializeEntities(entitiesData),
+			entities: serializeEntities(entities),
+			gameState: serializeGameState(gameState),
 			createdAt: now,
 			updatedAt: now,
 		};
@@ -218,7 +226,7 @@ async function getSave(id: number): Promise<SaveSlot | null> {
 	});
 }
 
-async function updateSave(id: number, entitiesData: Entities): Promise<void> {
+async function updateSave(id: number): Promise<void> {
 	const database = await openDB();
 	return new Promise((resolve, reject) => {
 		const tx = database.transaction(SAVES_STORE, "readwrite");
@@ -231,7 +239,8 @@ async function updateSave(id: number, entitiesData: Entities): Promise<void> {
 				reject(new Error(`Save with id ${id} not found`));
 				return;
 			}
-			save.entitiesData = serializeEntities(entitiesData);
+			save.entities = serializeEntities(entities);
+			save.gameState = serializeGameState(gameState);
 			save.updatedAt = Date.now();
 			const putRequest = store.put(save);
 			putRequest.onsuccess = () => resolve();
@@ -248,7 +257,7 @@ async function updateSave(id: number, entitiesData: Entities): Promise<void> {
  * Initialize storage: ensure at least one user and save exist,
  * then select the first user and first save.
  */
-export async function selectOrCreateActiveSave(defaultEntitiesData: Entities) {
+export async function selectOrCreateActiveSave() {
 	await openDB();
 
 	let users = await getUsers();
@@ -262,11 +271,7 @@ export async function selectOrCreateActiveSave(defaultEntitiesData: Entities) {
 
 	let saves = await getSavesForUser(currentUserId);
 	if (saves.length === 0) {
-		const newSave = await createSave(
-			currentUserId,
-			"Save 1",
-			defaultEntitiesData,
-		);
+		const newSave = await createSave(currentUserId, "Save 1");
 		saves = [newSave];
 	}
 	const save = saves[0];
@@ -274,13 +279,16 @@ export async function selectOrCreateActiveSave(defaultEntitiesData: Entities) {
 	currentSaveId = save.id;
 }
 
-export async function readActiveSaveSnapshots(): Promise<Map<
-	string,
-	EntitySnapshot
-> | null> {
+export async function readActiveSaveSnapshots(): Promise<{
+	entities: Map<string, EntitySnapshot> | null;
+	gameState: GameStateSnapshot | null;
+} | null> {
 	if (currentSaveId === null) return null;
 	const save = await getSave(currentSaveId);
-	return save ? deserializeEntities(save.entitiesData) : null;
+	return {
+		entities: save ? deserializeEntities(save.entities) : null,
+		gameState: save?.gameState ?? null,
+	};
 }
 
 // ============ Apply snapshots ============
@@ -305,7 +313,7 @@ function resetTransientMovement(e: Entity) {
 	e.brainDesiredDirection = null;
 }
 
-function applySnapshot(live: Entity, snap: EntitySnapshot) {
+function applyEntitySnapshot(live: Entity, snap: EntitySnapshot) {
 	// stable wiring
 	live.brainId = snap.brainId ?? live.brainId ?? null;
 	live.state = snap.state ?? live.state ?? null;
@@ -332,24 +340,32 @@ function applySnapshot(live: Entity, snap: EntitySnapshot) {
 	resetTransientMovement(live);
 }
 
+function applyGameStateSnapshot(snap: GameStateSnapshot) {
+	gameState.ms = snap.ms;
+}
+
 export async function load() {
 	// Ensure we have an active save selected
-	await selectOrCreateActiveSave(entities);
+	await selectOrCreateActiveSave();
 
 	const saved = await readActiveSaveSnapshots();
 	if (!saved) return;
 
+	if (saved.gameState) applyGameStateSnapshot(saved.gameState);
+
 	// Apply snapshots onto existing runtime entities (created by initializeArea / initEntities).
-	for (const [id, snap] of saved.entries()) {
-		const live = entities.get(id);
-		if (!live) continue;
-		applySnapshot(live, snap);
+	if (saved.entities) {
+		for (const [id, snap] of saved.entities.entries()) {
+			const live = entities.get(id);
+			if (!live) continue;
+			applyEntitySnapshot(live, snap);
+		}
 	}
 
 	// ✅ Rebuild occupancy (fix "ghost occupants" / wrong interaction targets)
 	occupied.clear();
 	for (const e of entities.values()) {
-		if (e.variant === "effect") continue;
+		if (e.solid) continue;
 		occupy(e);
 	}
 }
@@ -370,7 +386,7 @@ async function saveNow() {
 
 	saving = true;
 	try {
-		await updateSave(currentSaveId, entities);
+		await updateSave(currentSaveId);
 		dirty = false;
 	} finally {
 		saving = false;

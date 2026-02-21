@@ -23,27 +23,31 @@ But you can use any tool you like, as long as the sound effects fit the style.
 - 🔊 Audio related (requires DAW or synth)
 - 🤖 Good vibe coding task
 - 🔻 Not prioritized (might be a waste of time)
-- ⬅️ My current focus
 
 Priority
 
+- [x] ~~🤖 Add game time to game state (not ticking if paused)~~
+- [x] ~~🤖 Save/load game state~~
+- [ ] 🤖 Following
 - [ ] 🎨 Design menu
-  - [ ] Bag, Crew, Beastiary, Save, Settings
-- [ ] 🧠 Obstacle course mini-game (checkpoints, timer, leaderboard) ⬅️
+  - [ ] Bag
+  - [ ] Crew
+  - [ ] Beastiary
+  - [ ] Settings
+- [ ] 🧠 Obstacle course mini-game (checkpoints, timer, leaderboard)
   - [ ] 🎨 UI overlay
-- [ ] 🎨 Design beastiary
 
 Character Movement & Animation
 
+- [ ] 🎨 Poof (spawn/despawn effect)
+- [ ] 🤖 Dizzy if trick is repeated 3 times in quick sucession
+- [ ] 🎨 Dizzy animation
+- [ ] 🧠 Teleport command
 - [ ] 🤖 Ensure current cell is occupied during spin-in-place
-- [ ] 🎨 Create Roll & Flip sprites ⬅️
-- [ ] 🤖 Ensure animation rotation, position offsets and other effects work in the overworld (only works in the menu as of now)
-- [ ] 🧠 Trick system
-  - [ ] 🤖 Make it possible to rotate (spin/flip) while jumping (jump transitions)
-  - [ ] 🤖 Don't allow jump/flip if navigation is one z-layer above (and y + 1), as the entity is probably blocked
-- [ ] 🎨 Terrain dependant rendering:
+- [ ] 🎨 Create Roll & Flip sprites
+- [ ] 🎨 Terrain dependent rendering:
   Cut off lower part of sprite (dynamic height), add animated overlay (e.g., water, grass, mud)
-- [ ] 🤖 Camera control for transitions (e.g., remove vertical camera motion for slow/walking stub-to-stub-jumps)
+
 
 Bugs (clearly defined issues)
 
@@ -60,4 +64,14 @@ Bugs (clearly defined issues)
 
 Spikes (investigation tasks)
 
-- [ ] 🧠 Maybe we should properly pause the game (now animations and sound still play, and the current transition continues—but we should probably freeze everything), but it could be fine the way it is for now?
+- [ ] 🧠 Trick system
+  - [ ] 🤖 Make it possible to rotate (spin/flip) while jumping (jump transitions)
+  - [ ] 🤖 Don't allow jump/flip if navigation is one z-layer above (and y + 1), as the entity is probably blocked
+- [ ] 🧠 Add rendering px offset to entity state?  
+  xPx and yPx are now responsible for Camera, Rendering and Logical, but we should split them  
+  Camera + Logical/Rendering or Logical/Camera + Rendering?
+  Alternatively: Logical required, and Camera and Rendering as optional overrides (defaulting to logical if not set)
+  - [ ] 🤖 Ensure animation rotation, position offsets and other effects work in the overworld (only works in the menu as of now)
+  - [ ] 🤖 Camera control for transitions (e.g., remove vertical camera motion for slow/walking stub-to-stub-jumps)
+  - [ ] 🧠 Issue: Crashing with tile based camera offset leads to too much movement (E.g., crash at tip of docks)
+- [x] ~~🧠 Maybe we should properly pause the game (now animations and sound still play, and the current transition continues—but we should probably freeze everything), but it could be fine the way it is for now?~~

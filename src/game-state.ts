@@ -8,11 +8,13 @@ import {
 export type GameState = {
 	disabled: boolean;
 	paused: boolean;
+	ms: number;
 };
 
 export const gameState: GameState = {
 	disabled: false,
 	paused: false,
+	ms: 0,
 };
 
 export const startTileX = 30;

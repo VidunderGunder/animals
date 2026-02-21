@@ -1,7 +1,5 @@
-import { GAME_HEIGHT_PX, GAME_WIDTH_PX } from "../../../config";
 import { distanceChebyshev } from "../../../functions/general";
 import { player } from "../../../game-state";
-import { ctx } from "../../../gfx/canvas";
 import { cmd } from "../ai/commands";
 import { entities } from "../entity";
 import type { Activity } from "./activity";
@@ -28,6 +26,7 @@ export const activities = {
 					cmd.waitUntilStopped(),
 					() => {
 						npc.interactionLock = false;
+						npc.moveMode = "walk";
 					},
 					cmd.goToTile({ x: 32, y: 52 + i, z: 0 }),
 					cmd.face("left"),

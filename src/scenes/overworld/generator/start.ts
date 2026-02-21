@@ -2,6 +2,7 @@ import { butterfly } from "../../../animation/effect";
 import { createImageElement } from "../../../assets/image";
 import { setAmbienceFields } from "../../../audio/ambience";
 import { TILE_SIZE_PX } from "../../../config";
+import { distanceChebyshev } from "../../../functions/general";
 import { toggleActivity } from "../activity/activities";
 import { isActivityRunning } from "../activity/activity";
 import { CommandRunner } from "../ai/brain";
@@ -444,7 +445,7 @@ function initEntities() {
 				activated,
 				content: isActivityRunning("startObstacleCourse")
 					? "Back to it!"
-					: "We'll move out of the way!",
+					: "We'll move",
 				onAnswer() {
 					toggleActivity("startObstacleCourse");
 				},
@@ -489,33 +490,26 @@ function initEntities() {
 			},
 		},
 		onActivate: ({ activator, activated }) => {
-			const bubbleId = `${activated.id}_interact`;
-			if (bubbles.has(bubbleId)) return;
 			if (activated.interactionLock) return;
-			if (!activated.brain) return;
-
-			activated.interactionLock = true;
-
-			activated.brain?.runner.interrupt([
-				cmd.waitUntilStopped(),
-				cmd.goToTile(getEntityFacingTile(activator)),
-				cmd.waitUntilStopped(),
-				cmd.face(activator),
-				() => {
-					bubble(bubbleId, "♫", activated, {
-						pitch: 4,
-						tempo: 0.4,
-						intensity: 0.5,
-					});
+			cmd.talk({
+				activator,
+				activated,
+				content: "♫",
+				options: {
+					pitch: 4,
+					tempo: 0.4,
+					intensity: 0.5,
 				},
-				cmd.wait(1000),
-				{
-					onUpdate: ({ entity }) => {
-						entity.interactionLock = false;
-						return true;
+			});
+			activated.brain?.runner.interrupt(
+				cmd.follow({
+					follower: activated,
+					target: activator,
+					condition: () => {
+						return distanceChebyshev(activated, kitsunePos) < 10;
 					},
-				},
-			]);
+				}),
+			);
 		},
 	});
 
