@@ -3,6 +3,7 @@ import {
 	distanceManhattan,
 } from "../../../functions/general";
 import type { Entity, EntityState } from "../entity";
+import { vacate } from "../occupancy";
 import { type Command, goToTile } from "./commands";
 
 export type FollowState = {
@@ -27,6 +28,8 @@ export function follow({
 	let goal = { x: follower.x, y: follower.y, z: follower.z };
 
 	follower.state ??= { targetId: target.id } satisfies FollowState;
+
+	vacate(follower);
 
 	return {
 		onUpdate() {
