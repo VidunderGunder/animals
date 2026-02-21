@@ -33,8 +33,10 @@ export function follow({
 			const done = !(condition?.() ?? true);
 
 			if (done) {
-				follower = defaults;
+				follower = { ...defaults };
 				follower.state = null;
+				console.log(follower.state);
+
 				return true;
 			}
 
@@ -45,7 +47,7 @@ export function follow({
 
 			if (follower.isMoving) return false;
 
-			if (distanceManhattan(follower, target) > 1) {
+			if (distanceManhattan(follower, target) !== 0) {
 				goal = { x: target.x, y: target.y, z: target.z };
 				follower.moveMode = target.moveMode || "walk";
 			}

@@ -487,22 +487,27 @@ function initEntities() {
 			runner: new CommandRunner(),
 			routine(entity) {
 				const state = isFollowState(entity.state) ? entity.state : undefined;
+				console.log(state);
+
 				const target = state?.targetId
 					? entities.get(state.targetId)
 					: undefined;
 
 				if (target) {
+					console.count("AA");
+
 					entity.brain?.runner.interrupt(
 						cmd.follow({
 							follower: entity,
 							target,
 							condition: () => {
-								return distanceChebyshev(entity, target) < 10;
+								return distanceChebyshev(target, kitsunePos) < 10;
 							},
 						}),
 					);
 					return;
 				}
+
 				cmd.wanderAround(entity, kitsunePos);
 			},
 		},
