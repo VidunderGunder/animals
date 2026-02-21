@@ -496,7 +496,7 @@ function updateEntityAndPlayer({
 				entity.animationOverride = null;
 
 				// Destination was reserved earlier; this is idempotent.
-				occupy(entity);
+				if (entity.solid) occupy(entity);
 
 				if (entity.id === "player" && !isActivityRunning()) {
 					requestAutosave("player-settled");

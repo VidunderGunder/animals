@@ -98,6 +98,10 @@ function isOccupiedByOther(x: number, y: number, z: number, selfId: string) {
 	return !!occ && occ !== selfId;
 }
 
+function shouldCareAboutOccupancy(entity: Entity) {
+	return entity.solid === true;
+}
+
 function pickTransition(
 	edgeTransition: Transition | Transition[],
 	entity: Entity,
@@ -118,6 +122,7 @@ function dirOrderFacingFirst(facing: Direction): Direction[] {
 
 function getNeighbors(from: Tile, entity: Entity, goal: Tile): Step[] {
 	const out: Step[] = [];
+	const care = shouldCareAboutOccupancy(entity);
 
 	for (const dir of dirOrderFacingFirst(entity.direction)) {
 		const edge = getEdge(from.x, from.y, from.z, dir);
@@ -134,7 +139,7 @@ function getNeighbors(from: Tile, entity: Entity, goal: Tile): Step[] {
 			if (isBlockedCell(to.x, to.y, to.z)) continue;
 
 			// Allow goal even if occupied (so we can still move *towards* it)
-			if (!isSameTile(to, goal)) {
+			if (care && !isSameTile(to, goal)) {
 				if (isOccupiedByOther(to.x, to.y, to.z, entity.id)) continue;
 			}
 
@@ -164,7 +169,7 @@ function getNeighbors(from: Tile, entity: Entity, goal: Tile): Step[] {
 		if (isBlockedCell(nx, ny, nz)) continue;
 
 		// Allow goal even if occupied (so we can still move *towards* it)
-		if (!isSameTile({ x: nx, y: ny, z: nz }, goal)) {
+		if (care && !isSameTile({ x: nx, y: ny, z: nz }, goal)) {
 			if (isOccupiedByOther(nx, ny, nz, entity.id)) continue;
 		}
 

@@ -6,7 +6,12 @@ import { distanceChebyshev } from "../../../functions/general";
 import { toggleActivity } from "../activity/activities";
 import { isActivityRunning } from "../activity/activity";
 import { CommandRunner } from "../ai/brain";
-import { cmd, type Route } from "../ai/commands";
+import {
+	cmd,
+	type FollowState,
+	isFollowState,
+	type Route,
+} from "../ai/commands";
 import {
 	cellToPx,
 	getCellsOutline,
@@ -15,13 +20,12 @@ import {
 	setEdge,
 	setWorldImageLayers,
 } from "../cells";
-import { bubble, bubbles } from "../dialog";
+import { bubble } from "../dialog";
 import {
 	type Entity,
 	entities,
 	getEntityAnimalDefaults,
 	getEntityCharacterDefaults,
-	getEntityFacingTile,
 } from "../entity";
 import { getOccupant } from "../occupancy";
 import { getJumpDownTransition } from "../transition/jump-down";
@@ -486,9 +490,27 @@ function initEntities() {
 		brain: {
 			runner: new CommandRunner(),
 			routine(entity) {
+				const state = isFollowState(entity.state) ? entity.state : undefined;
+				const target = state?.targetId
+					? entities.get(state.targetId)
+					: undefined;
+
+				if (target) {
+					entity.brain?.runner.interrupt(
+						cmd.follow({
+							follower: entity,
+							target,
+							condition: () => {
+								return distanceChebyshev(entity, target) < 10;
+							},
+						}),
+					);
+					return;
+				}
 				cmd.wanderAround(entity, kitsunePos);
 			},
 		},
+
 		onActivate: ({ activator, activated }) => {
 			if (activated.interactionLock) return;
 			cmd.talk({
@@ -501,15 +523,10 @@ function initEntities() {
 					intensity: 0.5,
 				},
 			});
-			activated.brain?.runner.interrupt(
-				cmd.follow({
-					follower: activated,
-					target: activator,
-					condition: () => {
-						return distanceChebyshev(activated, kitsunePos) < 10;
-					},
-				}),
-			);
+
+			activated.state = {
+				targetId: activator.id,
+			} satisfies FollowState;
 		},
 	});
 

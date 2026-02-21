@@ -4,7 +4,7 @@ import type { MoveMode } from "../../../config";
 import { distanceChebyshev } from "../../../functions/general";
 import type { Direction } from "../../../input/input";
 import { bubble, bubbles } from "../dialog";
-import { type Entity, getEntityFacingTile } from "../entity";
+import { type Entity, type EntityState, getEntityFacingTile } from "../entity";
 import { getOccupant } from "../occupancy";
 import { findPathDirections } from "./pathfinding";
 
@@ -402,6 +402,13 @@ function wanderAround(entity: Entity, origin: { x: number; y: number }) {
 	);
 }
 
+export type FollowState = {
+	targetId?: string;
+};
+export function isFollowState(state: EntityState | null): state is FollowState {
+	return typeof state?.targetId === "string";
+}
+
 function follow({
 	follower,
 	target,
@@ -411,23 +418,38 @@ function follow({
 	target: Entity;
 	condition?: () => boolean;
 }): Command {
-	console.log("follow start");
-
 	const done = !(condition?.() ?? true);
 
+	const defaults = { ...follower };
+
 	follower.solid = false; // don't block the target
+
+	let goal = { x: follower.x, y: follower.y, z: follower.z };
+
+	follower.state ??= { targetId: target.id } satisfies FollowState;
 
 	return {
 		onUpdate() {
 			if (done) {
-				console.log("follow done");
-				follower.solid = true;
+				follower = defaults;
 				return true;
 			}
 
 			follower.moveMode = target.moveMode;
+			if (distanceChebyshev(follower, target) > 2) {
+				follower.moveMode = "run";
+			}
 
-			// TODO: Follow logic
+			if (follower.isMoving) return false;
+
+			if (target.isMoving && distanceChebyshev(target, goal) !== 0) {
+				goal = { x: target.x, y: target.y, z: target.z };
+				follower.moveMode = target.moveMode || "walk";
+			}
+
+			if (distanceChebyshev(follower, goal) !== 0) {
+				follower.brain?.runner.interrupt(goToTile(goal));
+			}
 
 			return false;
 		},
