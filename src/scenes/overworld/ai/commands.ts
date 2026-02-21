@@ -1,11 +1,11 @@
 // src/scenes/overworld/ai/commands.ts
 import type { SpeechOptions } from "../../../audio/speak";
 import type { MoveMode } from "../../../config";
-import { distanceChebyshev } from "../../../functions/general";
 import type { Direction } from "../../../input/input";
 import { bubble, bubbles } from "../dialog";
-import { type Entity, type EntityState, getEntityFacingTile } from "../entity";
+import { type Entity, getEntityFacingTile } from "../entity";
 import { getOccupant } from "../occupancy";
+import { follow } from "./command-follow";
 import { findPathDirections } from "./pathfinding";
 
 export type Command = {
@@ -158,7 +158,7 @@ function step(dir: Direction): Command {
  * - It only ever requests ONE step at a time through `entity.intentDir`.
  * - It completes once the entity is snapped to the goal tile.
  */
-function goToTile(
+export function goToTile(
 	target: { x: number; y: number; z: number },
 	opts?: {
 		stopAdjacentIfTargetBlocked?: boolean;
@@ -400,60 +400,6 @@ function wanderAround(entity: Entity, origin: { x: number; y: number }) {
 	entity.brain.runner.push(
 		cmd.goToTile(dest, { stopAdjacentIfTargetBlocked: true }),
 	);
-}
-
-export type FollowState = {
-	targetId?: string;
-};
-export function isFollowState(state: EntityState | null): state is FollowState {
-	return typeof state?.targetId === "string";
-}
-
-function follow({
-	follower,
-	target,
-	condition,
-}: {
-	follower: Entity;
-	target: Entity;
-	condition?: () => boolean;
-}): Command {
-	const done = !(condition?.() ?? true);
-
-	const defaults = { ...follower };
-
-	follower.solid = false; // don't block the target
-
-	let goal = { x: follower.x, y: follower.y, z: follower.z };
-
-	follower.state ??= { targetId: target.id } satisfies FollowState;
-
-	return {
-		onUpdate() {
-			if (done) {
-				follower = defaults;
-				return true;
-			}
-
-			follower.moveMode = target.moveMode;
-			if (distanceChebyshev(follower, target) > 2) {
-				follower.moveMode = "run";
-			}
-
-			if (follower.isMoving) return false;
-
-			if (target.isMoving && distanceChebyshev(target, goal) !== 0) {
-				goal = { x: target.x, y: target.y, z: target.z };
-				follower.moveMode = target.moveMode || "walk";
-			}
-
-			if (distanceChebyshev(follower, goal) !== 0) {
-				follower.brain?.runner.interrupt(goToTile(goal));
-			}
-
-			return false;
-		},
-	};
 }
 
 export const cmd = {

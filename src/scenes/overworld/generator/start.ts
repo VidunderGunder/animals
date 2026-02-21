@@ -6,12 +6,8 @@ import { distanceChebyshev } from "../../../functions/general";
 import { toggleActivity } from "../activity/activities";
 import { isActivityRunning } from "../activity/activity";
 import { CommandRunner } from "../ai/brain";
-import {
-	cmd,
-	type FollowState,
-	isFollowState,
-	type Route,
-} from "../ai/commands";
+import { type FollowState, isFollowState } from "../ai/command-follow";
+import { cmd, type Route } from "../ai/commands";
 import {
 	cellToPx,
 	getCellsOutline,
