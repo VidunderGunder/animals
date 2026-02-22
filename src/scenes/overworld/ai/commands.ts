@@ -6,7 +6,7 @@ import { bubble, bubbles } from "../dialog";
 import { type Entity, getEntityFacingTile } from "../entity";
 import { getOccupant } from "../occupancy";
 import { follow } from "./command-follow";
-import { dirToDxDy, findPathDirections } from "./pathfinding";
+import { dirToDxDy, findPathPlan, type PathStep } from "./pathfinding";
 
 export type Command = {
 	/**
@@ -135,7 +135,7 @@ export function goToTile(
 	const stopAdjacentIfTargetBlocked =
 		opts?.stopAdjacentIfTargetBlocked ?? false;
 
-	let cached: Direction[] | null = null;
+	let cached: PathStep[] | null = null;
 	let repathCooldownMs = 0;
 	let lastAt: { x: number; y: number; z: number } | null = null;
 	let stuckMs = 0;
@@ -189,7 +189,7 @@ export function goToTile(
 				stuckMs > 350;
 
 			if (shouldRepath) {
-				cached = findPathDirections(
+				cached = findPathPlan(
 					entity,
 					{ x: entity.x, y: entity.y, z: entity.z },
 					target,
@@ -208,8 +208,12 @@ export function goToTile(
 			const next = cached?.[0];
 			if (!next) return false;
 
+			if (entity.moveMode !== next.moveMode) entity.moveMode = next.moveMode;
+
+			const nextDir = next.dir;
+
 			if (stopAdjacentIfTargetBlocked && cached?.length === 1) {
-				const { dx, dy } = dirToDxDy(next);
+				const { dx, dy } = dirToDxDy(nextDir);
 				const wouldEnter = { x: entity.x + dx, y: entity.y + dy, z: entity.z };
 
 				if (
@@ -224,8 +228,8 @@ export function goToTile(
 				}
 			}
 
-			entity.brainDesiredDirection = next;
-			lastIssued = next; // NEW: remember what we asked for
+			entity.brainDesiredDirection = nextDir;
+			lastIssued = nextDir;
 
 			cached?.shift();
 			repathCooldownMs = Math.min(repathCooldownMs, 90);

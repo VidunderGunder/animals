@@ -1,4 +1,7 @@
 // src/scenes/overworld/ai/pathfinding.ts
+
+// ADD near the top (after imports)
+import type { MoveMode } from "../../../config";
 import { TILE_SIZE_PX } from "../../../config";
 import { distanceManhattan } from "../../../functions/general";
 import type { Direction } from "../../../input/input";
@@ -6,6 +9,54 @@ import { cellKey, getCell, getEdge, worldBounds } from "../cells";
 import type { Entity } from "../entity";
 import { getOccupant } from "../occupancy";
 import type { Transition } from "../transition/transition";
+
+export type PathStep = { dir: Direction; moveMode: MoveMode };
+
+// Small cost so we prefer staying in current moveMode,
+// but can switch when it unlocks a shorter / only valid path.
+const MOVE_MODE_SWITCH_COST = 0.35;
+
+// Default: walk+run, but always include current mode too (eg skate)
+function getAllowedMoveModes(entity: Entity, allowed?: readonly MoveMode[]) {
+	const base = allowed?.length ? [...allowed] : (["walk", "run"] as MoveMode[]);
+	const cur = entity.moveMode ?? "walk";
+	if (!base.includes(cur)) base.unshift(cur);
+	// de-dupe preserving order
+	return base.filter((m, i) => base.indexOf(m) === i);
+}
+
+function moveModeIndex(m: MoveMode) {
+	switch (m) {
+		case "walk":
+			return 0;
+		case "run":
+			return 1;
+		case "skate":
+			return 2;
+	}
+}
+function indexToMoveMode(i: number): MoveMode {
+	switch (i) {
+		case 0:
+			return "walk";
+		case 1:
+			return "run";
+		case 2:
+			return "skate";
+		default:
+			return "walk";
+	}
+}
+
+// Pack node key = (cellKey << 2) | modeIndex
+function nodeKey(tileKey: number, mode: MoveMode) {
+	return (tileKey << 2) | moveModeIndex(mode);
+}
+function unpackNodeKey(k: number) {
+	const modeIdx = k & 0b11;
+	const tileK = k >> 2;
+	return { tileK, mode: indexToMoveMode(modeIdx) };
+}
 
 export function tryPlanMove(
 	desired: Direction,
@@ -115,11 +166,93 @@ function isSameTile(a: Tile, b: Tile) {
 	return a.x === b.x && a.y === b.y && a.z === b.z;
 }
 
-type Step = {
+// ADD this type near Tile/Step definitions
+type Node = { tile: Tile; mode: MoveMode };
+
+type Step2 = {
 	dir: Direction;
 	to: Tile;
 	viaTransition: boolean;
+	mode: MoveMode; // mode used/kept after taking this step
+	cost: number; // movement cost (1) etc.
 };
+
+function getNeighbors(node: Node, entity: Entity, goal: Tile): Step2[] {
+	const out: Step2[] = [];
+	const care = shouldCareAboutOccupancy(entity);
+	const from = node.tile;
+	const mode = node.mode;
+
+	// 1) In-place moveMode switches (small cost)
+	const allowedModes = getAllowedMoveModes(entity);
+	for (const m of allowedModes) {
+		if (m === mode) continue;
+		out.push({
+			dir: entity.direction, // not used for movement; placeholder
+			to: { ...from },
+			viaTransition: false,
+			mode: m,
+			cost: MOVE_MODE_SWITCH_COST,
+		});
+	}
+
+	// 2) Movement edges under current virtual mode
+	for (const dir of dirOrderFacingFirst(entity.direction)) {
+		const edge = getEdge(from.x, from.y, from.z, dir);
+		if (edge?.blocked) continue;
+
+		// transition(s)
+		if (edge?.transition) {
+			const transitions = pickTransitions(edge.transition, entity, mode);
+			for (const t of transitions) {
+				const to = t.end;
+				if (isBlockedCell(to.x, to.y, to.z)) continue;
+
+				if (care && !isSameTile(to, goal)) {
+					if (isOccupiedByOther(to.x, to.y, to.z, entity.id)) continue;
+				}
+
+				out.push({
+					dir,
+					to: { x: to.x, y: to.y, z: to.z },
+					viaTransition: true,
+					mode, // mode persists (we switched before taking transition)
+					cost: 1,
+				});
+			}
+			continue;
+		}
+
+		// simple step
+		const { dx, dy } = dirToDxDy(dir);
+		const nx = from.x + dx;
+		const ny = from.y + dy;
+		const nz = from.z;
+
+		if (worldBounds) {
+			if (nx < 0 || ny < 0 || nx >= worldBounds.x || ny >= worldBounds.y)
+				continue;
+		} else {
+			continue;
+		}
+
+		if (isBlockedCell(nx, ny, nz)) continue;
+
+		if (care && !isSameTile({ x: nx, y: ny, z: nz }, goal)) {
+			if (isOccupiedByOther(nx, ny, nz, entity.id)) continue;
+		}
+
+		out.push({
+			dir,
+			to: { x: nx, y: ny, z: nz },
+			viaTransition: false,
+			mode,
+			cost: 1,
+		});
+	}
+
+	return out;
+}
 
 export function dirToDxDy(dir: Direction) {
 	switch (dir) {
@@ -147,131 +280,82 @@ function shouldCareAboutOccupancy(entity: Entity) {
 	return entity.solid === true;
 }
 
-function pickTransition(
+// REPLACE pickTransition(...) with this version
+function pickTransitions(
 	edgeTransition: Transition | Transition[],
 	entity: Entity,
+	virtualMoveMode: MoveMode,
 ) {
 	const list = Array.isArray(edgeTransition)
 		? edgeTransition
 		: [edgeTransition];
-	for (const t of list) {
-		if (t.condition && !t.condition(entity)) continue;
-		return t;
+
+	// Create a cheap "virtual" view for condition checks
+	const prev = entity.moveMode;
+	entity.moveMode = virtualMoveMode;
+
+	try {
+		const out: Transition[] = [];
+		for (const t of list) {
+			if (t.condition && !t.condition(entity)) continue;
+			out.push(t);
+		}
+		return out;
+	} finally {
+		entity.moveMode = prev;
 	}
-	return null;
 }
 
 function dirOrderFacingFirst(facing: Direction): Direction[] {
 	return [facing, leftOf(facing), rightOf(facing), backOf(facing)];
 }
 
-function getNeighbors(from: Tile, entity: Entity, goal: Tile): Step[] {
-	const out: Step[] = [];
-	const care = shouldCareAboutOccupancy(entity);
-
-	for (const dir of dirOrderFacingFirst(entity.direction)) {
-		const edge = getEdge(from.x, from.y, from.z, dir);
-		if (edge?.blocked) continue;
-
-		// If there's a transition, it defines the resulting tile.
-		if (edge?.transition) {
-			const t = pickTransition(edge.transition, entity);
-			if (!t) continue;
-
-			const to = t.end;
-
-			// Destination rules
-			if (isBlockedCell(to.x, to.y, to.z)) continue;
-
-			// Allow goal even if occupied (so we can still move *towards* it)
-			if (care && !isSameTile(to, goal)) {
-				if (isOccupiedByOther(to.x, to.y, to.z, entity.id)) continue;
-			}
-
-			out.push({
-				dir,
-				to: { x: to.x, y: to.y, z: to.z },
-				viaTransition: true,
-			});
-			continue;
-		}
-
-		// Otherwise it's a simple step.
-		const { dx, dy } = dirToDxDy(dir);
-		const nx = from.x + dx;
-		const ny = from.y + dy;
-		const nz = from.z;
-
-		if (worldBounds) {
-			if (nx < 0 || ny < 0 || nx >= worldBounds.x || ny >= worldBounds.y) {
-				continue;
-			}
-		} else {
-			// If we don't know bounds yet, be conservative.
-			continue;
-		}
-
-		if (isBlockedCell(nx, ny, nz)) continue;
-
-		// Allow goal even if occupied (so we can still move *towards* it)
-		if (care && !isSameTile({ x: nx, y: ny, z: nz }, goal)) {
-			if (isOccupiedByOther(nx, ny, nz, entity.id)) continue;
-		}
-
-		out.push({
-			dir,
-			to: { x: nx, y: ny, z: nz },
-			viaTransition: false,
-		});
-	}
-
-	return out;
-}
-
-/**
- * A* pathfind to a target tile.
- * Returns a list of directions (first is next move), or null if no path.
- */
-export function findPathDirections(
+// ADD this new export (leave old findPathDirections if you want)
+export function findPathPlan(
 	entity: Entity,
 	start: Tile,
 	goal: Tile,
 	opts?: {
-		/** safety cap so NPCs can't blow up CPU on huge maps */
 		maxExpanded?: number;
+		allowedMoveModes?: readonly MoveMode[];
 	},
-): Direction[] | null {
+): PathStep[] | null {
 	const maxExpanded = opts?.maxExpanded ?? 2500;
+	const allowedModes = getAllowedMoveModes(entity, opts?.allowedMoveModes);
 
-	const startK = cellKey(start.x, start.y, start.z);
-	const goalK = cellKey(goal.x, goal.y, goal.z);
+	const startTileK = cellKey(start.x, start.y, start.z);
+	const goalTileK = cellKey(goal.x, goal.y, goal.z);
 
-	if (startK === goalK) return [];
+	// We'll accept goal in ANY mode, but prefer reaching it without extra switches.
+	const startMode = entity.moveMode ?? "walk";
+	const startK = nodeKey(startTileK, startMode);
 
-	// open set (tiny maps: array is fine)
+	const goalKs = new Set<number>(
+		allowedModes.map((m) => nodeKey(goalTileK, m)),
+	);
+
+	// open set
 	const open = [startK];
 	const openHas = new Set<number>([startK]);
 
-	// scores
 	const gScore = new Map<number, number>([[startK, 0]]);
 	const fScore = new Map<number, number>([
 		[startK, distanceManhattan(start, goal)],
 	]);
 
-	// cameFrom: node -> {prevKey, dirUsedToReachNode}
-	const cameFrom = new Map<number, { prev: number; dir: Direction }>();
+	// cameFrom: node -> {prevKey, dirUsed, modeUsed}
+	const cameFrom = new Map<
+		number,
+		{ prev: number; dir: Direction; mode: MoveMode }
+	>();
 
-	// key -> tile decode cache (because we use cellKey bit packing)
 	const decodeCache = new Map<number, Tile>();
-	const decode = (k: number): Tile => {
+	const decodeTile = (k: number): Tile => {
 		const cached = decodeCache.get(k);
 		if (cached) return cached;
-
-		// cellKey: (z<<20)|(y<<10)|x, with x,y up to 1023, z up to ~4095
 		const x = k & 0x3ff;
 		const y = (k >> 10) & 0x3ff;
 		const z = k >> 20;
-
 		const t = { x, y, z };
 		decodeCache.set(k, t);
 		return t;
@@ -280,29 +364,20 @@ export function findPathDirections(
 	let expanded = 0;
 
 	while (open.length) {
-		// pick lowest fScore, tie-break by "keep going where I'm facing"
+		// pick best f (tie-break by facing penalty)
 		let bestIdx = 0;
 		let bestK = open[0];
-		if (bestK === undefined) {
-			throw new Error("Could not find path: open set is empty");
-		}
-
+		if (bestK === undefined) break;
 		let bestF = fScore.get(bestK) ?? Infinity;
 		let bestPenalty = facingPenalty(entity.direction, cameFrom.get(bestK)?.dir);
 
 		for (let i = 1; i < open.length; i++) {
 			const k = open[i];
-			if (k === undefined) {
-				throw new Error("Could not find path: open set is empty");
-			}
-
+			if (k === undefined) continue;
 			const f = fScore.get(k) ?? Infinity;
 			if (f > bestF) continue;
 
 			const penalty = facingPenalty(entity.direction, cameFrom.get(k)?.dir);
-
-			// primary: lower f
-			// secondary: lower facing penalty
 			if (f < bestF || penalty < bestPenalty) {
 				bestF = f;
 				bestPenalty = penalty;
@@ -311,37 +386,50 @@ export function findPathDirections(
 			}
 		}
 
-		// pop best
 		open.splice(bestIdx, 1);
 		openHas.delete(bestK);
 
-		if (bestK === goalK) {
-			// reconstruct directions by walking back from goal
-			const dirs: Direction[] = [];
-			let cur = goalK;
+		// reached goal in any mode
+		if (goalKs.has(bestK)) {
+			const steps: PathStep[] = [];
+			let cur = bestK;
+
 			while (cur !== startK) {
 				const step = cameFrom.get(cur);
 				if (!step) break;
-				dirs.push(step.dir);
+				steps.push({ dir: step.dir, moveMode: step.mode });
 				cur = step.prev;
 			}
-			dirs.reverse();
-			return dirs;
+
+			steps.reverse();
+
+			// Filter out pure "mode switch in place" edges (they had placeholder dir)
+			// Those edges exist only to enable transitions; they shouldn't be issued as movement.
+			return steps.filter(
+				(s) =>
+					s.dir === "up" ||
+					s.dir === "down" ||
+					s.dir === "left" ||
+					s.dir === "right",
+			);
 		}
 
 		expanded++;
 		if (expanded > maxExpanded) return null;
 
-		const curTile = decode(bestK);
-		const neighbors = getNeighbors(curTile, entity, goal);
+		const { tileK, mode } = unpackNodeKey(bestK);
+		const curTile = decodeTile(tileK);
+
+		const neighbors = getNeighbors({ tile: curTile, mode }, entity, goal);
 
 		for (const n of neighbors) {
-			const nk = cellKey(n.to.x, n.to.y, n.to.z);
+			const nkTile = cellKey(n.to.x, n.to.y, n.to.z);
+			const nk = nodeKey(nkTile, n.mode);
 
-			const tentativeG = (gScore.get(bestK) ?? Infinity) + 1;
+			const tentativeG = (gScore.get(bestK) ?? Infinity) + n.cost;
 
 			if (tentativeG < (gScore.get(nk) ?? Infinity)) {
-				cameFrom.set(nk, { prev: bestK, dir: n.dir });
+				cameFrom.set(nk, { prev: bestK, dir: n.dir, mode: n.mode });
 				gScore.set(nk, tentativeG);
 				fScore.set(nk, tentativeG + distanceManhattan(n.to, goal));
 
