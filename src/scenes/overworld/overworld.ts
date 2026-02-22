@@ -63,7 +63,7 @@ export function returnToOverworld() {
 	gameState.disabled = false;
 }
 
-const MAX_TRAIL = 4;
+const MAX_TRAIL = 12;
 function pushTrailStep(entity: Entity) {
 	entity.trail.push({ x: entity.x, y: entity.y, z: entity.z });
 	if (entity.trail.length > MAX_TRAIL) {
