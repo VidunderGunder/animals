@@ -121,7 +121,7 @@ function step(dir: Direction): Command {
 export type Route = { x: number; y: number; z: number; moveMode: MoveMode }[];
 type RouteState = { routeIndex?: number };
 
-function routeLoop(entity: Entity, route: Route) {
+export function routeLoop(entity: Entity, route: Route) {
 	entity.state ??= { routeIndex: 0 };
 	const state: RouteState = entity.state;
 
@@ -173,7 +173,7 @@ function routeLoop(entity: Entity, route: Route) {
 	});
 }
 
-function talk({
+export function respond({
 	activator,
 	activated,
 	content,
@@ -212,11 +212,9 @@ function talk({
 		activator ? cmd.face(activator) : null,
 		() => {
 			bubble(bubbleId, content, activated, options);
-			return {
-				onUpdate: () => {
-					return !bubbles.has(bubbleId);
-				},
-			};
+		},
+		{
+			onUpdate: () => !bubbles.has(bubbleId),
 		},
 		{
 			onUpdate: ({ entity }) => {
@@ -228,7 +226,7 @@ function talk({
 	]);
 }
 
-function wanderAround(entity: Entity, origin: { x: number; y: number }) {
+export function wanderAround(entity: Entity, origin: { x: number; y: number }) {
 	if (!entity.brain?.runner.isIdle()) return;
 
 	const randomOffset = () => Math.floor(Math.random() * 3) - 1;
@@ -247,14 +245,17 @@ function wanderAround(entity: Entity, origin: { x: number; y: number }) {
 	);
 }
 
+// biome-ignore lint/suspicious/noExplicitAny: We only care about the Command return type, and the type will only be used as a `satisfies` check
+type CommandGenerator = (...args: any[]) => Command;
+
+/**
+ * Command generator functions that produce Commands you can push to a CommandRunner
+ */
 export const cmd = {
 	face,
 	step,
 	goToTile,
-	routeLoop,
-	wanderAround,
-	talk,
 	wait,
 	waitUntilStopped,
 	follow,
-};
+} as const satisfies Record<string, CommandGenerator>;

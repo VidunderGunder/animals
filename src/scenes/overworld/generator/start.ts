@@ -11,7 +11,13 @@ import {
 	getDefaultFollowState,
 	getFollowState,
 } from "../ai/command-follow";
-import { cmd, type Route } from "../ai/commands";
+import {
+	cmd,
+	type Route,
+	respond,
+	routeLoop,
+	wanderAround,
+} from "../ai/commands";
 import {
 	cellToPx,
 	getCellsOutline,
@@ -441,11 +447,11 @@ function initEntities() {
 		brain: {
 			runner: new CommandRunner(),
 			routine(entity) {
-				cmd.routeLoop(entity, routeObstacleCourse);
+				routeLoop(entity, routeObstacleCourse);
 			},
 		},
 		onActivate: ({ activator, activated }) => {
-			cmd.talk({
+			respond({
 				activator,
 				activated,
 				content: isActivityRunning("startObstacleCourse")
@@ -465,11 +471,11 @@ function initEntities() {
 		brain: {
 			runner: new CommandRunner(),
 			routine(entity) {
-				cmd.routeLoop(entity, routeObstacleCourse);
+				routeLoop(entity, routeObstacleCourse);
 			},
 		},
 		onActivate: ({ activator, activated }) => {
-			cmd.talk({
+			respond({
 				activator,
 				activated,
 				content: "Yip!",
@@ -511,16 +517,17 @@ function initEntities() {
 				}
 
 				if (entity.moveMode !== "walk") entity.moveMode = "walk";
-				cmd.wanderAround(entity, kitsunePos);
+				wanderAround(entity, kitsunePos);
 			},
 		},
 
 		onActivate: ({ activator, activated }) => {
 			if (activated.interactionLock) return;
+
 			activated.brain?.runner.clear();
 			const isFollowing = !!activated.state?.targetId;
 
-			cmd.talk({
+			respond({
 				activator,
 				activated,
 				content: "♫",
@@ -551,12 +558,12 @@ function initEntities() {
 		brain: {
 			runner: new CommandRunner(),
 			routine(entity) {
-				cmd.wanderAround(entity, turtlePos);
+				wanderAround(entity, turtlePos);
 			},
 		},
 		onActivate: ({ activator, activated }) => {
 			if (activated.interactionLock) return;
-			cmd.talk({
+			respond({
 				activator,
 				activated,
 				content: "Ah",

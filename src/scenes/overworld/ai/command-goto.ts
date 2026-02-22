@@ -185,13 +185,6 @@ function getCardinalNeighbors(t: { x: number; y: number; z: number }) {
 	] as const;
 }
 
-function isBlockedCell(x: number, y: number, z: number) {
-	// command-goto.ts already imports inWorldBounds + getOccupant
-	// If you want to also respect static cell blocking here, import getCell and check .blocked.
-	// But easiest is to keep it purely inWorldBounds + occupancy; pathfinding will reject blocked anyway.
-	return false;
-}
-
 /**
  * If `target` is occupied by someone else and we want to "stop adjacent",
  * pick the best reachable adjacent tile and plan to that instead.
@@ -219,7 +212,6 @@ function findApproachPlanIfTargetOccupied(args: {
 	// Candidates are adjacent tiles around the target (same z as target).
 	const candidates = getCardinalNeighbors(target)
 		.filter((c) => inWorldBounds(c.x, c.y, c.z))
-		.filter((c) => !isBlockedCell(c.x, c.y, c.z))
 		.filter((c) => {
 			const occ2 = getOccupant(c.x, c.y, c.z);
 			return !occ2 || occ2 === entity.id;
