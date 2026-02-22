@@ -1,5 +1,5 @@
 // src/scenes/overworld/ai/command-follow.ts
-import { distanceChebyshev } from "../../../functions/general";
+import { distanceManhattan } from "../../../functions/general";
 import { type Direction, rotate } from "../../../input/input";
 import { type Entity, type EntityState, entities } from "../entity";
 import { forceOccupy, getOccupant, occupy, vacate } from "../occupancy";
@@ -82,11 +82,22 @@ function decToZero(n: number, dt: number) {
 }
 
 function updateMoveModeStable(
-	state: FollowState,
-	dist: number,
-	targetMove: Entity["moveMode"],
-	trailBacklog: number,
+	target: Entity,
+	follower: Entity,
+	// state: FollowState,
+	// dist: number,
+	// targetMove: Entity["moveMode"],
+	// trailBacklog: number,
 ) {
+	const state = getFollowState(follower);
+	const targetMove = target.moveMode ?? "walk";
+	const dist = distanceManhattan(follower, target);
+	const trailBacklog = target.trail.length;
+	const followerZ = follower.z;
+	const targetZ = target.z;
+
+	if (!state) return;
+
 	state.catchUpMs = decToZero(state.catchUpMs ?? 0, 0); // no-op helper use ok
 
 	// Engage catch-up when we are falling behind (tight threshold)
@@ -94,7 +105,8 @@ function updateMoveModeStable(
 		dist >= 2 || trailBacklog >= 2 || (targetMove === "run" && dist >= 2);
 
 	// Release only when we are close again
-	const closeEnough = dist <= 1 && trailBacklog <= 1;
+	const sameLayer = followerZ === targetZ; // pass in z’s
+	const closeEnough = sameLayer && dist <= 1 && trailBacklog <= 1;
 
 	// If already catching up, keep it latched a bit
 	if (state.catchUpMs > 0) {
@@ -140,6 +152,8 @@ export function follow({
 
 	return {
 		onUpdate({ dt }) {
+			console.log("follow");
+
 			decrementCooldown(state, dt);
 
 			// stop condition
@@ -184,15 +198,7 @@ export function follow({
 					});
 			}
 
-			const dist = distanceChebyshev(follower, target);
-			const trailBacklog = target.trail.length;
-
-			updateMoveModeStable(
-				state,
-				dist,
-				target.moveMode ?? "walk",
-				trailBacklog,
-			);
+			updateMoveModeStable(target, follower);
 
 			// small hold only when actually switching
 			if (state.moveModeHoldMs <= 0 && follower.moveMode !== state.moveMode) {
@@ -207,6 +213,18 @@ export function follow({
 
 			// while moving, do nothing
 			if (follower.isMoving) return false;
+
+			// ✅ If we're on a different layer than the target, crumbs are misleading.
+			// Always path toward the target (stop adjacent), so we actually take the down/up transitions.
+			if (follower.z !== target.z) {
+				follower.brain?.runner.interrupt(
+					goToTile(
+						{ x: target.x, y: target.y, z: target.z },
+						{ stopAdjacentIfTargetBlocked: true },
+					),
+				);
+				return false;
+			}
 
 			// Prefer breadcrumbs (MOST recent first; Pokémon-tight)
 			const trail = target.trail;

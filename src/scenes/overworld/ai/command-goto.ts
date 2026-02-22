@@ -25,12 +25,13 @@ export function goToTile(
 	let repathCooldownMs = 0;
 	let lastAt: { x: number; y: number; z: number } | null = null;
 	let stuckMs = 0;
-
-	// NEW: detect when something else (eg. interaction) changed facing
+	let lastGoal: { x: number; y: number; z: number } | null = null;
 	let lastIssued: Direction | null = null;
 
 	return {
 		onUpdate({ entity, dt }) {
+			console.log("goto");
+
 			const approach = stopAdjacentIfTargetBlocked
 				? findApproachPlanIfTargetOccupied({ entity, target })
 				: null;
@@ -84,18 +85,18 @@ export function goToTile(
 			repathCooldownMs -= dt;
 			if (repathCooldownMs < 0) repathCooldownMs = 0;
 
+			const goalChanged =
+				!lastGoal ||
+				lastGoal.x !== effectiveTarget.x ||
+				lastGoal.y !== effectiveTarget.y ||
+				lastGoal.z !== effectiveTarget.z;
+
 			const shouldRepath =
 				!cached ||
 				cached.length === 0 ||
 				repathCooldownMs === 0 ||
 				stuckMs > 350 ||
-				// Important: if effective target changed since last time, repath.
-				!(
-					lastAt &&
-					lastAt.x === effectiveTarget.x &&
-					lastAt.y === effectiveTarget.y &&
-					lastAt.z === effectiveTarget.z
-				);
+				goalChanged;
 
 			if (shouldRepath) {
 				// Prefer the precomputed "approach" plan if present
@@ -107,6 +108,7 @@ export function goToTile(
 						effectiveTarget,
 						{ maxExpanded: 2500 },
 					);
+				lastGoal = { ...effectiveTarget };
 
 				if (!cached) {
 					repathCooldownMs = 200;
@@ -121,12 +123,19 @@ export function goToTile(
 			const next = cached?.[0];
 			if (!next) return false;
 
+			if (next.kind === "mode") {
+				// Execute mode switch in-place (no movement intent this tick).
+				if (entity.moveMode !== next.moveMode) entity.moveMode = next.moveMode;
+				cached?.shift();
+				repathCooldownMs = Math.min(repathCooldownMs, 60);
+				return false;
+			}
+
+			// kind === "move"
 			if (entity.moveMode !== next.moveMode) entity.moveMode = next.moveMode;
 
-			const nextDir = next.dir;
-
-			entity.brainDesiredDirection = nextDir;
-			lastIssued = nextDir;
+			entity.brainDesiredDirection = next.dir;
+			lastIssued = next.dir;
 
 			cached?.shift();
 			repathCooldownMs = Math.min(repathCooldownMs, 90);
@@ -153,7 +162,7 @@ function getCardinalNeighbors(t: { x: number; y: number; z: number }) {
 function findApproachPlanIfTargetOccupied(args: {
 	entity: Entity;
 	target: { x: number; y: number; z: number };
-}) {
+}): { goal: { x: number; y: number; z: number }; plan: PathStep[] } | null {
 	const { entity, target } = args;
 
 	const occ = getOccupant(target.x, target.y, target.z);
@@ -164,22 +173,20 @@ function findApproachPlanIfTargetOccupied(args: {
 		Math.abs(entity.x - target.x) + Math.abs(entity.y - target.y) === 1 &&
 		entity.z === target.z;
 	if (alreadyAdjacent) {
-		return { goal: { ...entity }, plan: [] as PathStep[] };
+		return { goal: { x: entity.x, y: entity.y, z: entity.z }, plan: [] };
 	}
 
 	const candidates = getCardinalNeighbors(target)
 		.filter((c) => inWorldBounds(c.x, c.y, c.z))
-		// Can't stand on blocked/occupied tiles.
 		.filter((c) => {
 			const occ2 = getOccupant(c.x, c.y, c.z);
 			if (occ2 && occ2 !== entity.id) return false;
 			return true;
 		});
 
-	let best: {
-		goal: { x: number; y: number; z: number };
-		plan: PathStep[];
-	} | null = null;
+	let bestGoal: { x: number; y: number; z: number } | null = null;
+	let bestPlan: PathStep[] | null = null;
+	let bestModeSwitches = Number.POSITIVE_INFINITY;
 
 	for (const goal of candidates) {
 		const plan = findPathPlan(
@@ -190,33 +197,35 @@ function findApproachPlanIfTargetOccupied(args: {
 		);
 		if (!plan) continue;
 
-		// Prefer shortest plan. Tie-break: fewer mode switches.
-		const modeSwitches = plan.reduce((acc, s, i) => {
-			const step = plan[i - 1];
-			if (!step) return acc;
-			const prev = i === 0 ? (entity.moveMode ?? "walk") : step.moveMode;
-			return acc + (s.moveMode !== prev ? 1 : 0);
-		}, 0);
+		// Prefer shortest plan. Tie-break: fewer moveMode switches.
+		let modeSwitches = 0;
+		let prevMode = entity.moveMode ?? "walk";
+		for (const step of plan) {
+			if (step.moveMode !== prevMode) modeSwitches++;
+			prevMode = step.moveMode;
+		}
 
-		if (!best) {
-			best = { goal, plan };
-			(best as any).modeSwitches = modeSwitches;
+		if (!bestPlan) {
+			bestGoal = goal;
+			bestPlan = plan;
+			bestModeSwitches = modeSwitches;
 			continue;
 		}
 
-		const bestModeSwitches = (best as any).modeSwitches as number;
-
-		if (plan.length < best.plan.length) {
-			best = { goal, plan };
-			(best as any).modeSwitches = modeSwitches;
+		if (plan.length < bestPlan.length) {
+			bestGoal = goal;
+			bestPlan = plan;
+			bestModeSwitches = modeSwitches;
 			continue;
 		}
 
-		if (plan.length === best.plan.length && modeSwitches < bestModeSwitches) {
-			best = { goal, plan };
-			(best as any).modeSwitches = modeSwitches;
+		if (plan.length === bestPlan.length && modeSwitches < bestModeSwitches) {
+			bestGoal = goal;
+			bestPlan = plan;
+			bestModeSwitches = modeSwitches;
 		}
 	}
 
-	return best;
+	if (!bestGoal || !bestPlan) return null;
+	return { goal: bestGoal, plan: bestPlan };
 }

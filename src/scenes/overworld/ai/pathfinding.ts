@@ -10,7 +10,9 @@ import type { Entity } from "../entity";
 import { getOccupant } from "../occupancy";
 import type { Transition } from "../transition/transition";
 
-export type PathStep = { dir: Direction; moveMode: MoveMode };
+export type PathStep =
+	| { kind: "move"; dir: Direction; moveMode: MoveMode }
+	| { kind: "mode"; moveMode: MoveMode };
 
 // Small cost so we prefer staying in current moveMode,
 // but can switch when it unlocks a shorter / only valid path.
@@ -188,7 +190,7 @@ function getNeighbors(node: Node, entity: Entity, goal: Tile): Step2[] {
 	for (const m of allowedModes) {
 		if (m === mode) continue;
 		out.push({
-			dir: entity.direction, // not used for movement; placeholder
+			dir: entity.direction, // value irrelevant; we'll mark it as a mode-step in cameFrom
 			to: { ...from },
 			viaTransition: false,
 			mode: m,
@@ -397,21 +399,22 @@ export function findPathPlan(
 			while (cur !== startK) {
 				const step = cameFrom.get(cur);
 				if (!step) break;
-				steps.push({ dir: step.dir, moveMode: step.mode });
+
+				const prevState = unpackNodeKey(step.prev);
+				const curState = unpackNodeKey(cur);
+
+				// If the tile didn't change, this was an in-place moveMode switch.
+				if (prevState.tileK === curState.tileK) {
+					steps.push({ kind: "mode", moveMode: step.mode });
+				} else {
+					steps.push({ kind: "move", dir: step.dir, moveMode: step.mode });
+				}
+
 				cur = step.prev;
 			}
 
 			steps.reverse();
-
-			// Filter out pure "mode switch in place" edges (they had placeholder dir)
-			// Those edges exist only to enable transitions; they shouldn't be issued as movement.
-			return steps.filter(
-				(s) =>
-					s.dir === "up" ||
-					s.dir === "down" ||
-					s.dir === "left" ||
-					s.dir === "right",
-			);
+			return steps;
 		}
 
 		expanded++;
