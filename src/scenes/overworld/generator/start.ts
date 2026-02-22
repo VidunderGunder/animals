@@ -6,7 +6,12 @@ import { distanceChebyshev } from "../../../functions/general";
 import { toggleActivity } from "../activity/activities";
 import { isActivityRunning } from "../activity/activity";
 import { CommandRunner } from "../ai/brain";
-import { type FollowState, getFollowState } from "../ai/command-follow";
+import {
+	defaultFollowState,
+	type FollowState,
+	getDefaultFollowState,
+	getFollowState,
+} from "../ai/command-follow";
 import { cmd, type Route } from "../ai/commands";
 import {
 	cellToPx,
@@ -532,10 +537,10 @@ function initEntities() {
 				return;
 			}
 
-			activated.state = {
-				targetId: activator.id,
-				swapCooldownMs: 0,
-			} satisfies FollowState;
+			activated.state = getDefaultFollowState(
+				activated,
+				activator ?? "player",
+			) satisfies FollowState;
 		},
 	});
 

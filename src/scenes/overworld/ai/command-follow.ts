@@ -1,13 +1,8 @@
 // src/scenes/overworld/ai/command-follow.ts
-import { TILE_SIZE_PX } from "../../../config";
-import {
-	distanceChebyshev,
-	oppositeDirection,
-} from "../../../functions/general";
+import { distanceChebyshev } from "../../../functions/general";
 import { type Direction, rotate } from "../../../input/input";
-import { getEdge } from "../cells";
 import { type Entity, type EntityState, entities } from "../entity";
-import { getOccupant, occupy, swapOccupants, vacate } from "../occupancy";
+import { forceOccupy, getOccupant, occupy, vacate } from "../occupancy";
 import { setCurrentSegment, type Transition } from "../transition/transition";
 import { type Command, goToTile } from "./commands";
 import { tryPlanMove } from "./pathfinding";
@@ -15,15 +10,42 @@ import { tryPlanMove } from "./pathfinding";
 export type FollowState = {
 	targetId: string;
 	swapCooldownMs: number;
+
+	// NEW: smooth moveMode switching
+	moveModeHoldMs: number;
+	moveMode: "walk" | "run" | "skate";
+
+	// NEW: short window where follower becomes non-solid so it never blocks target
+	yieldMs: number;
+	isYielding: boolean;
+	wasSolidBeforeYield: boolean;
 };
 
-export function isFollowState(
+export const defaultFollowState = {
+	targetId: "",
+	swapCooldownMs: 0,
+	moveModeHoldMs: 0,
+	moveMode: "walk",
+	yieldMs: 0,
+	isYielding: false,
+	wasSolidBeforeYield: false,
+} as const satisfies FollowState;
+export const getDefaultFollowState = (
+	follower: Entity,
+	target: Entity | string,
+): FollowState => ({
+	...defaultFollowState,
+	targetId: typeof target === "string" ? target : target.id,
+	wasSolidBeforeYield: follower.solid,
+});
+
+export function isFollowStateFast(
 	state: EntityState | null | undefined,
 ): state is FollowState {
 	return !!state && typeof state.targetId === "string";
 }
 export function getFollowState(entity: Entity): FollowState | null {
-	return isFollowState(entity.state) ? entity.state : null;
+	return isFollowStateFast(entity.state) ? entity.state : null;
 }
 
 export function getFollowTargetId(entity: Entity): string | null {
@@ -47,6 +69,42 @@ function decrementCooldown(state: FollowState, dt: number) {
 	state.swapCooldownMs = Math.max(0, cur - dt);
 }
 
+function decToZero(n: number, dt: number) {
+	return n <= 0 ? 0 : Math.max(0, n - dt);
+}
+
+function updateMoveModeWithHysteresis(
+	state: FollowState,
+	dist: number,
+	targetMove: Entity["moveMode"],
+) {
+	// Hold prevents rapid flip-flop
+	if (state.moveModeHoldMs > 0) return;
+
+	// Thresholds (tweakable)
+	const RUN_ON = 3; // switch to run when 3+ tiles away
+	const RUN_OFF = 1; // switch back when within 1 tile
+
+	// If target is running and we're >=2 away, run sooner
+	const wantsRun = dist >= RUN_ON || (targetMove === "run" && dist >= 2);
+
+	if (wantsRun) {
+		if (state.moveMode !== "run") {
+			state.moveMode = "run";
+			state.moveModeHoldMs = 320;
+		}
+		return;
+	}
+
+	// Only drop back to walk when close enough
+	if (dist <= RUN_OFF) {
+		if (state.moveMode !== "walk") {
+			state.moveMode = "walk";
+			state.moveModeHoldMs = 260;
+		}
+	}
+}
+
 export function follow({
 	follower,
 	target,
@@ -60,11 +118,8 @@ export function follow({
 }): Command {
 	// Ensure state exists
 	follower.interactionLock = false;
-	follower.state ??= {
-		targetId: "",
-		swapCooldownMs: 0,
-	} satisfies FollowState;
-	const state = isFollowState(follower.state) ? follower.state : null;
+	follower.state ??= getDefaultFollowState(follower, target);
+	const state = isFollowStateFast(follower.state) ? follower.state : null;
 	if (!state) throw new Error("Failed to initialize follow state");
 
 	function resetState() {
@@ -83,40 +138,109 @@ export function follow({
 				return true;
 			}
 
-			// Match move mode-ish
-			follower.moveMode = target.moveMode ?? "walk";
-			if (distanceChebyshev(follower, target) > 2) follower.moveMode = "run";
+			// tick timers
+			state.swapCooldownMs = decToZero(state.swapCooldownMs ?? 0, dt);
+			state.moveModeHoldMs = decToZero(state.moveModeHoldMs ?? 0, dt);
+			state.yieldMs = Math.max(0, (state.yieldMs ?? 0) - dt);
+
+			// ENTER yield (one-shot)
+			if (state.yieldMs > 0 && !state.isYielding) {
+				state.isYielding = true;
+				state.wasSolidBeforeYield = follower.solid;
+
+				// become non-blocking
+				follower.solid = false;
+
+				// release any reservation / standing occupancy ONCE
+				vacate({ id: follower.id });
+
+				// optional: clear intent so we don't "fight" during yield
+				follower.brainDesiredDirection = null;
+
+				return false;
+			}
+
+			// EXIT yield (one-shot)
+			if (state.yieldMs === 0 && state.isYielding) {
+				state.isYielding = false;
+
+				// restore solidity
+				follower.solid = state.wasSolidBeforeYield;
+				state.wasSolidBeforeYield = false;
+
+				// re-occupy standing tile if solid again (safe + idempotent)
+				if (follower.solid)
+					occupy({
+						x: follower.x,
+						y: follower.y,
+						z: follower.z,
+						id: follower.id,
+					});
+
+				// continue normal follow logic this tick
+			}
+
+			// Yield ended: restore solidity
+			if (!follower.solid && state.wasSolidBeforeYield) {
+				follower.solid = true;
+				state.wasSolidBeforeYield = false;
+			}
+
+			// Smooth moveMode
+			const dist = distanceChebyshev(follower, target);
+			updateMoveModeWithHysteresis(state, dist, target.moveMode ?? "walk");
+			follower.moveMode = state.moveMode;
 
 			// while moving, do nothing
 			if (follower.isMoving) return false;
 
 			// Prefer breadcrumbs
+			// Prefer breadcrumbs (most recent first => <1 tile behind most of the time)
 			const trail = target.trail;
-			if (trail.length > 0 && trail[0]) {
-				// keep trail bounded defensively
+			if (trail.length > 0) {
+				// keep bounded defensively
 				if (trail.length > maxTrail) trail.splice(0, trail.length - maxTrail);
 
-				const goal = trail[0];
-				// If we already reached this breadcrumb, consume it
-				if (
-					follower.x === goal.x &&
-					follower.y === goal.y &&
-					follower.z === goal.z
-				) {
-					trail.shift();
-					return false;
+				// Pick the NEWEST breadcrumb we can actually step into soon.
+				// Scan from end (latest) backwards until we find one that isn't occupied by others.
+				let pickIndex = -1;
+				for (let i = trail.length - 1; i >= 0; i--) {
+					const t = trail[i];
+					if (!t) continue;
+
+					const occ = getOccupant(t.x, t.y, t.z);
+					if (occ && occ !== follower.id) continue;
+
+					pickIndex = i;
+					break;
 				}
 
-				// If the goal tile is still occupied by the target (reservation timing), just wait a tick
-				const occ = getOccupant(goal.x, goal.y, goal.z);
-				if (occ && occ !== follower.id) {
-					return false;
-				}
+				if (pickIndex !== -1) {
+					// Drop stale older crumbs so we don’t “chase the past”
+					if (pickIndex > 0) trail.splice(0, pickIndex);
 
-				follower.brain?.runner.interrupt(
-					goToTile(goal, { stopAdjacentIfTargetBlocked: false }),
-				);
-				return false;
+					const goal = trail[0];
+					if (goal) {
+						// If we already reached this breadcrumb, consume it
+						if (
+							follower.x === goal.x &&
+							follower.y === goal.y &&
+							follower.z === goal.z
+						) {
+							trail.shift();
+							return false;
+						}
+
+						// If goal still occupied by the target, wait (reservation timing)
+						const occ = getOccupant(goal.x, goal.y, goal.z);
+						if (occ && occ !== follower.id) return false;
+
+						follower.brain?.runner.interrupt(
+							goToTile(goal, { stopAdjacentIfTargetBlocked: false }),
+						);
+						return false;
+					}
+				}
 			}
 
 			// No breadcrumbs: just try to get adjacent (Pokémon-like fallback)
@@ -139,161 +263,64 @@ export function overworldFollowerCollision({
 	target: Entity;
 	planned: Transition;
 }): boolean {
-	// Destination occupied by someone else.
-	// If it's our follow-linked partner, attempt swap, else attempt sidestep.
-
 	const occId = getOccupant(planned.end.x, planned.end.y, planned.end.z);
 	const other = occId ? entities.get(occId) : undefined;
 
-	const canTryPair =
-		!!other &&
-		isFollowLinked(target, other) &&
-		!target.isMoving &&
-		!other.isMoving &&
-		!target.interactionLock &&
-		!other.interactionLock;
-
-	// Only for simple steps on same z (no transitions)
-	const dx = planned.end.x - target.x;
-	const dy = planned.end.y - target.y;
-	const manhattan = Math.abs(dx) + Math.abs(dy);
-	const isSimpleStepSameZ = planned.end.z === target.z && manhattan === 1;
-
-	// Helper to check edge rules for swap in both directions
-	const dir: Direction | null =
-		dx === 1 && dy === 0
-			? "right"
-			: dx === -1 && dy === 0
-				? "left"
-				: dx === 0 && dy === 1
-					? "down"
-					: dx === 0 && dy === -1
-						? "up"
-						: null;
-
-	const backDir = dir ? rotate(dir, "counterclockwise", 2) : null;
-
-	// Follow-scoped cooldown stored on the follower
+	// Only care if the blocker is OUR follower (linked)
 	const otherIsFollower =
-		isFollowState(other?.state) && other.state.targetId === target.id;
+		!!other &&
+		isFollowStateFast(other.state) &&
+		other.state.targetId === target.id;
+
 	if (!otherIsFollower) return false;
+
 	const follower = other;
-	const state = isFollowState(follower?.state) ? follower.state : null;
+	const state = getFollowState(follower);
+	if (!state) return false;
 
-	if (!state) {
-		console.warn("Follower has no follow state during collision handling");
-		return false;
-	}
-
+	// If either is mid-move or the planned move is a multi-segment/transition,
+	// we still yield — we just do it without trying to sidestep.
 	const isTransitionMove =
 		planned.path.length > 1 || planned.end.z !== target.z;
 
-	if (other.isMoving || isTransitionMove) {
-		// Force reserve end for target (single occupancy still holds — follower simply loses claim)
-		occupy({
-			x: planned.end.x,
-			y: planned.end.y,
-			z: planned.end.z,
-			id: target.id,
-		});
+	// Arm yield window (prevents immediate re-occupy/jitter)
+	state.swapCooldownMs = Math.max(state.swapCooldownMs ?? 0, 120);
+	state.yieldMs = Math.max(state.yieldMs ?? 0, isTransitionMove ? 220 : 160);
+	state.isYielding = false;
 
-		// Optional: nudge follower to replan sooner
-		state.swapCooldownMs = Math.max(state.swapCooldownMs, 80);
+	// Clear follower occupancy and ensure target reserves the destination
+	vacate({ id: follower.id });
+	forceOccupy({ ...planned.end, id: target.id });
 
-		return true; // ✅ allow target to proceed this tick
-	}
+	// If follower is idle and this was a simple step, try to step aside (nice-to-have).
+	// If it can’t, target still goes through because follower is non-solid during yield.
+	if (!isTransitionMove && !follower.isMoving) {
+		// "planned end" is follower's current tile; try to move follower out of the lane
+		const dx = planned.end.x - target.x;
+		const dy = planned.end.y - target.y;
+		const dir: Direction | null =
+			dx === 1 && dy === 0
+				? "right"
+				: dx === -1 && dy === 0
+					? "left"
+					: dx === 0 && dy === 1
+						? "down"
+						: dx === 0 && dy === -1
+							? "up"
+							: null;
 
-	const cdMs = state?.swapCooldownMs ?? 0;
-
-	// --- Attempt SWAP ---
-	if (canTryPair && isSimpleStepSameZ && dir && backDir && cdMs <= 0) {
-		// Ensure edges are normal walkable edges both ways (no blocked or transitions)
-		const e1 = getEdge(target.x, target.y, target.z, dir);
-		const e2 = getEdge(follower.x, follower.y, follower.z, backDir);
-		const edgesOk =
-			!e1?.blocked && !e1?.transition && !e2?.blocked && !e2?.transition;
-
-		if (edgesOk) {
-			// Both must currently occupy their own tiles for swapOccupants to succeed
-			// (Idle entities already occupy; this is just defensive.)
-			occupy({ x: target.x, y: target.y, z: target.z, id: target.id });
-			occupy({
-				x: follower.x,
-				y: follower.y,
-				z: follower.z,
-				id: follower.id,
-			});
-
-			const swapped = swapOccupants(
-				{ x: target.x, y: target.y, z: target.z },
-				{ x: follower.x, y: follower.y, z: follower.z },
-				target.id,
-				follower.id,
-			);
-
-			if (swapped) {
-				// Arm cooldown on the follower (contained in follow state)
-				if (state) state.swapCooldownMs = 250;
-
-				follower.isMoving = true;
-				follower.direction = oppositeDirection(dir);
-				follower.transitionEndTile = {
-					x: target.x,
-					y: target.y,
-					z: target.z,
-				};
-				follower.animationOverride = null;
-				follower.transitionPath = [
-					{
-						xPx: target.x * TILE_SIZE_PX,
-						yPx: target.y * TILE_SIZE_PX,
-						z: target.z,
-					},
-				].map((p) => ({ ...p }));
-
-				// Ensure follower vacates its start tile correctly on first segment end
-				const fFirst = follower.transitionPath[0];
-				if (fFirst) {
-					const prev = fFirst.onSegmentEnd;
-					fFirst.onSegmentEnd = (e) => {
-						if (e.solid) {
-							vacate({ x: target.x, y: target.y, z: target.z, id: e.id });
-						}
-						prev?.(e);
-					};
-				}
-				setCurrentSegment(follower);
-
-				// Now proceed to start leader movement WITHOUT re-occupying destination (already swapped)
-				// We'll treat ok=true and skip occupy({end,id}) (already done).
-				// So just fall through by setting ok=true-like behavior:
-			} else {
-				// swap failed -> fall back to sidestep / block
-			}
-		}
-	}
-
-	// Re-check: after swap, the destination should now be occupied by leader id, so we can continue.
-	const occNow = getOccupant(planned.end.x, planned.end.y, planned.end.z);
-	const okAfterSwap = occNow === target.id;
-
-	if (!okAfterSwap) {
-		// --- Attempt SIDESTEP (move follower out of the way) ---
-		if (canTryPair && isSimpleStepSameZ && dir && cdMs <= 0) {
+		if (dir) {
 			const directionCandidates: Direction[] = [
 				rotate(dir, "counterclockwise"),
 				rotate(dir, "clockwise"),
 				rotate(dir, "counterclockwise", 2),
 			];
 
-			for (const directionCandidate of directionCandidates) {
-				// sidestep only if follower idle
-				if (follower.isMoving) break;
-
-				const sidestepPlanned = tryPlanMove(directionCandidate, follower);
+			for (const d of directionCandidates) {
+				const sidestepPlanned = tryPlanMove(d, follower);
 				if (!sidestepPlanned) continue;
 
-				// attempt reserve and start follower move
+				// Reserve sidestep end for follower (only if solid right now; it might already be false)
 				const okSidestep = follower.solid
 					? occupy({ ...sidestepPlanned.end, id: follower.id })
 					: true;
@@ -303,36 +330,23 @@ export function overworldFollowerCollision({
 				follower.isMoving = true;
 				follower.transitionEndTile = sidestepPlanned.end;
 				follower.animationOverride = sidestepPlanned.animation ?? null;
-				follower.transitionPath = sidestepPlanned.path.map((p) => ({
-					...p,
-				}));
+				follower.transitionPath = sidestepPlanned.path.map((p) => ({ ...p }));
 
-				const fFirst = follower.transitionPath[0];
-				if (fFirst) {
-					const prev = fFirst.onSegmentEnd;
-					fFirst.onSegmentEnd = (e) => {
+				const first = follower.transitionPath[0];
+				if (first) {
+					const prev = first.onSegmentEnd;
+					first.onSegmentEnd = (e) => {
+						// when we actually leave, ensure we’re not “ghost occupying”
 						if (e.solid) vacate({ id: e.id });
-
 						prev?.(e);
 					};
 				}
 
 				setCurrentSegment(follower);
-
-				// Arm cooldown
-				if (state) state.swapCooldownMs = 150;
-
 				break;
 			}
 		}
-
-		// Leader stays idle this tick; next tick it can try again.
-		return false;
 	}
 
-	// If we got here, swap succeeded and leader can start its move without reserving end again.
-	// NOTE: Do NOT call occupy({end,id}) again; it would fail (occupied by leader already is fine, but your occupy is idempotent for same id).
-	// We'll just proceed to start movement below.
-
-	return false;
+	return true; // ✅ allow leader to proceed
 }

@@ -99,3 +99,17 @@ export function swapOccupants(
 	occupied.set(kb, aId);
 	return true;
 }
+
+/**
+ * Force-occupy a tile (overwrites whatever was there).
+ * Use sparingly for special cases (eg. "follower yields to leader").
+ */
+export function forceOccupy(props: {
+	x: number;
+	y: number;
+	z: number;
+	id: string;
+}): void {
+	const { x, y, z, id } = props;
+	occupied.set(cellKey(x, y, z), id);
+}
