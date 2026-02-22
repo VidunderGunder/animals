@@ -82,29 +82,28 @@ function decToZero(n: number, dt: number) {
 
 function updateMoveModeStable(target: Entity, follower: Entity) {
 	const state = getFollowState(follower);
-	const targetMove = target.moveMode ?? "walk";
-	const dist = distanceManhattan(follower, target);
-	const trailBacklog = target.trail.length;
-
 	if (!state) return;
 
-	state.catchUpMs = decToZero(state.catchUpMs ?? 0, 0); // no-op helper use ok
+	const targetMove = target.moveMode ?? "walk";
 
-	// Engage catch-up when we are falling behind (tight threshold)
+	const dist = distanceManhattan(follower, target);
+
+	const trailBacklog = target.trail.length;
+
+	// Engage catch-up when we are falling behind (planar + trail only)
 	const shouldCatchUp =
 		dist >= 2 || trailBacklog >= 2 || (targetMove === "run" && dist >= 2);
 
-	// Release only when we are close again
+	// Release only when we are close again (planar)
 	const closeEnough = dist <= 1;
 
 	// If already catching up, keep it latched a bit
 	if (state.catchUpMs > 0) {
-		if (closeEnough) {
-			// allow release below
-		} else {
+		if (!closeEnough) {
 			state.moveMode = "run";
 			return;
 		}
+		// closeEnough: allow release below
 	}
 
 	if (shouldCatchUp && !closeEnough) {
@@ -113,7 +112,6 @@ function updateMoveModeStable(target: Entity, follower: Entity) {
 		return;
 	}
 
-	// Not catching up: mirror leader a bit, but keep it simple
 	state.moveMode = "walk";
 }
 
@@ -247,6 +245,30 @@ export function follow({
 						);
 						return false;
 					}
+				}
+			}
+
+			if (follower.z !== target.z) {
+				const occ = getOccupant(target.x, target.y, target.z);
+				const targetIsOccupyingSelf = occ === target.id;
+
+				// No crumbs to follow right now (or all crumbs are unusable)
+				const hasUsableCrumb = (() => {
+					const trail = target.trail;
+					for (let i = trail.length - 1; i >= 0; i--) {
+						const c = trail[i];
+						if (!c) continue;
+						const occ2 = getOccupant(c.x, c.y, c.z);
+						if (occ2 && occ2 !== follower.id) continue;
+						return true;
+					}
+					return false;
+				})();
+
+				if (targetIsOccupyingSelf && !hasUsableCrumb) {
+					// Optional: reduce “panic running” while waiting at chokepoint
+					follower.moveMode = "walk";
+					return false;
 				}
 			}
 
