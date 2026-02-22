@@ -33,6 +33,8 @@ import {
 	isActivityRunning,
 	updateActivity,
 } from "./activity/activity";
+import { overworldFollowerCollision } from "./ai/command-follow";
+import { tryPlanMove } from "./ai/pathfinding";
 import { camera, updateCamera } from "./camera";
 import {
 	getCell,
@@ -58,19 +60,6 @@ export function returnToOverworld() {
 	menuState.show = false;
 	gameState.paused = false;
 	gameState.disabled = false;
-}
-
-function dirToDxDy(direction: Direction): { dx: number; dy: number } {
-	switch (direction) {
-		case "up":
-			return { dx: 0, dy: -1 };
-		case "down":
-			return { dx: 0, dy: 1 };
-		case "left":
-			return { dx: -1, dy: 0 };
-		case "right":
-			return { dx: 1, dy: 0 };
-	}
 }
 
 function applyTapToTurnGate(opts: {
@@ -222,54 +211,6 @@ function isWorldImagesReady() {
 			: true;
 		return backReady && frontReady;
 	});
-}
-
-function tryPlanMove(desired: Direction, entity: Entity): Transition | null {
-	const edge = getEdge(entity.x, entity.y, entity.z, desired);
-	if (edge?.blocked) return null;
-
-	if (edge?.transition) {
-		const transitions = Array.isArray(edge.transition)
-			? edge.transition
-			: [edge.transition];
-
-		for (const transition of transitions) {
-			if (transition.condition && !transition.condition(entity)) continue;
-
-			// Block if destination is occupied by someone else
-			const end = transition.end;
-			const occupant = getOccupant(end.x, end.y, end.z);
-			if (occupant && occupant !== entity.id) return null;
-
-			const endCell = getCell(end.x, end.y, end.z);
-			if (endCell?.blocked) return null;
-
-			return transition;
-		}
-
-		return null;
-	}
-
-	// --- simple step ---
-	const { dx, dy } = dirToDxDy(desired);
-	const nx = entity.x + dx;
-	const ny = entity.y + dy;
-	const nz = entity.z;
-
-	if (nx < 0 || ny < 0 || nx >= worldBounds.x || ny >= worldBounds.y)
-		return null;
-
-	const destination = getCell(nx, ny, nz);
-	if (destination?.blocked) return null;
-
-	// Block if destination is occupied by someone else
-	// const occupant = getOccupant(nx, ny, nz);
-	// if (occupant && occupant !== entity.id) return null;
-
-	return {
-		path: [{ xPx: nx * TILE_SIZE_PX, yPx: ny * TILE_SIZE_PX, z: nz }],
-		end: { x: nx, y: ny, z: nz },
-	};
 }
 
 /** Update player and world state */
@@ -426,6 +367,10 @@ function updateEntityAndPlayer({
 				: true;
 			if (!ok && !trick) {
 				// Someone else got there first; stay idle this tick, but attempt trick (will probably crash)
+				overworldFollowerCollision({
+					target: entity,
+					planned,
+				});
 			} else {
 				entity.isMoving = true;
 

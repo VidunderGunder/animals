@@ -37,6 +37,9 @@ export const indexToDirection: Record<number, Direction> = {
 export function rotate(
 	direction: Direction,
 	rotation: "clockwise" | "counterclockwise",
+	/**
+	 * Number of 90 degree rotations to apply. 1 = 90 degrees, 2 = 180 degrees, etc.
+	 */
 	times = 1,
 ): Direction {
 	const index = directionToIndex[direction];

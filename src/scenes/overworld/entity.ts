@@ -72,6 +72,8 @@ export type Entity<ID extends string = StringWithSuggestions<"player">> = {
 	/* Tile position */
 	z: number;
 
+	trail: { x: number; y: number; z: number }[];
+
 	direction: Direction;
 	idleTurnLockMs?: number;
 
@@ -152,6 +154,7 @@ export function getEntityCharacterDefaults<ID extends string>({
 		xPx: x * TILE_SIZE_PX,
 		yPx: y * TILE_SIZE_PX,
 		z: 0,
+		trail: [],
 		direction: "down",
 		width: CHARACTER_SPRITE_WIDTH_PX,
 		height: CHARACTER_SPRITE_HEIGHT_PX,

@@ -1,9 +1,61 @@
 // src/scenes/overworld/ai/pathfinding.ts
+import { TILE_SIZE_PX } from "../../../config";
 import type { Direction } from "../../../input/input";
 import { cellKey, getCell, getEdge, worldBounds } from "../cells";
 import type { Entity } from "../entity";
 import { getOccupant } from "../occupancy";
 import type { Transition } from "../transition/transition";
+
+export function tryPlanMove(
+	desired: Direction,
+	entity: Entity,
+): Transition | null {
+	const edge = getEdge(entity.x, entity.y, entity.z, desired);
+	if (edge?.blocked) return null;
+
+	if (edge?.transition) {
+		const transitions = Array.isArray(edge.transition)
+			? edge.transition
+			: [edge.transition];
+
+		for (const transition of transitions) {
+			if (transition.condition && !transition.condition(entity)) continue;
+
+			// Block if destination is occupied by someone else
+			const end = transition.end;
+			const occupant = getOccupant(end.x, end.y, end.z);
+			if (occupant && occupant !== entity.id) return null;
+
+			const endCell = getCell(end.x, end.y, end.z);
+			if (endCell?.blocked) return null;
+
+			return transition;
+		}
+
+		return null;
+	}
+
+	// --- simple step ---
+	const { dx, dy } = dirToDxDy(desired);
+	const nx = entity.x + dx;
+	const ny = entity.y + dy;
+	const nz = entity.z;
+
+	if (nx < 0 || ny < 0 || nx >= worldBounds.x || ny >= worldBounds.y)
+		return null;
+
+	const destination = getCell(nx, ny, nz);
+	if (destination?.blocked) return null;
+
+	// Block if destination is occupied by someone else
+	// const occupant = getOccupant(nx, ny, nz);
+	// if (occupant && occupant !== entity.id) return null;
+
+	return {
+		path: [{ xPx: nx * TILE_SIZE_PX, yPx: ny * TILE_SIZE_PX, z: nz }],
+		end: { x: nx, y: ny, z: nz },
+	};
+}
 
 function leftOf(d: Direction): Direction {
 	switch (d) {
@@ -72,7 +124,7 @@ type Step = {
 	viaTransition: boolean;
 };
 
-function dirToDxDy(dir: Direction) {
+export function dirToDxDy(dir: Direction) {
 	switch (dir) {
 		case "up":
 			return { dx: 0, dy: -1 };

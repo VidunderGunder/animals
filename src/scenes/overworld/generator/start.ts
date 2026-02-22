@@ -6,7 +6,7 @@ import { distanceChebyshev } from "../../../functions/general";
 import { toggleActivity } from "../activity/activities";
 import { isActivityRunning } from "../activity/activity";
 import { CommandRunner } from "../ai/brain";
-import { type FollowState, isFollowState } from "../ai/command-follow";
+import { type FollowState, getFollowState } from "../ai/command-follow";
 import { cmd, type Route } from "../ai/commands";
 import {
 	cellToPx,
@@ -446,7 +446,7 @@ function initEntities() {
 				content: isActivityRunning("startObstacleCourse")
 					? "Back to it!"
 					: "We'll move",
-				onAnswer() {
+				onEnd() {
 					toggleActivity("startObstacleCourse");
 				},
 			});
@@ -471,7 +471,7 @@ function initEntities() {
 				options: {
 					pitch: 3.5,
 				},
-				onAnswer() {
+				onEnd() {
 					toggleActivity("startObstacleCourse");
 				},
 			});
@@ -486,34 +486,40 @@ function initEntities() {
 		brain: {
 			runner: new CommandRunner(),
 			routine(entity) {
-				const state = isFollowState(entity.state) ? entity.state : undefined;
-				console.log(state);
+				entity.interactionLock = false;
+				console.log(entity.interactionLock);
 
-				const target = state?.targetId
-					? entities.get(state.targetId)
-					: undefined;
+				const state = getFollowState(entity);
+
+				const targetId = state?.targetId;
+
+				const target = targetId ? entities.get(targetId) : undefined;
 
 				if (target) {
-					console.count("AA");
-
-					entity.brain?.runner.interrupt(
-						cmd.follow({
-							follower: entity,
-							target,
-							condition: () => {
-								return distanceChebyshev(target, kitsunePos) < 10;
-							},
-						}),
-					);
+					// Only start follow when idle (no spam)
+					if (entity.brain?.runner.isIdle()) {
+						entity.brain.runner.push([
+							cmd.follow({
+								follower: entity,
+								target,
+								condition: () => distanceChebyshev(target, kitsunePos) < 16,
+							}),
+							cmd.goToTile({ ...kitsunePos, z: 0 }),
+						]);
+					}
 					return;
 				}
 
+				if (entity.moveMode !== "walk") entity.moveMode = "walk";
 				cmd.wanderAround(entity, kitsunePos);
 			},
 		},
 
 		onActivate: ({ activator, activated }) => {
 			if (activated.interactionLock) return;
+			activated.brain?.runner.clear();
+			const isFollowing = !!activated.state?.targetId;
+
 			cmd.talk({
 				activator,
 				activated,
@@ -525,8 +531,14 @@ function initEntities() {
 				},
 			});
 
+			if (isFollowing) {
+				activated.state = null;
+				return;
+			}
+
 			activated.state = {
 				targetId: activator.id,
+				swapCooldownMs: 0,
 			} satisfies FollowState;
 		},
 	});

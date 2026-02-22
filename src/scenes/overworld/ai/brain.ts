@@ -12,17 +12,18 @@ export class CommandRunner {
 		}
 	}
 
-	push(cmd: Command | (() => void)) {
-		if (typeof cmd === "function") {
-			this.queue.push({
-				onUpdate: () => {
-					cmd();
-					return true;
-				},
-			});
-			return;
+	push(cmd: Command | (() => void) | (Command | null | (() => void))[]) {
+		const cmds = Array.isArray(cmd) ? cmd : [cmd];
+		for (const c of cmds) {
+			if (typeof c === "function") {
+				this.queue.push({
+					onUpdate: () => {
+						c();
+						return true;
+					},
+				});
+			} else if (c) this.queue.push(c);
 		}
-		this.queue.push(cmd);
 	}
 
 	/** Push a command to the FRONT (preempt current plan). */

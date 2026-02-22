@@ -1,12 +1,12 @@
 // src/scenes/overworld/ai/commands.ts
 import type { SpeechOptions } from "../../../audio/speak";
 import type { MoveMode } from "../../../config";
-import type { Direction } from "../../../input/input";
+import { type Direction, rotate } from "../../../input/input";
 import { bubble, bubbles } from "../dialog";
 import { type Entity, getEntityFacingTile } from "../entity";
 import { getOccupant } from "../occupancy";
 import { follow } from "./command-follow";
-import { findPathDirections } from "./pathfinding";
+import { dirToDxDy, findPathDirections } from "./pathfinding";
 
 export type Command = {
 	/**
@@ -65,43 +65,6 @@ function face(
 	};
 }
 
-function leftOf(d: Direction): Direction {
-	switch (d) {
-		case "up":
-			return "left";
-		case "left":
-			return "down";
-		case "down":
-			return "right";
-		case "right":
-			return "up";
-	}
-}
-function rightOf(d: Direction): Direction {
-	switch (d) {
-		case "up":
-			return "right";
-		case "right":
-			return "down";
-		case "down":
-			return "left";
-		case "left":
-			return "up";
-	}
-}
-function backOf(d: Direction): Direction {
-	switch (d) {
-		case "up":
-			return "down";
-		case "down":
-			return "up";
-		case "left":
-			return "right";
-		case "right":
-			return "left";
-	}
-}
-
 /**
  * stepCmd: requests a one-tile step-ish.
  *
@@ -115,7 +78,12 @@ function step(dir: Direction): Command {
 	let attemptIndex = 0;
 	let retryCooldownMs = 0;
 
-	const tries: Direction[] = [dir, leftOf(dir), rightOf(dir), backOf(dir)];
+	const tries: Direction[] = [
+		dir,
+		rotate(dir, "counterclockwise"),
+		rotate(dir, "clockwise"),
+		rotate(dir, "clockwise", 2),
+	];
 
 	return {
 		onUpdate({ entity, dt }) {
@@ -174,19 +142,6 @@ export function goToTile(
 
 	// NEW: detect when something else (eg. interaction) changed facing
 	let lastIssued: Direction | null = null;
-
-	function dirToDxDy(dir: Direction): { dx: number; dy: number } {
-		switch (dir) {
-			case "up":
-				return { dx: 0, dy: -1 };
-			case "down":
-				return { dx: 0, dy: 1 };
-			case "left":
-				return { dx: -1, dy: 0 };
-			case "right":
-				return { dx: 1, dy: 0 };
-		}
-	}
 
 	return {
 		onUpdate({ entity, dt }) {
@@ -338,15 +293,15 @@ function talk({
 	activator,
 	activated,
 	content,
-	onTalk,
-	onAnswer,
+	onStart,
+	onEnd,
 	options,
 }: {
 	activator?: Entity;
 	activated: Entity;
 	content: string;
-	onTalk?: () => void;
-	onAnswer?: () => void;
+	onStart?: () => void;
+	onEnd?: () => void;
 	options?: SpeechOptions;
 }) {
 	const bubbleId = `${activated.id}_interact`;
@@ -363,7 +318,7 @@ function talk({
 	activated.interactionLock = true;
 
 	activated.brain?.runner.interrupt([
-		onTalk ?? null,
+		onStart ?? null,
 		cmd.waitUntilStopped(),
 		activator
 			? cmd.goToTile(getEntityFacingTile(activator), {
@@ -371,15 +326,21 @@ function talk({
 				})
 			: null,
 		activator ? cmd.face(activator) : null,
-		() => bubble(bubbleId, content, activated, options),
-		cmd.wait(1000),
-		onAnswer ?? null,
+		() => {
+			bubble(bubbleId, content, activated, options);
+			return {
+				onUpdate: () => {
+					return !bubbles.has(bubbleId);
+				},
+			};
+		},
 		{
 			onUpdate: ({ entity }) => {
 				entity.interactionLock = false;
 				return true;
 			},
 		},
+		onEnd ?? null,
 	]);
 }
 
