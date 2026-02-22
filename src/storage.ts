@@ -365,7 +365,7 @@ export async function load() {
 	// ✅ Rebuild occupancy (fix "ghost occupants" / wrong interaction targets)
 	occupied.clear();
 	for (const e of entities.values()) {
-		if (e.solid) continue;
+		if (!e.solid) continue;
 		occupy(e);
 	}
 }

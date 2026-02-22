@@ -421,6 +421,7 @@ function initEntities() {
 		{ x: 26, y: 44, z: 0, moveMode: "walk" },
 		{ x: 26, y: 46, z: 0, moveMode: "walk" },
 		{ x: 30, y: 46, z: 0, moveMode: "walk" },
+		{ x: 35, y: 45, z: 1, moveMode: "walk" },
 		{ x: 35, y: 49, z: 1, moveMode: "walk" },
 		{ x: 30, y: 49, z: 1, moveMode: "run" },
 		{ x: 26, y: 50, z: 0, moveMode: "run" },

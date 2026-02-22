@@ -138,7 +138,7 @@ export function overworldFollowerCollision({
 }: {
 	target: Entity;
 	planned: Transition;
-}) {
+}): boolean {
 	// Destination occupied by someone else.
 	// If it's our follow-linked partner, attempt swap, else attempt sidestep.
 
@@ -176,13 +176,31 @@ export function overworldFollowerCollision({
 	// Follow-scoped cooldown stored on the follower
 	const otherIsFollower =
 		isFollowState(other?.state) && other.state.targetId === target.id;
-	if (!otherIsFollower) return;
+	if (!otherIsFollower) return false;
 	const follower = other;
 	const state = isFollowState(follower?.state) ? follower.state : null;
 
 	if (!state) {
 		console.warn("Follower has no follow state during collision handling");
-		return;
+		return false;
+	}
+
+	const isTransitionMove =
+		planned.path.length > 1 || planned.end.z !== target.z;
+
+	if (other.isMoving || isTransitionMove) {
+		// Force reserve end for target (single occupancy still holds — follower simply loses claim)
+		occupy({
+			x: planned.end.x,
+			y: planned.end.y,
+			z: planned.end.z,
+			id: target.id,
+		});
+
+		// Optional: nudge follower to replan sooner
+		state.swapCooldownMs = Math.max(state.swapCooldownMs, 80);
+
+		return true; // ✅ allow target to proceed this tick
 	}
 
 	const cdMs = state?.swapCooldownMs ?? 0;
@@ -238,7 +256,9 @@ export function overworldFollowerCollision({
 				if (fFirst) {
 					const prev = fFirst.onSegmentEnd;
 					fFirst.onSegmentEnd = (e) => {
-						if (e.solid) vacate({ id: e.id });
+						if (e.solid) {
+							vacate({ x: target.x, y: target.y, z: target.z, id: e.id });
+						}
 						prev?.(e);
 					};
 				}
@@ -307,10 +327,12 @@ export function overworldFollowerCollision({
 		}
 
 		// Leader stays idle this tick; next tick it can try again.
-		return;
+		return false;
 	}
 
 	// If we got here, swap succeeded and leader can start its move without reserving end again.
 	// NOTE: Do NOT call occupy({end,id}) again; it would fail (occupied by leader already is fine, but your occupy is idempotent for same id).
 	// We'll just proceed to start movement below.
+
+	return false;
 }

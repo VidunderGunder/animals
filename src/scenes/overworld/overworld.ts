@@ -62,6 +62,14 @@ export function returnToOverworld() {
 	gameState.disabled = false;
 }
 
+const MAX_TRAIL = 4;
+function pushTrailStep(entity: Entity) {
+	entity.trail.push({ x: entity.x, y: entity.y, z: entity.z });
+	if (entity.trail.length > MAX_TRAIL) {
+		entity.trail.splice(0, entity.trail.length - MAX_TRAIL);
+	}
+}
+
 function applyTapToTurnGate(opts: {
 	entity: Entity;
 	direction?: Direction | null;
@@ -365,13 +373,13 @@ function updateEntityAndPlayer({
 			const ok = entity.solid
 				? occupy({ ...planned.end, id: entity.id })
 				: true;
+			let allowAnyway = false;
 			if (!ok && !trick) {
-				// Someone else got there first; stay idle this tick, but attempt trick (will probably crash)
-				overworldFollowerCollision({
-					target: entity,
-					planned,
-				});
-			} else {
+				allowAnyway = overworldFollowerCollision({ target: entity, planned });
+			}
+
+			if (ok || allowAnyway || trick) {
+				pushTrailStep(entity);
 				entity.isMoving = true;
 
 				entity.transitionEndTile = planned.end;

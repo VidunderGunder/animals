@@ -171,10 +171,12 @@ export function distanceChebyshev(
  * [Manhattan distance](https://en.wikipedia.org/wiki/Taxicab_geometry) between two points.
  */
 export function distanceManhattan(
-	position1: { x: number; y: number },
-	position2: { x: number; y: number },
+	position1: { x: number; y: number; z?: number },
+	position2: { x: number; y: number; z?: number },
 ) {
-	const dx = position2.x - position1.x;
-	const dy = position2.y - position1.y;
-	return Math.abs(dx) + Math.abs(dy);
+	return (
+		Math.abs(position1.x - position2.x) +
+		Math.abs(position1.y - position2.y) +
+		Math.abs((position1.z ?? 0) - (position2.z ?? 0)) * 4
+	);
 }

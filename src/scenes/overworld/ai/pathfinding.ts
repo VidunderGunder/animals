@@ -1,5 +1,6 @@
 // src/scenes/overworld/ai/pathfinding.ts
 import { TILE_SIZE_PX } from "../../../config";
+import { distanceManhattan } from "../../../functions/general";
 import type { Direction } from "../../../input/input";
 import { cellKey, getCell, getEdge, worldBounds } from "../cells";
 import type { Entity } from "../entity";
@@ -21,11 +22,7 @@ export function tryPlanMove(
 		for (const transition of transitions) {
 			if (transition.condition && !transition.condition(entity)) continue;
 
-			// Block if destination is occupied by someone else
 			const end = transition.end;
-			const occupant = getOccupant(end.x, end.y, end.z);
-			if (occupant && occupant !== entity.id) return null;
-
 			const endCell = getCell(end.x, end.y, end.z);
 			if (endCell?.blocked) return null;
 
@@ -135,10 +132,6 @@ export function dirToDxDy(dir: Direction) {
 		case "right":
 			return { dx: 1, dy: 0 };
 	}
-}
-
-function manhattan3(a: Tile, b: Tile) {
-	return Math.abs(a.x - b.x) + Math.abs(a.y - b.y) + Math.abs(a.z - b.z) * 4;
 }
 
 function isBlockedCell(x: number, y: number, z: number) {
@@ -261,7 +254,9 @@ export function findPathDirections(
 
 	// scores
 	const gScore = new Map<number, number>([[startK, 0]]);
-	const fScore = new Map<number, number>([[startK, manhattan3(start, goal)]]);
+	const fScore = new Map<number, number>([
+		[startK, distanceManhattan(start, goal)],
+	]);
 
 	// cameFrom: node -> {prevKey, dirUsedToReachNode}
 	const cameFrom = new Map<number, { prev: number; dir: Direction }>();
@@ -348,7 +343,7 @@ export function findPathDirections(
 			if (tentativeG < (gScore.get(nk) ?? Infinity)) {
 				cameFrom.set(nk, { prev: bestK, dir: n.dir });
 				gScore.set(nk, tentativeG);
-				fScore.set(nk, tentativeG + manhattan3(n.to, goal));
+				fScore.set(nk, tentativeG + distanceManhattan(n.to, goal));
 
 				if (!openHas.has(nk)) {
 					open.push(nk);
