@@ -1,8 +1,9 @@
 import type { Direction } from "../../../input/input";
+import { inWorldBounds } from "../cells";
 import type { Entity } from "../entity";
 import { getOccupant } from "../occupancy";
 import type { Command } from "./commands";
-import { dirToDxDy, findPathPlan, type PathStep } from "./pathfinding";
+import { findPathPlan, type PathStep } from "./pathfinding";
 
 /**
  * goToTile: A* to a target tile.
@@ -134,12 +135,6 @@ export function goToTile(
 	};
 }
 
-function inBounds(x: number, y: number, z: number) {
-	// worldBounds exists in cells.ts, but commands.ts doesn't import it.
-	// We'll just rely on blocked/occupancy checks and allow edges to reject out of bounds.
-	return x >= 0 && y >= 0; // cheap guard; real bounds handled by pathfinding/cells
-}
-
 function getCardinalNeighbors(t: { x: number; y: number; z: number }) {
 	return [
 		{ x: t.x + 1, y: t.y, z: t.z },
@@ -173,7 +168,7 @@ function findApproachPlanIfTargetOccupied(args: {
 	}
 
 	const candidates = getCardinalNeighbors(target)
-		.filter((c) => inBounds(c.x, c.y, c.z))
+		.filter((c) => inWorldBounds(c.x, c.y, c.z))
 		// Can't stand on blocked/occupied tiles.
 		.filter((c) => {
 			const occ2 = getOccupant(c.x, c.y, c.z);
