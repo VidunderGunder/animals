@@ -80,26 +80,6 @@ function vacateByEntityId(entityId: string): void {
 	}
 }
 
-export function swapOccupants(
-	a: { x: number; y: number; z: number },
-	b: { x: number; y: number; z: number },
-	aId: string,
-	bId: string,
-): boolean {
-	const ka = cellKey(a.x, a.y, a.z);
-	const kb = cellKey(b.x, b.y, b.z);
-
-	const ca = occupied.get(ka);
-	const cb = occupied.get(kb);
-
-	if (ca !== aId) return false;
-	if (cb !== bId) return false;
-
-	occupied.set(ka, bId);
-	occupied.set(kb, aId);
-	return true;
-}
-
 /**
  * Force-occupy a tile (overwrites whatever was there).
  * Use sparingly for special cases (eg. "follower yields to leader").

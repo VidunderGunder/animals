@@ -30,8 +30,6 @@ export function goToTile(
 
 	return {
 		onUpdate({ entity, dt }) {
-			console.log("goto");
-
 			const approach = stopAdjacentIfTargetBlocked
 				? findApproachPlanIfTargetOccupied({ entity, target })
 				: null;

@@ -18,6 +18,7 @@ import {
 	TAP_TO_TURN_MS,
 	TILE_SIZE_PX,
 } from "../../config";
+import { distanceManhattan } from "../../functions/general";
 import { gameState, player } from "../../game-state";
 import { clear, ctx } from "../../gfx/canvas";
 import {
@@ -391,8 +392,9 @@ function updateEntityAndPlayer({
 				if (first) {
 					const prev = first.onSegmentEnd;
 					first.onSegmentEnd = (e) => {
+						const endIsBeginTile = distanceManhattan(e, planned.end) === 0;
 						// Vacate start tile once the first segment ends
-						if (e.solid) vacate(e);
+						if (e.solid && !endIsBeginTile && !trick) vacate(e);
 						prev?.(e);
 					};
 				}

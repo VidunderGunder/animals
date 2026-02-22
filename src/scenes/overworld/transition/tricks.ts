@@ -12,6 +12,7 @@ import {
 	mix,
 	oppositeDirection,
 	pxToTile,
+	pxToTileValue,
 } from "../../../functions/general";
 import { type Direction, rotate } from "../../../input/input";
 import { getCell, getEdge, worldBounds } from "../cells";
@@ -395,6 +396,18 @@ function getSpinTransitionPath({
 			yPx,
 			duration: rawDuration * scale,
 			onSegmentStart(e) {
+				const assumedTile = pxToTile(e);
+
+				console.log("THING");
+
+				vacate({ id: e.id });
+				occupy({
+					x: assumedTile.x,
+					y: assumedTile.y,
+					z: assumedTile.z,
+					id: e.id,
+				});
+
 				if (isStartOfNewRound) spinDelaySFX();
 				if (i === 0 && hasSlide)
 					impact({
@@ -403,17 +416,12 @@ function getSpinTransitionPath({
 						z: start.z,
 					});
 				if (slideDir) {
-					const from = {
-						x: pxToTile(e.xPx),
-						y: pxToTile(e.yPx),
+					const from = assumedTile;
+					const to = pxToTile({
+						xPx,
+						yPx,
 						z: e.z,
-					};
-					const to = {
-						x: pxToTile(xPx),
-						y: pxToTile(yPx),
-						z: e.z,
-					};
-
+					});
 					if (from.x !== to.x || from.y !== to.y) {
 						const res = checkTileStepAllowed({
 							entity: e,
@@ -464,11 +472,7 @@ function crashBothOnCollision(args: {
 }) {
 	const { collider, collided, slideDir } = args;
 
-	const colliderTile = {
-		x: pxToTile(collider.xPx),
-		y: pxToTile(collider.yPx),
-		z: collider.z,
-	};
+	const colliderTile = pxToTile(collider);
 
 	triggerCrashForEntity({
 		entity: collider,
@@ -479,11 +483,7 @@ function crashBothOnCollision(args: {
 	if (!collided) return;
 	if (collided.interactionLock) return;
 
-	const collidedTile = {
-		x: pxToTile(collided.xPx),
-		y: pxToTile(collided.yPx),
-		z: collided.z,
-	};
+	const collidedTile = pxToTile(collided);
 
 	triggerCrashForEntity({
 		entity: collided,
@@ -497,11 +497,7 @@ function crashAnchorPx(
 	entity: Entity,
 	crashTile: { x: number; y: number; z: number },
 ) {
-	const curTile = {
-		x: pxToTile(entity.xPx),
-		y: pxToTile(entity.yPx),
-		z: entity.z,
-	};
+	const curTile = pxToTile(entity);
 
 	const sameTile =
 		curTile.x === crashTile.x &&
@@ -515,10 +511,10 @@ function crashAnchorPx(
 
 	return {
 		xPx: sameTile
-			? pxToTile(entity.xPx) * TILE_SIZE_PX + offset.xPx
+			? pxToTileValue(entity.xPx) * TILE_SIZE_PX + offset.xPx
 			: crashTile.x * TILE_SIZE_PX + offset.xPx,
 		yPx: sameTile
-			? pxToTile(entity.yPx) * TILE_SIZE_PX + offset.yPx
+			? pxToTileValue(entity.yPx) * TILE_SIZE_PX + offset.yPx
 			: crashTile.y * TILE_SIZE_PX + offset.yPx,
 	};
 }

@@ -1,5 +1,8 @@
 // src/scenes/overworld/ai/command-follow.ts
-import { distanceManhattan } from "../../../functions/general";
+import {
+	distanceManhattan,
+	oppositeDirection,
+} from "../../../functions/general";
 import { type Direction, rotate } from "../../../input/input";
 import { type Entity, type EntityState, entities } from "../entity";
 import { forceOccupy, getOccupant, occupy, vacate } from "../occupancy";
@@ -22,9 +25,6 @@ export type FollowState = {
 
 	// NEW: mode latch to avoid flapping
 	catchUpMs: number;
-
-	// NEW: facing while yielding (looks intentional)
-	yieldFaceDir: Direction | null;
 };
 
 export const defaultFollowState = {
@@ -36,7 +36,6 @@ export const defaultFollowState = {
 	isYielding: false,
 	wasSolidBeforeYield: false,
 	catchUpMs: 0,
-	yieldFaceDir: null,
 } as const satisfies FollowState;
 export const getDefaultFollowState = (
 	follower: Entity,
@@ -96,7 +95,7 @@ function updateMoveModeStable(target: Entity, follower: Entity) {
 		dist >= 2 || trailBacklog >= 2 || (targetMove === "run" && dist >= 2);
 
 	// Release only when we are close again
-	const closeEnough = dist <= 1 && trailBacklog <= 1;
+	const closeEnough = dist <= 1;
 
 	// If already catching up, keep it latched a bit
 	if (state.catchUpMs > 0) {
@@ -142,8 +141,6 @@ export function follow({
 
 	return {
 		onUpdate({ dt }) {
-			console.log("follow");
-
 			decrementCooldown(state, dt);
 
 			// stop condition
@@ -163,8 +160,6 @@ export function follow({
 				state.isYielding = true;
 				state.wasSolidBeforeYield = follower.solid;
 
-				if (state.yieldFaceDir) follower.direction = state.yieldFaceDir;
-
 				follower.solid = false;
 				vacate({ id: follower.id });
 				follower.brainDesiredDirection = null;
@@ -177,7 +172,6 @@ export function follow({
 
 				follower.solid = state.wasSolidBeforeYield;
 				state.wasSolidBeforeYield = false;
-				state.yieldFaceDir = null;
 
 				if (follower.solid)
 					occupy({
@@ -203,18 +197,6 @@ export function follow({
 
 			// while moving, do nothing
 			if (follower.isMoving) return false;
-
-			// ✅ If we're on a different layer than the target, crumbs are misleading.
-			// Always path toward the target (stop adjacent), so we actually take the down/up transitions.
-			if (follower.z !== target.z) {
-				follower.brain?.runner.interrupt(
-					goToTile(
-						{ x: target.x, y: target.y, z: target.z },
-						{ stopAdjacentIfTargetBlocked: true },
-					),
-				);
-				return false;
-			}
 
 			// Prefer breadcrumbs (MOST recent first; Pokémon-tight)
 			const trail = target.trail;
@@ -351,9 +333,7 @@ export function overworldFollowerCollision({
 
 				if (!okSidestep) continue;
 
-				state.yieldFaceDir = dir;
-
-				follower.direction = d;
+				follower.direction = oppositeDirection(d);
 				follower.isMoving = true;
 				follower.transitionEndTile = sidestepPlanned.end;
 				follower.animationOverride = sidestepPlanned.animation ?? null;
@@ -362,9 +342,13 @@ export function overworldFollowerCollision({
 				const first = follower.transitionPath[0];
 				if (first) {
 					const prev = first.onSegmentEnd;
+					const endIsStartTile =
+						distanceManhattan(follower, sidestepPlanned.end) === 0;
 					first.onSegmentEnd = (e) => {
 						// when we actually leave, ensure we’re not “ghost occupying”
-						if (e.solid) vacate({ id: e.id });
+
+						if (e.solid && !endIsStartTile) vacate(e);
+
 						prev?.(e);
 					};
 				}

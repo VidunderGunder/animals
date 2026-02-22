@@ -1,5 +1,5 @@
 import { createImageElement } from "../assets/image";
-import { pxToTile } from "../functions/general";
+import { pxToTileValue } from "../functions/general";
 import { entities, getEntityItemDefaults } from "../scenes/overworld/entity";
 import { layerFactory } from "./animation";
 
@@ -97,8 +97,8 @@ export function impact(position: {
 	entities.set(id, {
 		...getEntityItemDefaults({
 			id,
-			x: pxToTile(position.xPx),
-			y: pxToTile(position.yPx),
+			x: pxToTileValue(position.xPx),
+			y: pxToTileValue(position.yPx),
 		}),
 		xPx: position.xPx,
 		yPx: position.yPx,

@@ -83,8 +83,24 @@ export function mix(a: number, b: number, alpha: number) {
 	return a + (b - a) * alpha;
 }
 
-export function pxToTile(px: number) {
+export function pxToTileValue(px: number) {
 	return Math.floor((px + TILE_SIZE_PX / 2) / TILE_SIZE_PX);
+}
+
+export function pxToTile({
+	xPx,
+	yPx,
+	z,
+}: {
+	xPx: number;
+	yPx: number;
+	z?: number;
+}) {
+	return {
+		x: pxToTileValue(xPx),
+		y: pxToTileValue(yPx),
+		z: z ?? 0,
+	};
 }
 
 export function directionToDxDy(direction: Direction): {
