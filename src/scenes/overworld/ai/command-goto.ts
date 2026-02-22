@@ -3,7 +3,7 @@ import { inWorldBounds } from "../cells";
 import type { Entity } from "../entity";
 import { getOccupant } from "../occupancy";
 import type { Command } from "./commands";
-import { findPathPlan, type PathStep } from "./pathfinding";
+import { findPathPlan, type PathStep, tryPlanMove } from "./pathfinding";
 
 /**
  * goToTile: A* to a target tile.
@@ -30,11 +30,39 @@ export function goToTile(
 
 	return {
 		onUpdate({ entity, dt }) {
-			const approach = stopAdjacentIfTargetBlocked
-				? findApproachPlanIfTargetOccupied({ entity, target })
-				: null;
+			// If we want "stop adjacent" explicitly, keep existing behavior:
+			const approach = findApproachPlanIfTargetOccupied({ entity, target });
 
-			const effectiveTarget = approach?.goal ?? target;
+			let effectiveTarget = approach?.goal ?? target;
+			let forcedApproachPlan: PathStep[] | null = approach?.plan ?? null;
+
+			// ✅ NEW: Even when stopAdjacentIfTargetBlocked=false,
+			// NEVER try to path into an occupied goal tile (unless it's us).
+			// Instead, automatically switch into "approach" mode.
+			if (isOccupiedByOtherEntity(effectiveTarget, entity.id)) {
+				// If we are already adjacent (same z, cardinal), we're done.
+				const adjacent =
+					Math.abs(entity.x - effectiveTarget.x) +
+						Math.abs(entity.y - effectiveTarget.y) ===
+						1 && entity.z === effectiveTarget.z;
+
+				if (adjacent) return true;
+
+				const autoApproach = findApproachPlanIfTargetOccupied({
+					entity,
+					target: effectiveTarget,
+				});
+
+				if (autoApproach) {
+					effectiveTarget = autoApproach.goal;
+					forcedApproachPlan = autoApproach.plan;
+				} else {
+					// No reachable adjacent tile; back off a bit and retry later.
+					cached = null;
+					repathCooldownMs = 200;
+					return false;
+				}
+			}
 
 			if (
 				entity.x === effectiveTarget.x &&
@@ -44,6 +72,7 @@ export function goToTile(
 				return true;
 			}
 
+			// Existing: if stopAdjacentIfTargetBlocked is on, allow "finish" when adjacent to occupied target.
 			if (stopAdjacentIfTargetBlocked) {
 				const occ = getOccupant(target.x, target.y, target.z);
 				if (occ && occ !== entity.id) {
@@ -54,12 +83,9 @@ export function goToTile(
 				}
 			}
 
-			// While moving, we don't issue new intents.
 			if (entity.isMoving) return false;
 
-			// NEW: if our last-issued direction doesn't match current facing,
-			// something external likely rotated the NPC (eg. face(player)).
-			// Drop cached plan so we don't take a "stale" first step.
+			// If something rotated us externally, drop cache.
 			if (lastIssued && entity.direction !== lastIssued) {
 				cached = null;
 				repathCooldownMs = 0;
@@ -97,15 +123,15 @@ export function goToTile(
 				goalChanged;
 
 			if (shouldRepath) {
-				// Prefer the precomputed "approach" plan if present
 				cached =
-					approach?.plan ??
+					forcedApproachPlan ??
 					findPathPlan(
 						entity,
 						{ x: entity.x, y: entity.y, z: entity.z },
 						effectiveTarget,
 						{ maxExpanded: 2500 },
 					);
+
 				lastGoal = { ...effectiveTarget };
 
 				if (!cached) {
@@ -113,7 +139,6 @@ export function goToTile(
 					return false;
 				}
 
-				// If approach plan is empty, we might already be adjacent and will return true above next tick.
 				repathCooldownMs = 120;
 				stuckMs = 0;
 			}
@@ -122,14 +147,24 @@ export function goToTile(
 			if (!next) return false;
 
 			if (next.kind === "mode") {
-				// Execute mode switch in-place (no movement intent this tick).
 				if (entity.moveMode !== next.moveMode) entity.moveMode = next.moveMode;
 				cached?.shift();
 				repathCooldownMs = Math.min(repathCooldownMs, 60);
 				return false;
 			}
 
-			// kind === "move"
+			// ✅ NEW: sanity guard — if the immediate move can’t be planned *right now*,
+			// drop cache and force a repath. This prevents “spam the same dir forever”
+			// when a transition condition or dynamic occupancy changes mid-command.
+			{
+				const planned = tryPlanMove(next.dir, entity);
+				if (!planned) {
+					cached = null;
+					repathCooldownMs = 0;
+					return false;
+				}
+			}
+
 			if (entity.moveMode !== next.moveMode) entity.moveMode = next.moveMode;
 
 			entity.brainDesiredDirection = next.dir;
@@ -141,7 +176,6 @@ export function goToTile(
 		},
 	};
 }
-
 function getCardinalNeighbors(t: { x: number; y: number; z: number }) {
 	return [
 		{ x: t.x + 1, y: t.y, z: t.z },
@@ -149,6 +183,13 @@ function getCardinalNeighbors(t: { x: number; y: number; z: number }) {
 		{ x: t.x, y: t.y + 1, z: t.z },
 		{ x: t.x, y: t.y - 1, z: t.z },
 	] as const;
+}
+
+function isBlockedCell(x: number, y: number, z: number) {
+	// command-goto.ts already imports inWorldBounds + getOccupant
+	// If you want to also respect static cell blocking here, import getCell and check .blocked.
+	// But easiest is to keep it purely inWorldBounds + occupancy; pathfinding will reject blocked anyway.
+	return false;
 }
 
 /**
@@ -166,25 +207,28 @@ function findApproachPlanIfTargetOccupied(args: {
 	const occ = getOccupant(target.x, target.y, target.z);
 	if (!occ || occ === entity.id) return null;
 
-	// If already adjacent (cardinal), we can finish immediately.
+	// If already adjacent (cardinal) on same z, we are "close enough" and can finish.
 	const alreadyAdjacent =
 		Math.abs(entity.x - target.x) + Math.abs(entity.y - target.y) === 1 &&
 		entity.z === target.z;
+
 	if (alreadyAdjacent) {
 		return { goal: { x: entity.x, y: entity.y, z: entity.z }, plan: [] };
 	}
 
+	// Candidates are adjacent tiles around the target (same z as target).
 	const candidates = getCardinalNeighbors(target)
 		.filter((c) => inWorldBounds(c.x, c.y, c.z))
+		.filter((c) => !isBlockedCell(c.x, c.y, c.z))
 		.filter((c) => {
 			const occ2 = getOccupant(c.x, c.y, c.z);
-			if (occ2 && occ2 !== entity.id) return false;
-			return true;
+			return !occ2 || occ2 === entity.id;
 		});
 
 	let bestGoal: { x: number; y: number; z: number } | null = null;
 	let bestPlan: PathStep[] | null = null;
 	let bestModeSwitches = Number.POSITIVE_INFINITY;
+	let bestCloseness = Number.POSITIVE_INFINITY; // Manhattan goal->target
 
 	for (const goal of candidates) {
 		const plan = findPathPlan(
@@ -195,7 +239,7 @@ function findApproachPlanIfTargetOccupied(args: {
 		);
 		if (!plan) continue;
 
-		// Prefer shortest plan. Tie-break: fewer moveMode switches.
+		// Count move mode switches in this plan (prefer fewer)
 		let modeSwitches = 0;
 		let prevMode = entity.moveMode ?? "walk";
 		for (const step of plan) {
@@ -203,27 +247,57 @@ function findApproachPlanIfTargetOccupied(args: {
 			prevMode = step.moveMode;
 		}
 
+		const closeness =
+			Math.abs(goal.x - target.x) +
+			Math.abs(goal.y - target.y) +
+			(goal.z === target.z ? 0 : 4);
+
 		if (!bestPlan) {
 			bestGoal = goal;
 			bestPlan = plan;
 			bestModeSwitches = modeSwitches;
+			bestCloseness = closeness;
 			continue;
 		}
 
+		// Primary: shortest plan
 		if (plan.length < bestPlan.length) {
 			bestGoal = goal;
 			bestPlan = plan;
 			bestModeSwitches = modeSwitches;
+			bestCloseness = closeness;
 			continue;
 		}
 
+		// Tie-break: fewer mode switches
 		if (plan.length === bestPlan.length && modeSwitches < bestModeSwitches) {
 			bestGoal = goal;
 			bestPlan = plan;
 			bestModeSwitches = modeSwitches;
+			bestCloseness = closeness;
+			continue;
+		}
+
+		// Tie-break: closer to target (keeps it tight / less “orbiting”)
+		if (
+			plan.length === bestPlan.length &&
+			modeSwitches === bestModeSwitches &&
+			closeness < bestCloseness
+		) {
+			bestGoal = goal;
+			bestPlan = plan;
+			bestCloseness = closeness;
 		}
 	}
 
 	if (!bestGoal || !bestPlan) return null;
 	return { goal: bestGoal, plan: bestPlan };
+}
+
+function isOccupiedByOtherEntity(
+	t: { x: number; y: number; z: number },
+	selfId: string,
+) {
+	const occ = getOccupant(t.x, t.y, t.z);
+	return !!occ && occ !== selfId;
 }

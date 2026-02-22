@@ -241,7 +241,7 @@ export function follow({
 
 						// One-shot: head directly to the crumb (typically 1 step behind leader)
 						follower.brain?.runner.interrupt(
-							goToTile(goal, { stopAdjacentIfTargetBlocked: false }),
+							goToTile(goal, { stopAdjacentIfTargetBlocked: true }),
 						);
 						return false;
 					}
@@ -266,8 +266,14 @@ export function follow({
 				})();
 
 				if (targetIsOccupyingSelf && !hasUsableCrumb) {
-					// Optional: reduce “panic running” while waiting at chokepoint
 					follower.moveMode = "walk";
+					// Attempt to walk directly to the target's current tile (typically via stairs)
+					follower.brain?.runner.interrupt(
+						goToTile(
+							{ x: target.x, y: target.y, z: target.z },
+							{ stopAdjacentIfTargetBlocked: true },
+						),
+					);
 					return false;
 				}
 			}
