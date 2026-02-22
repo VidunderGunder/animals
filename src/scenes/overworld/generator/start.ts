@@ -487,8 +487,6 @@ function initEntities() {
 			runner: new CommandRunner(),
 			routine(entity) {
 				entity.interactionLock = false;
-				console.log(entity.interactionLock);
-
 				const state = getFollowState(entity);
 
 				const targetId = state?.targetId;
@@ -496,18 +494,15 @@ function initEntities() {
 				const target = targetId ? entities.get(targetId) : undefined;
 
 				if (target) {
-					// Only start follow when idle (no spam)
-					if (entity.brain?.runner.isIdle()) {
-						entity.brain.runner.push([
-							cmd.follow({
-								follower: entity,
-								target,
-								condition: () => distanceChebyshev(target, kitsunePos) < 16,
-							}),
-							cmd.goToTile({ ...kitsunePos, z: 0 }),
-						]);
-					}
-					return;
+					if (!entity.brain?.runner.isIdle()) return;
+					entity.brain.runner.push([
+						cmd.follow({
+							follower: entity,
+							target,
+							condition: () => distanceChebyshev(target, kitsunePos) < 16,
+						}),
+						cmd.goToTile({ ...kitsunePos, z: 0 }),
+					]);
 				}
 
 				if (entity.moveMode !== "walk") entity.moveMode = "walk";
