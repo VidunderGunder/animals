@@ -81,20 +81,11 @@ function decToZero(n: number, dt: number) {
 	return n <= 0 ? 0 : Math.max(0, n - dt);
 }
 
-function updateMoveModeStable(
-	target: Entity,
-	follower: Entity,
-	// state: FollowState,
-	// dist: number,
-	// targetMove: Entity["moveMode"],
-	// trailBacklog: number,
-) {
+function updateMoveModeStable(target: Entity, follower: Entity) {
 	const state = getFollowState(follower);
 	const targetMove = target.moveMode ?? "walk";
 	const dist = distanceManhattan(follower, target);
 	const trailBacklog = target.trail.length;
-	const followerZ = follower.z;
-	const targetZ = target.z;
 
 	if (!state) return;
 
@@ -105,8 +96,7 @@ function updateMoveModeStable(
 		dist >= 2 || trailBacklog >= 2 || (targetMove === "run" && dist >= 2);
 
 	// Release only when we are close again
-	const sameLayer = followerZ === targetZ; // pass in z’s
-	const closeEnough = sameLayer && dist <= 1 && trailBacklog <= 1;
+	const closeEnough = dist <= 1 && trailBacklog <= 1;
 
 	// If already catching up, keep it latched a bit
 	if (state.catchUpMs > 0) {
