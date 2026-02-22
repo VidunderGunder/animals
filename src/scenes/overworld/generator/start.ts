@@ -7,7 +7,6 @@ import { toggleActivity } from "../activity/activities";
 import { isActivityRunning } from "../activity/activity";
 import { CommandRunner } from "../ai/brain";
 import {
-	defaultFollowState,
 	type FollowState,
 	getDefaultFollowState,
 	getFollowState,

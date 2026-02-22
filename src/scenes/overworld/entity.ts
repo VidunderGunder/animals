@@ -54,7 +54,10 @@ export function isPlayer(entity: Entity): entity is Entity<PlayerID> {
 	return isPlayerID(entity.id);
 }
 
-export type EntityState = Record<string, number | string | boolean>;
+export type EntityState = Record<
+	string,
+	number | string | boolean | null | undefined
+>;
 
 export type Entity<ID extends string = StringWithSuggestions<"player">> = {
 	id: ID;

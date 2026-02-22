@@ -11,14 +11,19 @@ export type FollowState = {
 	targetId: string;
 	swapCooldownMs: number;
 
-	// NEW: smooth moveMode switching
 	moveModeHoldMs: number;
 	moveMode: "walk" | "run" | "skate";
 
-	// NEW: short window where follower becomes non-solid so it never blocks target
+	// yield
 	yieldMs: number;
 	isYielding: boolean;
 	wasSolidBeforeYield: boolean;
+
+	// NEW: mode latch to avoid flapping
+	catchUpMs: number;
+
+	// NEW: facing while yielding (looks intentional)
+	yieldFaceDir: Direction | null;
 };
 
 export const defaultFollowState = {
@@ -29,6 +34,8 @@ export const defaultFollowState = {
 	yieldMs: 0,
 	isYielding: false,
 	wasSolidBeforeYield: false,
+	catchUpMs: 0,
+	yieldFaceDir: null,
 } as const satisfies FollowState;
 export const getDefaultFollowState = (
 	follower: Entity,
@@ -73,36 +80,39 @@ function decToZero(n: number, dt: number) {
 	return n <= 0 ? 0 : Math.max(0, n - dt);
 }
 
-function updateMoveModeWithHysteresis(
+function updateMoveModeStable(
 	state: FollowState,
 	dist: number,
 	targetMove: Entity["moveMode"],
+	trailBacklog: number,
 ) {
-	// Hold prevents rapid flip-flop
-	if (state.moveModeHoldMs > 0) return;
+	state.catchUpMs = decToZero(state.catchUpMs ?? 0, 0); // no-op helper use ok
 
-	// Thresholds (tweakable)
-	const RUN_ON = 3; // switch to run when 3+ tiles away
-	const RUN_OFF = 1; // switch back when within 1 tile
+	// Engage catch-up when we are falling behind (tight threshold)
+	const shouldCatchUp =
+		dist >= 2 || trailBacklog >= 2 || (targetMove === "run" && dist >= 2);
 
-	// If target is running and we're >=2 away, run sooner
-	const wantsRun = dist >= RUN_ON || (targetMove === "run" && dist >= 2);
+	// Release only when we are close again
+	const closeEnough = dist <= 1 && trailBacklog <= 1;
 
-	if (wantsRun) {
-		if (state.moveMode !== "run") {
+	// If already catching up, keep it latched a bit
+	if (state.catchUpMs > 0) {
+		if (closeEnough) {
+			// allow release below
+		} else {
 			state.moveMode = "run";
-			state.moveModeHoldMs = 320;
+			return;
 		}
+	}
+
+	if (shouldCatchUp && !closeEnough) {
+		state.moveMode = "run";
+		state.catchUpMs = 420; // latch window
 		return;
 	}
 
-	// Only drop back to walk when close enough
-	if (dist <= RUN_OFF) {
-		if (state.moveMode !== "walk") {
-			state.moveMode = "walk";
-			state.moveModeHoldMs = 260;
-		}
-	}
+	// Not catching up: mirror leader a bit, but keep it simple
+	state.moveMode = "walk";
 }
 
 export function follow({
@@ -148,15 +158,11 @@ export function follow({
 				state.isYielding = true;
 				state.wasSolidBeforeYield = follower.solid;
 
-				// become non-blocking
+				if (state.yieldFaceDir) follower.direction = state.yieldFaceDir;
+
 				follower.solid = false;
-
-				// release any reservation / standing occupancy ONCE
 				vacate({ id: follower.id });
-
-				// optional: clear intent so we don't "fight" during yield
 				follower.brainDesiredDirection = null;
-
 				return false;
 			}
 
@@ -164,11 +170,10 @@ export function follow({
 			if (state.yieldMs === 0 && state.isYielding) {
 				state.isYielding = false;
 
-				// restore solidity
 				follower.solid = state.wasSolidBeforeYield;
 				state.wasSolidBeforeYield = false;
+				state.yieldFaceDir = null;
 
-				// re-occupy standing tile if solid again (safe + idempotent)
 				if (follower.solid)
 					occupy({
 						x: follower.x,
@@ -176,39 +181,48 @@ export function follow({
 						z: follower.z,
 						id: follower.id,
 					});
-
-				// continue normal follow logic this tick
 			}
 
-			// Yield ended: restore solidity
-			if (!follower.solid && state.wasSolidBeforeYield) {
-				follower.solid = true;
-				state.wasSolidBeforeYield = false;
-			}
-
-			// Smooth moveMode
 			const dist = distanceChebyshev(follower, target);
-			updateMoveModeWithHysteresis(state, dist, target.moveMode ?? "walk");
-			follower.moveMode = state.moveMode;
+			const trailBacklog = target.trail.length;
+
+			updateMoveModeStable(
+				state,
+				dist,
+				target.moveMode ?? "walk",
+				trailBacklog,
+			);
+
+			// small hold only when actually switching
+			if (state.moveModeHoldMs <= 0 && follower.moveMode !== state.moveMode) {
+				follower.moveMode = state.moveMode;
+				state.moveModeHoldMs = 260;
+			} else if (state.moveModeHoldMs <= 0) {
+				follower.moveMode = state.moveMode;
+			}
+
+			state.moveModeHoldMs = decToZero(state.moveModeHoldMs ?? 0, dt);
+			state.catchUpMs = decToZero(state.catchUpMs ?? 0, dt);
 
 			// while moving, do nothing
 			if (follower.isMoving) return false;
 
-			// Prefer breadcrumbs
-			// Prefer breadcrumbs (most recent first => <1 tile behind most of the time)
+			// Prefer breadcrumbs (MOST recent first; Pokémon-tight)
 			const trail = target.trail;
 			if (trail.length > 0) {
 				// keep bounded defensively
 				if (trail.length > maxTrail) trail.splice(0, trail.length - maxTrail);
 
-				// Pick the NEWEST breadcrumb we can actually step into soon.
-				// Scan from end (latest) backwards until we find one that isn't occupied by others.
+				// 1) Prefer the newest crumb (last item)
+				// 2) If blocked, walk backwards until we find a usable one
 				let pickIndex = -1;
-				for (let i = trail.length - 1; i >= 0; i--) {
-					const t = trail[i];
-					if (!t) continue;
 
-					const occ = getOccupant(t.x, t.y, t.z);
+				for (let i = trail.length - 1; i >= 0; i--) {
+					const crumb = trail[i];
+					if (!crumb) continue;
+
+					// If someone else occupies it, can't step there
+					const occ = getOccupant(crumb.x, crumb.y, crumb.z);
 					if (occ && occ !== follower.id) continue;
 
 					pickIndex = i;
@@ -216,12 +230,13 @@ export function follow({
 				}
 
 				if (pickIndex !== -1) {
-					// Drop stale older crumbs so we don’t “chase the past”
+					// Drop ALL older crumbs than the one we picked
+					// so we always bias to "latest known good"
 					if (pickIndex > 0) trail.splice(0, pickIndex);
 
 					const goal = trail[0];
 					if (goal) {
-						// If we already reached this breadcrumb, consume it
+						// If we already reached this crumb, consume and continue next tick
 						if (
 							follower.x === goal.x &&
 							follower.y === goal.y &&
@@ -231,10 +246,11 @@ export function follow({
 							return false;
 						}
 
-						// If goal still occupied by the target, wait (reservation timing)
+						// If goal got occupied after we checked (race), wait
 						const occ = getOccupant(goal.x, goal.y, goal.z);
 						if (occ && occ !== follower.id) return false;
 
+						// One-shot: head directly to the crumb (typically 1 step behind leader)
 						follower.brain?.runner.interrupt(
 							goToTile(goal, { stopAdjacentIfTargetBlocked: false }),
 						);
@@ -243,7 +259,6 @@ export function follow({
 				}
 			}
 
-			// No breadcrumbs: just try to get adjacent (Pokémon-like fallback)
 			follower.brain?.runner.interrupt(
 				goToTile(
 					{ x: target.x, y: target.y, z: target.z },
@@ -327,6 +342,9 @@ export function overworldFollowerCollision({
 
 				if (!okSidestep) continue;
 
+				state.yieldFaceDir = dir;
+
+				follower.direction = d;
 				follower.isMoving = true;
 				follower.transitionEndTile = sidestepPlanned.end;
 				follower.animationOverride = sidestepPlanned.animation ?? null;
