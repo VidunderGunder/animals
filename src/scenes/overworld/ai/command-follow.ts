@@ -4,7 +4,8 @@ import { type Direction, rotate } from "../../../input/input";
 import { type Entity, type EntityState, entities } from "../entity";
 import { forceOccupy, getOccupant, occupy, vacate } from "../occupancy";
 import { setCurrentSegment, type Transition } from "../transition/transition";
-import { type Command, goToTile } from "./commands";
+import { goToTile } from "./command-goto";
+import type { Command } from "./commands";
 import { tryPlanMove } from "./pathfinding";
 
 export type FollowState = {

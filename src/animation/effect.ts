@@ -58,6 +58,7 @@ export function butterfly(
 		}),
 		z: position.z,
 		variant: "effect",
+		solid: false,
 		animationFrameIndex: Math.floor(Math.random() * frames),
 		width: effects[`butterfly-${color}`].w,
 		height: effects[`butterfly-${color}`].h,

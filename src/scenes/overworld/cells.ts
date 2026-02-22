@@ -118,6 +118,12 @@ export function setWorldBounds(x: number, y: number) {
 	worldBounds = { x, y };
 }
 
+export function inWorldBounds(x: number, y: number, z: number) {
+	return (
+		(x >= 0 && x < worldBounds.x && y >= 0 && y < worldBounds.y) || z !== 0
+	);
+}
+
 /** A single outline edge segment */
 export type OutlineEdge = {
 	x: number; // cell x

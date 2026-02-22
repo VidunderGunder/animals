@@ -4,9 +4,8 @@ import type { MoveMode } from "../../../config";
 import { type Direction, rotate } from "../../../input/input";
 import { bubble, bubbles } from "../dialog";
 import { type Entity, getEntityFacingTile } from "../entity";
-import { getOccupant } from "../occupancy";
 import { follow } from "./command-follow";
-import { dirToDxDy, findPathPlan, type PathStep } from "./pathfinding";
+import { goToTile } from "./command-goto";
 
 export type Command = {
 	/**
@@ -114,125 +113,6 @@ function step(dir: Direction): Command {
 			if (attemptIndex === 0) retryCooldownMs = 120;
 			else retryCooldownMs = 40;
 
-			return false;
-		},
-	};
-}
-
-/**
- * goToTile: A* to a target tile.
- *
- * - If blocked by dynamic occupancy (player/NPC), it will replan.
- * - It only ever requests ONE step at a time through `entity.intentDir`.
- * - It completes once the entity is snapped to the goal tile.
- */
-export function goToTile(
-	target: { x: number; y: number; z: number },
-	opts?: {
-		stopAdjacentIfTargetBlocked?: boolean;
-	},
-): Command {
-	const stopAdjacentIfTargetBlocked =
-		opts?.stopAdjacentIfTargetBlocked ?? false;
-
-	let cached: PathStep[] | null = null;
-	let repathCooldownMs = 0;
-	let lastAt: { x: number; y: number; z: number } | null = null;
-	let stuckMs = 0;
-
-	// NEW: detect when something else (eg. interaction) changed facing
-	let lastIssued: Direction | null = null;
-
-	return {
-		onUpdate({ entity, dt }) {
-			if (
-				entity.x === target.x &&
-				entity.y === target.y &&
-				entity.z === target.z
-			) {
-				return true;
-			}
-
-			// While moving, we don't issue new intents.
-			if (entity.isMoving) return false;
-
-			// NEW: if our last-issued direction doesn't match current facing,
-			// something external likely rotated the NPC (eg. face(player)).
-			// Drop cached plan so we don't take a "stale" first step.
-			if (lastIssued && entity.direction !== lastIssued) {
-				cached = null;
-				repathCooldownMs = 0;
-				stuckMs = 0;
-				lastAt = null;
-				lastIssued = null;
-			}
-
-			if (
-				lastAt &&
-				lastAt.x === entity.x &&
-				lastAt.y === entity.y &&
-				lastAt.z === entity.z
-			) {
-				stuckMs += dt;
-			} else {
-				stuckMs = 0;
-				lastAt = { x: entity.x, y: entity.y, z: entity.z };
-			}
-
-			repathCooldownMs -= dt;
-			if (repathCooldownMs < 0) repathCooldownMs = 0;
-
-			const shouldRepath =
-				!cached ||
-				cached.length === 0 ||
-				repathCooldownMs === 0 ||
-				stuckMs > 350;
-
-			if (shouldRepath) {
-				cached = findPathPlan(
-					entity,
-					{ x: entity.x, y: entity.y, z: entity.z },
-					target,
-					{ maxExpanded: 2500 },
-				);
-
-				if (!cached || cached.length === 0) {
-					repathCooldownMs = 200;
-					return false;
-				}
-
-				repathCooldownMs = 120;
-				stuckMs = 0;
-			}
-
-			const next = cached?.[0];
-			if (!next) return false;
-
-			if (entity.moveMode !== next.moveMode) entity.moveMode = next.moveMode;
-
-			const nextDir = next.dir;
-
-			if (stopAdjacentIfTargetBlocked && cached?.length === 1) {
-				const { dx, dy } = dirToDxDy(nextDir);
-				const wouldEnter = { x: entity.x + dx, y: entity.y + dy, z: entity.z };
-
-				if (
-					wouldEnter.x === target.x &&
-					wouldEnter.y === target.y &&
-					wouldEnter.z === target.z
-				) {
-					const occ = getOccupant(target.x, target.y, target.z);
-					if (occ && occ !== entity.id) {
-						return true; // finish adjacent
-					}
-				}
-			}
-
-			entity.brainDesiredDirection = nextDir;
-			lastIssued = nextDir;
-
-			cached?.shift();
-			repathCooldownMs = Math.min(repathCooldownMs, 90);
 			return false;
 		},
 	};
