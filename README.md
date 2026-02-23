@@ -48,7 +48,6 @@ Character Movement & Animation
 - [ ] 🎨 Terrain dependent rendering:
   Cut off lower part of sprite (dynamic height), add animated overlay (e.g., water, grass, mud)
 
-
 Bugs (clearly defined issues)
 
 - [ ] 🤖 Re-opening Chrome with the app as the current tab opens a new tab
