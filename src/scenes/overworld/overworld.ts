@@ -53,7 +53,7 @@ import {
 	snapToSegmentEnd,
 	type Transition,
 } from "./transition/transition";
-import { spin } from "./transition/tricks";
+import { spin } from "./transition/trick-spin";
 
 initializeStartArea();
 

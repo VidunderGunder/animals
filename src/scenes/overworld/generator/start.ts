@@ -512,7 +512,6 @@ function initEntities() {
 							target,
 							condition: () => distanceChebyshev(target, kitsunePos) < 16,
 						}),
-						cmd.goToTile({ ...kitsunePos, z: 0 }),
 					]);
 				}
 
@@ -536,12 +535,14 @@ function initEntities() {
 					tempo: 0.4,
 					intensity: 0.5,
 				},
+				onEnd() {
+					if (isFollowing) {
+						activated.state = null;
+						activated.brain?.runner.push(cmd.goToTile({ ...kitsunePos, z: 0 }));
+						return;
+					}
+				},
 			});
-
-			if (isFollowing) {
-				activated.state = null;
-				return;
-			}
 
 			activated.state = getDefaultFollowState(
 				activated,

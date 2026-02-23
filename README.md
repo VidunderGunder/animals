@@ -73,7 +73,7 @@ Spikes (investigation tasks)
   Alternatively: Logical required, and Camera and Rendering as optional overrides (defaulting to logical if not set)
   - [ ] 🤖 Ensure animation rotation, position offsets and other effects work in the overworld (only works in the menu as of now)
   - [ ] 🤖 Camera control for transitions (e.g., remove vertical camera motion for slow/walking stub-to-stub-jumps)
-  - [ ] 🧠 Issue: Crashing with tile based camera offset leads to too much movement (E.g., crash at tip of docks)
+  - [ ] 🧠 Issue: Crashing with cell based camera offset leads to too much movement (E.g., crash at tip of docks)
 - [x] ~~🧠 Maybe we should properly pause the game (now animations and sound still play, and the current transition continues—but we should probably freeze everything), but it could be fine the way it is for now?~~
-- [ ] 🧠 Research and redo pathfinding that 
-- [ ] 🧠 Research and redo following
+- [ ] 🧠🔻 Research and redo pathfinding that 
+- [ ] 🧠🔻 Research and redo following

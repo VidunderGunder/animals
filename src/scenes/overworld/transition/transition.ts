@@ -97,3 +97,21 @@ export function isTransitionEndBlocked(end: Transition["end"]): boolean {
 
 	return false;
 }
+
+export function injectOnSegmentStart(
+	path: Transition["path"],
+	onSegmentStart: (e: Entity) => void,
+	index = 0,
+) {
+	if (path.length <= index) return;
+
+	const segment = path[index];
+	if (!segment) return;
+
+	const prev = segment.onSegmentStart;
+
+	segment.onSegmentStart = (e) => {
+		onSegmentStart(e);
+		prev?.(e);
+	};
+}
