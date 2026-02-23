@@ -2,6 +2,17 @@
 
 Nostalgic GBA inspired game about a skater collecting animals and mythological beings to make them dance battle.
 
+## 🎨 Art
+
+Use [Aseprite](https://www.aseprite.org/) for pixel art and animations
+
+[Figma Mood Board](https://www.figma.com/design/VW1gLuo6uHi9OP6OOCYgSk/Mood-Board?node-id=0-1&t=HpaZA41md53X1G4u-1)
+
+Inspiration:
+
+- [Interface In Game](https://interfaceingame.com/games/?themes=pixel-art)
+- [Pinterest](https://pinterest.com/search/pins/?q=pixel%20art)
+
 ## 🔊 Sounds
 
 Music and ambience can be high fidelity, but sound effects should be lo-fi/chiptune style to match the retro aesthetic.
@@ -28,7 +39,7 @@ Priority
 
 - [x] ~~🤖 Add game time to game state (not ticking if paused)~~
 - [x] ~~🤖 Save/load game state~~
-- [ ] 🤖 Following
+- [x] ~~🤖 Following~~
 - [ ] 🎨 Design menu
   - [ ] Bag
   - [ ] Crew
@@ -41,7 +52,7 @@ Character Movement & Animation
 
 - [ ] 🎨 Poof (spawn/despawn effect)
 - [ ] 🤖 Dizzy if trick is repeated 3 times in quick sucession
-- [ ] 🎨 Dizzy animation
+- [ ] 🎨 Dizzy effect (starts/planets/chickens spinning)
 - [ ] 🧠 Teleport command
 - [ ] 🤖 Ensure current cell is occupied during spin-in-place
 - [ ] 🎨 Create Roll & Flip sprites
