@@ -7,6 +7,7 @@ import { moveSpeeds, TILE_SIZE_PX } from "../../../config";
 import {
 	directionToDxDy,
 	ease,
+	equalVec,
 	getCellInDirection,
 	jitter,
 	mix,
@@ -16,7 +17,7 @@ import {
 } from "../../../functions/general";
 import { type Direction, rotate } from "../../../input/input";
 import { getCell, getEdge, worldBounds } from "../cells";
-import { type Entity, entities } from "../entity";
+import { type Entity, entities, pushTrailStep } from "../entity";
 import { getOccupant, occupy, vacate } from "../occupancy";
 import { setCurrentSegment, type Transition } from "./transition";
 
@@ -398,8 +399,6 @@ function getSpinTransitionPath({
 			onSegmentStart(e) {
 				const assumedTile = pxToTile(e);
 
-				console.log("THING");
-
 				vacate({ id: e.id });
 				occupy({
 					x: assumedTile.x,
@@ -407,6 +406,11 @@ function getSpinTransitionPath({
 					z: assumedTile.z,
 					id: e.id,
 				});
+				if (!equalVec(assumedTile, entity.trail[entity.trail.length - 1])) {
+					console.log("Pushing trail step at", assumedTile);
+					pushTrailStep(e, assumedTile);
+				} else {
+				}
 
 				if (isStartOfNewRound) spinDelaySFX();
 				if (i === 0 && hasSlide)

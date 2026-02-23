@@ -196,3 +196,15 @@ export function distanceManhattan(
 		Math.abs((position1.z ?? 0) - (position2.z ?? 0)) * 4
 	);
 }
+
+export function equalVec(
+	position1?: { x: number; y: number; z?: number },
+	position2?: { x: number; y: number; z?: number },
+) {
+	if (!position1 || !position2) return false;
+	return (
+		position1.x === position2.x &&
+		position1.y === position2.y &&
+		(position1.z ?? 0) === (position2.z ?? 0)
+	);
+}

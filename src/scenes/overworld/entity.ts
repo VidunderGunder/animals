@@ -185,6 +185,19 @@ export function getEntityCharacterDefaults<ID extends string>({
 	};
 }
 
+const MAX_TRAIL = 12;
+export function pushTrailStep(
+	entity: Entity,
+	positionOverride?: { x: number; y: number; z: number },
+) {
+	entity.trail.push(
+		positionOverride ?? { x: entity.x, y: entity.y, z: entity.z },
+	);
+	if (entity.trail.length > MAX_TRAIL) {
+		entity.trail.splice(0, entity.trail.length - MAX_TRAIL);
+	}
+}
+
 export function getEntityAnimalDefaults({
 	id,
 	x,

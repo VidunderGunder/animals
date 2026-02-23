@@ -45,7 +45,7 @@ import {
 	worldImageLayers,
 } from "./cells";
 import { renderDialogs } from "./dialog";
-import { type Entity, entities, isPlayerID } from "./entity";
+import { type Entity, entities, isPlayerID, pushTrailStep } from "./entity";
 import { initializeArea as initializeStartArea } from "./generator/start";
 import { getOccupant, occupy, vacate } from "./occupancy";
 import {
@@ -61,14 +61,6 @@ export function returnToOverworld() {
 	menuState.show = false;
 	gameState.paused = false;
 	gameState.disabled = false;
-}
-
-const MAX_TRAIL = 12;
-function pushTrailStep(entity: Entity) {
-	entity.trail.push({ x: entity.x, y: entity.y, z: entity.z });
-	if (entity.trail.length > MAX_TRAIL) {
-		entity.trail.splice(0, entity.trail.length - MAX_TRAIL);
-	}
 }
 
 function applyTapToTurnGate(opts: {

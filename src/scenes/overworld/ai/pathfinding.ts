@@ -16,7 +16,7 @@ export type PathStep =
 
 // Small cost so we prefer staying in current moveMode,
 // but can switch when it unlocks a shorter / only valid path.
-const MOVE_MODE_SWITCH_COST = 0.35;
+const MOVE_MODE_SWITCH_COST = 1.75;
 
 // Default: walk+run, but always include current mode too (eg skate)
 function getAllowedMoveModes(entity: Entity, allowed?: readonly MoveMode[]) {
