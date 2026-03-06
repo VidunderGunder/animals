@@ -54,7 +54,6 @@ Character Movement & Animation
 - [ ] 🤖 Dizzy if trick is repeated 3 times in quick succession
 - [ ] 🎨 Dizzy effect (starts/planets/chickens spinning)
 - [ ] 🧠 Teleport command
-- [ ] 🤖 Ensure current cell is occupied during spin-in-place
 - [ ] 🎨 Create Roll & Flip sprites
 - [ ] 🎨 Terrain dependent rendering:
   Cut off lower part of sprite (dynamic height), add animated overlay (e.g., water, grass, mud)

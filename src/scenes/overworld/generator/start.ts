@@ -252,6 +252,7 @@ function initCellsAndEdges() {
 				if (getOccupant(26, 53, 0)) return false;
 				return entity.moveMode === "run";
 			},
+			// Temporary animation/transition until we have a proper roll implemented
 			animation: "jump",
 			path: [{ ...cellToPx(26, 54), z: 0 }],
 			end: { x: 26, y: 54, z: 0 },
