@@ -1,4 +1,5 @@
 // src/storage.ts
+import { TILE_SIZE_PX } from "./config";
 import { type GameState, gameState } from "./game-state";
 import {
 	type Entities,
@@ -39,6 +40,12 @@ export type EntitySnapshot = {
 	// misc state you likely want to persist
 	moveMode?: Entity["moveMode"];
 	autoRun?: Entity["autoRun"];
+
+	/**
+	 * Set when the entity was saved mid-transition (jump, ladder, ...).
+	 * On load we snap to this tile so the entity never resumes in mid-air.
+	 */
+	transitionEndTile?: Entity["transitionEndTile"];
 
 	// stable runtime wiring
 	brainId?: string | null;
@@ -159,6 +166,8 @@ function toSnapshot(entity: Entity): EntitySnapshot {
 
 		moveMode: entity.moveMode,
 		autoRun: entity.autoRun,
+
+		transitionEndTile: entity.isMoving ? entity.transitionEndTile : null,
 
 		brainId: entity.brainId ?? null,
 		state: entity.state ?? null,
@@ -326,6 +335,16 @@ function applyEntitySnapshot(live: Entity, snap: EntitySnapshot) {
 	// IMPORTANT: keep persisted render position (may include offsets)
 	live.xPx = snap.xPx;
 	live.yPx = snap.yPx;
+
+	// Saved mid-transition: snap to the planned destination tile so the
+	// entity doesn't resume floating mid-jump/ladder (noclip).
+	if (snap.transitionEndTile) {
+		live.x = snap.transitionEndTile.x;
+		live.y = snap.transitionEndTile.y;
+		live.z = snap.transitionEndTile.z;
+		live.xPx = live.x * TILE_SIZE_PX;
+		live.yPx = live.y * TILE_SIZE_PX;
+	}
 
 	live.direction = snap.direction;
 	live.animationCurrentId = snap.animationCurrent;

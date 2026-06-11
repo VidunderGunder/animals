@@ -60,15 +60,6 @@ Character Movement & Animation
 
 Bugs (clearly defined issues)
 
-- [ ] 🤖 Re-opening Chrome with the app as the current tab opens a new tab
-- [ ] 🤖 Loaded entities are not snapped to the beginning or end of a transition that was in progress when saving (causing noclipping if mid ladder or jump)
-- [ ] 🔊 Looping ambience (forest definitely, beach maybe) has a small gap/pause when looping
-- [ ] Browser audio issues
-  - [ ] 🤖 Current ambience implementation hijacks audio on iOS, stopping music playback from other apps—we want to allow both to play simultaneously
-  - [ ] 🤖 Ambience can be muted by pressing play/pause on iOS
-  - [ ] 🤖 Ambience may keep playing when changing tabs
-  - [ ] 🤖 I suspect there's a bug causing the same track to be triggered multiple time (weird distortions/phasing can happen during longer sessions)
-- [ ] 🤖 Getting stuck in a zoom-in on iOS Safari is still happening occasionally when using the touch controller (primarily on the d-pad)
 - [ ] 🔻 Blurry menu (pause menu will be remade soon, so will probably not fix)
 
 Spikes (investigation tasks)
@@ -84,5 +75,5 @@ Spikes (investigation tasks)
   - [ ] 🤖 Camera control for transitions (e.g., remove vertical camera motion for slow/walking stub-to-stub-jumps)
   - [ ] 🧠 Issue: Crashing with cell based camera offset leads to too much movement (E.g., crash at tip of docks)
 - [x] ~~🧠 Maybe we should properly pause the game (now animations and sound still play, and the current transition continues—but we should probably freeze everything), but it could be fine the way it is for now?~~
-- [ ] 🧠🔻 Research and redo pathfinding that 
+- [ ] 🧠🔻 Research and redo pathfinding
 - [ ] 🧠🔻 Research and redo following

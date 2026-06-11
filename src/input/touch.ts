@@ -18,6 +18,27 @@ document.addEventListener(
 	{ passive: false },
 );
 
+// iOS Safari pinch-zoom prevention: Safari ignores user-scalable=no and
+// touch-action for two-finger pinch (e.g. one thumb on the d-pad + one on
+// abxy), but cancelling its non-standard gesture events does block it.
+(["gesturestart", "gesturechange", "gestureend"] as const).forEach(
+	(eventName) => {
+		document.addEventListener(eventName, (e) => e.preventDefault(), {
+			passive: false,
+		});
+	},
+);
+
+// Belt and braces for browsers without gesture events: kill multi-touch moves
+// (the game never needs them; controller buttons each use a single pointer).
+document.addEventListener(
+	"touchmove",
+	(e) => {
+		if (e.touches.length > 1) e.preventDefault();
+	},
+	{ passive: false },
+);
+
 const groups = ["dpad", "abxy"] as const;
 type Group = (typeof groups)[number];
 
@@ -83,6 +104,19 @@ function switchAction(pointerId: number, newAction: Action) {
 // biome-ignore lint/style/noNonNullAssertion: <intentional>
 const controller = document.getElementById("controller-portrait")!;
 if (!controller) throw new Error("Controller element not found");
+
+// Cancel ALL native touch behavior on the controller (double-tap zoom,
+// magnifier, ...). Input is handled via pointer events, which still fire.
+// The buttons do this individually, but the d-pad/abxy capture areas are
+// much bigger than the buttons — taps there were still hitting Safari's
+// double-tap zoom.
+(["touchstart", "touchmove", "touchend", "touchcancel"] as const).forEach(
+	(eventName) => {
+		controller.addEventListener(eventName, (e) => e.preventDefault(), {
+			passive: false,
+		});
+	},
+);
 
 const groupAreas = new Map<NonNullable<PointerBinding["group"]>, HTMLElement>();
 

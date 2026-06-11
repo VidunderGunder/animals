@@ -11,9 +11,13 @@ import {
 /**
  * Audio buses (submixes).
  * - master is the final volume
- * - music is a single looping decoded buffer (stable on iOS Safari)
- * - ambience are long streams (MediaElement) mixed together
+ * - music/ambience are decoded buffers played as cross-faded loops
  * - sfx/voice/haptics are short buffers (AudioBufferSource)
+ *
+ * Everything is Web Audio buffer based (no HTMLMediaElement):
+ * - cross-faded loops are gapless (mp3 encoder padding doesn't matter)
+ * - no media session is created, so iOS hardware/lockscreen play-pause
+ *   doesn't control us and we don't stop other apps' music
  */
 export type AudioBus =
 	| "master"
@@ -25,16 +29,28 @@ export type AudioBus =
 
 type BusNodes = Record<AudioBus, GainNode>;
 
-type MediaChannel = {
-	el: HTMLAudioElement;
-	src: MediaElementAudioSourceNode;
-	gain: GainNode; // per-track trim (in addition to bus)
+/** Cross-fade loop duration for ambience/music (seconds) */
+const CROSSFADE_S = 1.5;
+
+/** How far ahead of the splice point the scheduler wakes up (seconds) */
+const SCHEDULE_LOOKAHEAD_S = 1;
+
+type LoopHandle = {
+	stop: () => void;
+};
+
+type AmbienceChannel = {
+	/** Per-track weight (in addition to the ambience bus) */
+	gain: GainNode;
+	/** Set once the buffer is decoded and the loop is started */
+	loop: LoopHandle | null;
 };
 
 type MusicChannel = {
 	id: MusicId;
-	src: AudioBufferSourceNode;
 	gain: GainNode;
+	loop: boolean;
+	handle: LoopHandle | null;
 };
 
 type AudioState = {
@@ -44,11 +60,12 @@ type AudioState = {
 	// Caches
 	buffers: Map<string, AudioBuffer>;
 
-	// Current music (buffer-based, single track)
+	// Current music (single track)
 	music?: MusicChannel;
+	musicGen: number;
 
-	// Ambience is a multi-track mix (media-based)
-	ambience: Map<AmbienceId, MediaChannel>;
+	// Ambience is a multi-track mix
+	ambience: Map<AmbienceId, AmbienceChannel>;
 
 	// Track stop timers to avoid stale timeouts killing revived tracks
 	ambienceStopTimers: Map<AmbienceId, number>;
@@ -69,7 +86,7 @@ export type AmbienceOptions = {
 	loop?: boolean;
 
 	/**
-	 * If true, tracks that fade to 0 will be paused+disconnected after the fade.
+	 * If true, tracks that fade to 0 will be stopped+disconnected after the fade.
 	 * Default true.
 	 */
 	stopWhenSilent?: boolean;
@@ -99,6 +116,21 @@ function getCtor(): typeof AudioContext {
 	const Ctx = AnyWindow.AudioContext ?? AnyWindow.webkitAudioContext;
 	if (!Ctx) throw new Error("Web Audio API not supported in this browser");
 	return Ctx;
+}
+
+/**
+ * iOS Safari 16.4+: mix with other apps' audio (Music, podcasts, ...)
+ * instead of hijacking the audio session.
+ */
+function configureAudioSession() {
+	const nav = navigator as Navigator & {
+		audioSession?: { type: string };
+	};
+	try {
+		if (nav.audioSession) nav.audioSession.type = "ambient";
+	} catch {
+		// ignore
+	}
 }
 
 function setGainSmooth(
@@ -132,59 +164,189 @@ function setGainSmooth(
 	param.linearRampToValueAtTime(target, t1);
 }
 
-function disconnectAndUnloadMedia(ch?: MediaChannel) {
-	if (!ch) return;
-	try {
-		ch.src.disconnect();
-	} catch {}
-	try {
-		ch.gain.disconnect();
-	} catch {}
-	try {
-		ch.el.pause();
-		ch.el.src = "";
-		ch.el.load();
-	} catch {}
+// Equal-power fade curves shared by all loop splices
+const FADE_CURVE_LEN = 64;
+const FADE_IN_CURVE = new Float32Array(FADE_CURVE_LEN);
+const FADE_OUT_CURVE = new Float32Array(FADE_CURVE_LEN);
+for (let i = 0; i < FADE_CURVE_LEN; i++) {
+	const t = i / (FADE_CURVE_LEN - 1);
+	FADE_IN_CURVE[i] = Math.sin((t * Math.PI) / 2);
+	FADE_OUT_CURVE[i] = Math.cos((t * Math.PI) / 2);
 }
 
-function disconnectMusic(ch?: MusicChannel) {
-	if (!ch) return;
-	try {
-		ch.src.stop();
-	} catch {}
-	try {
-		ch.src.disconnect();
-	} catch {}
-	try {
-		ch.gain.disconnect();
-	} catch {}
+/**
+ * Gapless looping by overlapping the end of each pass with the start of the
+ * next, using an equal-power cross-fade. Survives context suspension: all
+ * times are in (frozen-while-suspended) AudioContext time.
+ */
+function startCrossfadeLoop(
+	ctx: AudioContext,
+	buffer: AudioBuffer,
+	destination: AudioNode,
+): LoopHandle {
+	const duration = buffer.duration;
+	const xf = clamp(CROSSFADE_S, 0.01, duration / 4);
+	const period = duration - xf;
+
+	let stopped = false;
+	let timer: number | null = null;
+	const active = new Set<AudioBufferSourceNode>();
+
+	const scheduleOne = (at: number, fadeIn: boolean) => {
+		const src = ctx.createBufferSource();
+		src.buffer = buffer;
+
+		const env = ctx.createGain();
+		if (fadeIn) {
+			env.gain.setValueAtTime(0, at);
+			env.gain.setValueCurveAtTime(FADE_IN_CURVE, at, xf);
+		}
+		env.gain.setValueCurveAtTime(FADE_OUT_CURVE, at + duration - xf, xf);
+
+		src.connect(env).connect(destination);
+
+		active.add(src);
+		src.onended = () => {
+			active.delete(src);
+			try {
+				src.disconnect();
+				env.disconnect();
+			} catch {
+				// ignore
+			}
+		};
+
+		src.start(at);
+		src.stop(at + duration);
+	};
+
+	let nextStart = ctx.currentTime;
+	scheduleOne(nextStart, false);
+	nextStart += period;
+
+	const arm = () => {
+		if (stopped) return;
+
+		const wakeIn = (nextStart - SCHEDULE_LOOKAHEAD_S - ctx.currentTime) * 1000;
+		timer = window.setTimeout(
+			() => {
+				if (stopped) return;
+
+				// Context suspended (tab hidden): time is frozen, check back later.
+				if (ctx.state !== "running") {
+					timer = window.setTimeout(arm, 500);
+					return;
+				}
+
+				scheduleOne(Math.max(nextStart, ctx.currentTime), true);
+				nextStart += period;
+				arm();
+			},
+			Math.max(0, wakeIn),
+		);
+	};
+	arm();
+
+	return {
+		stop() {
+			stopped = true;
+			if (timer !== null) {
+				clearTimeout(timer);
+				timer = null;
+			}
+			for (const src of active) {
+				try {
+					src.stop();
+				} catch {
+					// ignore
+				}
+			}
+			active.clear();
+		},
+	};
 }
 
+/** Play a decoded buffer once (used when loop is disabled) */
+function startOneShot(
+	ctx: AudioContext,
+	buffer: AudioBuffer,
+	destination: AudioNode,
+): LoopHandle {
+	const src = ctx.createBufferSource();
+	src.buffer = buffer;
+	src.connect(destination);
+	src.onended = () => {
+		try {
+			src.disconnect();
+		} catch {
+			// ignore
+		}
+	};
+	src.start();
+
+	return {
+		stop() {
+			try {
+				src.stop();
+			} catch {
+				// ignore
+			}
+		},
+	};
+}
+
+function stopAmbienceChannel(ch?: AmbienceChannel) {
+	if (!ch) return;
+	ch.loop?.stop();
+	ch.loop = null;
+	try {
+		ch.gain.disconnect();
+	} catch {
+		// ignore
+	}
+}
+
+function stopMusicChannel(ch?: MusicChannel) {
+	if (!ch) return;
+	ch.handle?.stop();
+	ch.handle = null;
+	try {
+		ch.gain.disconnect();
+	} catch {
+		// ignore
+	}
+}
+
+/**
+ * Create the channel synchronously (so concurrent setAmbienceMix calls can
+ * never double-start the same track), then start the loop once decoded.
+ */
 function getOrCreateAmbienceTrack(
 	s: AudioState,
 	id: AmbienceId,
 	opts: { loop: boolean },
-): MediaChannel {
+): AmbienceChannel {
 	const existing = s.ambience.get(id);
 	if (existing) return existing;
 
-	const url = ambiencePaths[id];
-
-	const el = new Audio();
-	el.src = url;
-	el.loop = opts.loop;
-	el.preload = "auto";
-	el.crossOrigin = "anonymous";
-
-	const src = s.ctx.createMediaElementSource(el);
-
 	const gain = s.ctx.createGain();
 	gain.gain.value = 0; // start silent; setAmbienceMix will fade it
+	gain.connect(s.bus.ambience);
 
-	src.connect(gain).connect(s.bus.ambience);
-
-	const ch: MediaChannel = { el, src, gain };
+	const ch: AmbienceChannel = { gain, loop: null };
 	s.ambience.set(id, ch);
+
+	void (async () => {
+		const buffer = await audio.loadBuffer(ambiencePaths[id]);
+
+		// Track was stopped/replaced while decoding, or already started.
+		if (s.ambience.get(id) !== ch) return;
+		if (ch.loop) return;
+
+		ch.loop = opts.loop
+			? startCrossfadeLoop(s.ctx, buffer, ch.gain)
+			: startOneShot(s.ctx, buffer, ch.gain);
+	})();
 
 	return ch;
 }
@@ -194,6 +356,8 @@ function ensure(): AudioState {
 
 	const Ctx = getCtor();
 	const ctx = new Ctx();
+
+	configureAudioSession();
 
 	const master = ctx.createGain();
 	master.gain.value = 1;
@@ -220,11 +384,28 @@ function ensure(): AudioState {
 		bus,
 		buffers: new Map(),
 		music: undefined,
+		musicGen: 0,
 		ambience: new Map(),
 		ambienceStopTimers: new Map(),
 		ambienceDesired: new Map(),
 		unlockBound: false,
 	};
+
+	// Silence everything while the tab is hidden (Web Audio keeps playing
+	// in background tabs otherwise). Suspension freezes the loop scheduler
+	// too, so tracks resume exactly where they left off.
+	const onVisibility = () => {
+		if (!state) return;
+		if (document.hidden) {
+			void state.ctx.suspend().catch(() => {});
+		} else {
+			void safeResume(state.ctx);
+		}
+	};
+	document.addEventListener("visibilitychange", onVisibility);
+	window.addEventListener("pagehide", () => {
+		void state?.ctx.suspend().catch(() => {});
+	});
 
 	return state;
 }
@@ -236,15 +417,6 @@ async function safeResume(ctx: AudioContext) {
 		} catch {
 			// ignore
 		}
-	}
-}
-
-async function tryPlay(el: HTMLAudioElement): Promise<boolean> {
-	try {
-		await el.play();
-		return true;
-	} catch {
-		return false;
 	}
 }
 
@@ -309,17 +481,14 @@ export const audio = {
 	/** Best-effort resume. Must be called from a user gesture to reliably unlock on iOS/Safari. */
 	async unlock(): Promise<void> {
 		const s = ensure();
+
+		// Don't fight the visibility handler while hidden.
+		if (document.hidden) return;
+
 		await safeResume(s.ctx);
 
-		// Retry desired ambience tracks (media elements can still be blocked)
-		for (const [id, ch] of s.ambience) {
-			const desired = s.ambienceDesired.get(id) ?? 0;
-			if (desired > 0 && ch.el.paused) {
-				await tryPlay(ch.el);
-			}
-		}
-
-		// Music is buffer-based, so nothing to "play" here; it will start once ctx runs.
+		// Buffer sources are scheduled on the context timeline, so anything
+		// that was started while suspended plays as soon as the context runs.
 	},
 
 	/** Expose low-level nodes for advanced use. */
@@ -339,7 +508,7 @@ export const audio = {
 	},
 
 	// -------------------------
-	// Buffer loading (SFX/voice/music)
+	// Buffer loading (SFX/voice/music/ambience)
 	// -------------------------
 	async loadBuffer(url: string): Promise<AudioBuffer> {
 		const s = ensure();
@@ -376,7 +545,7 @@ export const audio = {
 
 		const buffer = await audio.loadBuffer(url);
 
-		void safeResume(ctx);
+		void audio.unlock();
 
 		const src = ctx.createBufferSource();
 		src.buffer = buffer;
@@ -428,7 +597,7 @@ export const audio = {
 	},
 
 	// -------------------------
-	// Music (buffer-based, stable loop)
+	// Music (buffer-based, cross-faded loop)
 	// -------------------------
 
 	/**
@@ -448,7 +617,7 @@ export const audio = {
 			s.music.gain.gain.value = clamp(opts.volume ?? 1, 0, 1);
 
 			const wantLoop = opts.loop ?? true;
-			if (s.music.src.loop !== wantLoop) {
+			if (s.music.loop !== wantLoop) {
 				// restart to apply loop flag reliably
 				await audio.playMusic(id, opts);
 			}
@@ -460,52 +629,57 @@ export const audio = {
 
 	async playMusic(id: MusicId, opts: MusicOptions = {}): Promise<void> {
 		const s = ensure();
-		void safeResume(s.ctx);
+		void audio.unlock();
+
+		// Claim a generation BEFORE awaiting, so concurrent calls can never
+		// start two overlapping tracks (the old phasing/distortion bug).
+		const gen = ++s.musicGen;
 
 		// Stop previous
-		disconnectMusic(s.music);
+		stopMusicChannel(s.music);
 		s.music = undefined;
+
+		const loop = opts.loop ?? true;
+
+		const gain = s.ctx.createGain();
+		gain.gain.value = clamp(opts.volume ?? 1, 0, 1);
+		gain.connect(s.bus.music);
+
+		const ch: MusicChannel = { id, gain, loop, handle: null };
+		s.music = ch;
 
 		const url = musicPaths[id];
 		const buffer = await audio.loadBuffer(url);
 
-		const src = s.ctx.createBufferSource();
-		src.buffer = buffer;
-		src.loop = opts.loop ?? true;
-
-		// Be explicit about loop points (helps some Safari edge cases)
-		src.loopStart = 0;
-		src.loopEnd = buffer.duration;
-
-		const gain = s.ctx.createGain();
-		gain.gain.value = clamp(opts.volume ?? 1, 0, 1);
-
-		src.connect(gain).connect(s.bus.music);
-
-		s.music = { id, src, gain };
-
-		try {
-			src.start();
-		} catch {
-			// ignore
+		if (gen !== s.musicGen || s.music !== ch) {
+			// Superseded while decoding
+			try {
+				gain.disconnect();
+			} catch {}
+			return;
 		}
+
+		ch.handle = loop
+			? startCrossfadeLoop(s.ctx, buffer, gain)
+			: startOneShot(s.ctx, buffer, gain);
 	},
 
 	stopMusic(): void {
 		const s = ensure();
-		disconnectMusic(s.music);
+		s.musicGen++;
+		stopMusicChannel(s.music);
 		s.music = undefined;
 	},
 
 	// -------------------------
-	// Ambience (media-element mix)
+	// Ambience (buffer-based mix, cross-faded loops)
 	// -------------------------
 	async setAmbienceMix(
 		mix: AmbienceMix,
 		opts: AmbienceOptions = {},
 	): Promise<void> {
 		const s = ensure();
-		void safeResume(s.ctx);
+		void audio.unlock();
 
 		const fadeMs = opts.fadeMs ?? 600;
 		const loop = opts.loop ?? true;
@@ -526,23 +700,10 @@ export const audio = {
 
 		s.ambienceDesired = target;
 
-		const playPromises: Promise<void>[] = [];
-
 		for (const [id, weight] of target) {
 			if (weight > 0) cancelAmbienceStopTimer(s, id);
 
 			const ch = getOrCreateAmbienceTrack(s, id, { loop });
-			ch.el.loop = loop;
-
-			if (ch.el.paused) {
-				playPromises.push(
-					ch.el.play().then(
-						() => {},
-						() => {},
-					) as Promise<void>,
-				);
-			}
-
 			setGainSmooth(ch.gain.gain, weight, fadeMs, s.ctx);
 		}
 
@@ -562,7 +723,7 @@ export const audio = {
 						if (nowDesired > 0) return;
 
 						s.ambience.delete(id);
-						disconnectAndUnloadMedia(ch);
+						stopAmbienceChannel(ch);
 						s.ambienceStopTimers.delete(id);
 					}, fadeMs + 50);
 
@@ -570,8 +731,6 @@ export const audio = {
 				}
 			}
 		}
-
-		await Promise.all(playPromises);
 	},
 
 	stopAmbience(opts: { fadeMs?: number; stopWhenSilent?: boolean } = {}): void {
@@ -594,7 +753,7 @@ export const audio = {
 					if (nowDesired > 0) return;
 
 					s.ambience.delete(id);
-					disconnectAndUnloadMedia(ch);
+					stopAmbienceChannel(ch);
 					s.ambienceStopTimers.delete(id);
 				}, fadeMs + 50);
 
