@@ -3,42 +3,23 @@ import { gameState } from "../../game-state";
 import type { Rotation } from "../../input/input";
 import type { Entity } from "./entity";
 
-/**
- * A record of the tricks an entity has performed, newest last.
- *
- * This is the shared substrate for the trick system (parkour / skating /
- * etc): individual tricks append a structured descriptor here when they
- * start, and *consequence* systems (dizziness, scoring, combos, ...) read
- * the log back to decide what should happen — e.g. "spun the same way 3×
- * in a row" or "back-flipped N times without touching the ground".
- *
- * The log is intentionally transient (not persisted): it represents recent
- * in-the-moment history, not saved progress.
- */
+// Transient per-entity history of recent tricks, read back by consequence
+// systems (dizziness, scoring, combos).
 
-/**
- * Structured description of a single trick. Discriminated by `type` so new
- * trick families (flip, grind, grab, ...) can be added without touching the
- * consumers — they pattern-match on what they care about.
- */
 export type Trick = {
 	type: "spin";
 	rotation: Rotation;
-	/** Number of full rotations (1 = 360°, 2 = 720°, ...) */
+	/** Full rotations: 1 = 360°, 2 = 720°. */
 	rounds: number;
 };
 
 export type TrickLogEntry = {
 	trick: Trick;
-	/** gameState.ms at which the trick began */
+	/** gameState.ms */
 	at: number;
 };
 
-/**
- * Repeat-grouping signature: two tricks with the same key count as "the
- * same trick" for repeat detection. Deliberately ignores magnitude (rounds)
- * so a 360 then a 720 in the same direction still reads as a repeat.
- */
+/** Identity for repeat detection; intentionally rounds-agnostic. */
 export function trickKey(trick: Trick): string {
 	switch (trick.type) {
 		case "spin":
@@ -46,27 +27,30 @@ export function trickKey(trick: Trick): string {
 	}
 }
 
-/** Compact, human-readable label for a trick (debug overlays, logs). */
 export function formatTrick(trick: Trick): string {
 	switch (trick.type) {
 		case "spin": {
-			const dir = trick.rotation === "clockwise" ? "cw" : "ccw";
-			return `spin ${dir} ×${trick.rounds}`;
+			const dir = trick.rotation === "clockwise" ? "←" : "→";
+			return `${dir} ${trick.rounds * 360}°`;
 		}
 	}
 }
 
-/** Cap per-entity history so a long session can't grow unbounded. */
+export const TRICK_CHAIN_WINDOW_MS = 2000;
+
 const MAX_ENTRIES = 24;
 
 const logs = new Map<string, TrickLogEntry[]>();
 
-/** Append a trick to an entity's log. Call when the trick actually starts. */
 export function logTrick(entity: Entity, trick: Trick): TrickLogEntry {
-	const entry: TrickLogEntry = { trick, at: gameState.ms };
+	const now = gameState.ms;
+	const entry: TrickLogEntry = { trick, at: now };
 
 	const log = logs.get(entity.id);
-	if (!log) {
+	const last = log?.[log.length - 1];
+
+	// Lapsed since the last trick: start a fresh chain.
+	if (!log || !last || now - last.at > TRICK_CHAIN_WINDOW_MS) {
 		logs.set(entity.id, [entry]);
 		return entry;
 	}
@@ -84,21 +68,23 @@ export function clearTrickLog(entity: Entity): void {
 	logs.delete(entity.id);
 }
 
-/**
- * How long after a trick you can perform another and still have it count as
- * part of the same chain (combo). Also bounds repeat detection, so "the same
- * trick N times in a row" only counts while you're actively chaining.
- */
-export const TRICK_CHAIN_WINDOW_MS = 1500;
+/** Drops lapsed chains; call once per frame. */
+export function updateTrickLog(now: number = gameState.ms): void {
+	for (const [id, log] of logs) {
+		const newest = log[log.length - 1];
+		if (!newest || now - newest.at > TRICK_CHAIN_WINDOW_MS) {
+			logs.delete(id);
+		}
+	}
+}
 
-export type TrickRepeat = { key: string; count: number };
+export type TrickRepeat = {
+	key: string;
+	trick: Trick;
+	count: number;
+};
 
-/**
- * The most recent run of consecutive *identical* tricks (same `trickKey`),
- * where each successive trick started within `maxGapMs` of the previous one.
- * This is the "same trick over and over" signal — e.g. dizziness when `count`
- * reaches a threshold. Returns `null` if the log is empty.
- */
+/** Tail run of consecutive same-key tricks. */
 export function currentTrickRepeat(
 	entity: Entity,
 	opts: { maxGapMs?: number } = {},
@@ -122,27 +108,18 @@ export function currentTrickRepeat(
 		prevAt = entry.at;
 	}
 
-	return { key, count };
+	return { key, trick: newest.trick, count };
 }
 
 export type TrickChain = {
-	/** Number of tricks linked in the current chain (>= 1). */
 	count: number;
-	/** gameState.ms of the first trick in the chain. */
 	startedAt: number;
-	/** gameState.ms of the most recent trick in the chain. */
 	lastAt: number;
-	/** ms left before the chain lapses; 0 once it has expired. */
+	/** Counts down to 0 as the chain lapses. */
 	remainingMs: number;
 };
 
-/**
- * The current chain (combo): the run of *any* tricks at the tail of the log,
- * each performed within `TRICK_CHAIN_WINDOW_MS` of the previous. `remainingMs`
- * counts down from the most recent trick and hits 0 when the chain breaks —
- * landing another trick before then extends it. Returns `null` if the log is
- * empty.
- */
+/** Tail run of any tricks still within the chain window. */
 export function currentTrickChain(
 	entity: Entity,
 	now: number = gameState.ms,

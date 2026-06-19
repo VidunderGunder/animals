@@ -13,6 +13,7 @@ import type { Direction } from "../../../input/input";
 import { getCell, getEdge, worldBounds } from "../cells";
 import { type Entity, entities } from "../entity";
 import { getOccupant, occupy, vacate } from "../occupancy";
+import { clearTrickLog } from "../trick-log";
 import { setCurrentSegment, type Transition } from "./transition";
 
 function crashPath(args: {
@@ -140,6 +141,8 @@ export function triggerCrashForEntity(args: {
 	if (entity.interactionLock) return;
 
 	entity.interactionLock = true;
+
+	clearTrickLog(entity);
 
 	const { xPx: crashXPx, yPx: crashYPx } = crashAnchorPx(entity, crashTile);
 

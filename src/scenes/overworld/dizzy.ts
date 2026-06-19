@@ -7,7 +7,6 @@ import { ctx } from "../../gfx/canvas";
 import { type Entity, entities, getEntityItemDefaults } from "./entity";
 import { clearTrickLog, currentTrickRepeat } from "./trick-log";
 
-/** Repeating the same trick this many times in a row makes you dizzy. */
 const DIZZY_TRICK_REPEATS = 4;
 const DIZZY_DURATION_MS = 3200;
 
@@ -31,11 +30,6 @@ export function isDizzy(entity: Entity): boolean {
 	return dizzyStates.has(entity.id);
 }
 
-/**
- * Dizziness rule: reading the trick log, if the most recent run of the same
- * trick (same direction etc) is long enough, the entity gets dizzy.
- * Call right after a trick is logged.
- */
 export function checkDizziness(entity: Entity): void {
 	if (dizzyStates.has(entity.id)) return;
 
@@ -43,7 +37,7 @@ export function checkDizziness(entity: Entity): void {
 
 	if (repeat && repeat.count >= DIZZY_TRICK_REPEATS) {
 		makeDizzy(entity);
-		clearTrickLog(entity); // consumed — don't immediately re-trigger
+		clearTrickLog(entity); // don't immediately re-trigger
 	}
 }
 
@@ -85,8 +79,7 @@ export function makeDizzy(entity: Entity): void {
 			frames: Array.from({ length: frames }, (_, i) => [
 				layer({
 					index: i,
-					// Hover at head height without changing yPx (which would
-					// change the row the butterfly is depth-sorted into).
+					// Hover at head height without affecting depth sort (yPx).
 					onBeforeRender: () => ctx.translate(0, -state.yOffsetPx),
 				}),
 			]),
@@ -122,13 +115,10 @@ export function updateDizzy(dt: number): void {
 		butterfly.y = host.y;
 		butterfly.z = host.z;
 		butterfly.xPx = Math.round(host.xPx + dx);
-		// Same yPx as the host so both depth-sort into the same row; the
-		// visual hover offset is applied by the render hook instead.
-		butterfly.yPx = host.yPx;
+		butterfly.yPx = host.yPx; // hover offset applied in the render hook
 		state.yOffsetPx = Math.round(HEAD_OFFSET_PX - dy);
 
-		// In front of the face on the near side of the orbit, behind the
-		// head on the far side.
+		// In front on the near half of the orbit, behind the head on the far half.
 		butterfly.renderPriority =
 			Math.sin(state.angle) >= 0
 				? host.renderPriority + 1

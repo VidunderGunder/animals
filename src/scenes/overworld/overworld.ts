@@ -57,10 +57,10 @@ import {
 import { spin } from "./transition/trick-spin";
 import {
 	currentTrickChain,
-	currentTrickRepeat,
 	formatTrick,
 	getTrickLog,
 	logTrick,
+	updateTrickLog,
 } from "./trick-log";
 
 initializeStartArea();
@@ -494,6 +494,7 @@ function update(dt: number) {
 	updateActivity(dt);
 	updatePlayer(dt);
 	updateDizzy(dt);
+	updateTrickLog();
 	updateCamera();
 	updateAmbience(dt);
 	updateMusic(dt);
@@ -632,52 +633,42 @@ function draw(dt: number) {
 		ctx.restore();
 	}
 
-	if (DEBUG_OVERLAY) {
-		const log = getTrickLog(player);
+	const log = getTrickLog(player);
 
-		if (log.length > 0) {
-			const chain = currentTrickChain(player);
-			const repeat = currentTrickRepeat(player);
+	if (log.length > 0) {
+		const chain = currentTrickChain(player);
 
-			ctx.save();
-			ctx.fillStyle = "#ffffff";
-			ctx.font = "8px Tiny5";
-			ctx.globalAlpha = menuState.show ? 0.25 : 1.0;
-			ctx.textAlign = "right";
-			ctx.textBaseline = "top";
-			ctx.shadowColor = menuState.show ? "#00000000" : "#0000000d";
-			ctx.shadowOffsetX = 0;
-			ctx.shadowOffsetY = 1;
-			ctx.shadowBlur = 0;
+		ctx.save();
+		ctx.fillStyle = "#ffffff";
+		ctx.font = "8px Tiny5";
+		ctx.globalAlpha = menuState.show ? 0.25 : 1.0;
+		ctx.textAlign = "right";
+		ctx.textBaseline = "top";
+		ctx.shadowColor = menuState.show ? "#00000000" : "#0000000d";
+		ctx.shadowOffsetX = 0;
+		ctx.shadowOffsetY = 1;
+		ctx.shadowBlur = 0;
 
-			const right = GAME_WIDTH_PX - 4;
-			const lines: string[] = [];
+		const right = GAME_WIDTH_PX - 4;
+		const lines: string[] = [];
 
-			if (chain) {
-				lines.push(
-					`chain ×${chain.count}  ${(chain.remainingMs / 1000).toFixed(1)}s`,
-				);
-			}
-			if (repeat && repeat.count >= 2) {
-				lines.push(`repeat ${repeat.key} ×${repeat.count}`);
-			}
-
-			// Newest first, capped so it never runs off the bottom of the screen.
-			const MAX_SHOWN = 12;
-			for (const entry of log.slice(-MAX_SHOWN).reverse()) {
-				const ageMs = gameState.ms - entry.at;
-				const age =
-					ageMs < 1000
-						? `${Math.round(ageMs)}ms`
-						: `${(ageMs / 1000).toFixed(1)}s`;
-				lines.push(`${formatTrick(entry.trick)}  ${age}`);
-			}
-
-			lines.forEach((line, index) => {
-				ctx.fillText(line, right, 2 + index * 8);
-			});
-			ctx.restore();
+		if (chain) {
+			lines.push(
+				`chain ×${chain.count}  ${(chain.remainingMs / 1000).toFixed(1)}s`,
+			);
 		}
+
+		// Newest first, capped so it never runs off the bottom of the screen.
+		const MAX_SHOWN = 12;
+		lines.push(`--------------------`);
+		for (const entry of log.slice(-MAX_SHOWN).reverse()) {
+			lines.push(`${formatTrick(entry.trick)}`);
+		}
+
+		lines.forEach((line, index) => {
+			ctx.fillText(line, right, 2 + index * 8);
+		});
+		ctx.restore();
 	}
 }
 
