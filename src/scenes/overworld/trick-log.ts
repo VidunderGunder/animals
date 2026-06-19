@@ -30,7 +30,7 @@ export function trickKey(trick: Trick): string {
 export function formatTrick(trick: Trick): string {
 	switch (trick.type) {
 		case "spin": {
-			const dir = trick.rotation === "clockwise" ? "←" : "→";
+			const dir = trick.rotation === "clockwise" ? "→" : "←";
 			return `${dir} ${trick.rounds * 360}°`;
 		}
 	}
