@@ -11,7 +11,7 @@ import {
 	mix,
 	pxToTile,
 } from "../../../functions/general";
-import { type Direction, rotate } from "../../../input/input";
+import { type Direction, type Rotation, rotate } from "../../../input/input";
 import { type Entity, pushTrailStep } from "../entity";
 import { occupy, vacate } from "../occupancy";
 import { injectOnSegmentStart, type Transition } from "./transition";
@@ -42,7 +42,7 @@ function spinDelaySFX() {
 export function spin(
 	entity: Entity,
 	direction?: Direction | null,
-	rotation: "clockwise" | "counterclockwise" = "clockwise",
+	rotation: Rotation = "clockwise",
 ): Transition {
 	const condition = (entity: Entity) => !entity.isMoving;
 
@@ -70,7 +70,12 @@ export function spin(
 			})
 		: { x: entity.x, y: entity.y, z: entity.z };
 
-	return { condition, path, end };
+	return {
+		trick: { type: "spin", rotation, rounds },
+		condition,
+		path,
+		end,
+	};
 }
 function getSpinTransitionPath({
 	entity,
@@ -80,7 +85,7 @@ function getSpinTransitionPath({
 	distance,
 }: {
 	entity: Entity;
-	rotation: "clockwise" | "counterclockwise";
+	rotation: Rotation;
 	rounds: number;
 	direction?: Direction | null;
 	distance?: number;

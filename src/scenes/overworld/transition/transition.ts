@@ -2,6 +2,7 @@ import type { AnimationIDStable } from "../../../animation/animation";
 import { getCell } from "../cells";
 import type { Entity } from "../entity";
 import { getOccupant } from "../occupancy";
+import type { Trick } from "../trick-log";
 
 export type TransitionPathSegment = {
 	xPx: ((entity: Entity) => number) | number;
@@ -14,6 +15,12 @@ export type TransitionPathSegment = {
 };
 
 export type Transition = {
+	/**
+	 * If this transition is a trick, the structured descriptor that gets
+	 * appended to the entity's trick log when it starts. See trick-log.ts.
+	 */
+	trick?: Trick;
+
 	condition?: (entity: Entity) => boolean;
 
 	/* optional: overrides current animation during the transition */

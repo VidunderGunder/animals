@@ -51,8 +51,6 @@ Priority
 Character Movement & Animation
 
 - [ ] 🎨 Poof (spawn/despawn effect)
-- [ ] 🤖 Dizzy if trick is repeated 3 times in quick succession
-- [ ] 🎨 Dizzy effect (starts/planets/chickens spinning)
 - [ ] 🧠 Teleport command
 - [ ] 🎨 Create Roll & Flip sprites
 - [ ] 🎨 Terrain dependent rendering:
@@ -66,6 +64,7 @@ Spikes (investigation tasks)
 
 - [ ] 🧠 Trick system
   - [ ] 🤖 Make it possible to rotate (spin/flip) while jumping (jump transitions)
+  - [ ] 🤖 Crash if trick didn't finnish before landing (end of jump transition)
   - [ ] 🤖 Don't allow jump/flip if navigation is one z-layer above (and y + 1), as the entity is probably blocked
 - [ ] 🧠 Add rendering px offset to entity state?  
   xPx and yPx are now responsible for Camera, Rendering and Logical, but we should split them  

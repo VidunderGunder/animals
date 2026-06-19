@@ -3,6 +3,7 @@ export const sfxPaths = {
 	thud: "/audio/sounds/thud.mp3",
 	crash: "/audio/sounds/crash.mp3",
 	swoosh: "/audio/sounds/swoosh.mp3",
+	dizzy: "/audio/sounds/dizzy.mp3",
 } as const;
 
 export const ambiencePaths = {

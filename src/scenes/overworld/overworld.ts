@@ -45,6 +45,7 @@ import {
 	worldImageLayers,
 } from "./cells";
 import { renderDialogs } from "./dialog";
+import { checkDizziness, isDizzy, updateDizzy } from "./dizzy";
 import { type Entity, entities, isPlayerID, pushTrailStep } from "./entity";
 import { initializeArea as initializeStartArea } from "./generator/start";
 import { getOccupant, occupy, vacate } from "./occupancy";
@@ -54,6 +55,13 @@ import {
 	type Transition,
 } from "./transition/transition";
 import { spin } from "./transition/trick-spin";
+import {
+	currentTrickChain,
+	currentTrickRepeat,
+	formatTrick,
+	getTrickLog,
+	logTrick,
+} from "./trick-log";
 
 initializeStartArea();
 
@@ -232,7 +240,9 @@ function updatePlayer(dt: number) {
 		entity.autoRun = !entity.autoRun;
 	}
 
-	entity.moveMode = getPlayerMoveMode();
+	const dizzy = isDizzy(entity);
+
+	entity.moveMode = dizzy ? "walk" : getPlayerMoveMode();
 
 	// Speed based on run/walk
 	entity.speed = moveSpeeds[entity.moveMode ?? "walk"];
@@ -294,10 +304,10 @@ function updatePlayer(dt: number) {
 
 	let trick: Transition | undefined;
 
-	if (!entity.isMoving && activeActions.has("r")) {
+	if (!entity.isMoving && !dizzy && activeActions.has("r")) {
 		trick = spin(entity, desiredDirection);
 	}
-	if (!entity.isMoving && activeActions.has("l")) {
+	if (!entity.isMoving && !dizzy && activeActions.has("l")) {
 		trick = spin(entity, desiredDirection, "counterclockwise");
 	}
 
@@ -374,6 +384,11 @@ function updateEntityAndPlayer({
 			if (ok || allowAnyway || trick) {
 				pushTrailStep(entity);
 				entity.isMoving = true;
+
+				if (trick?.trick) {
+					logTrick(entity, trick.trick);
+					checkDizziness(entity);
+				}
 
 				entity.transitionEndTile = planned.end;
 				entity.animationOverride = planned.animation ?? null;
@@ -478,6 +493,7 @@ function update(dt: number) {
 
 	updateActivity(dt);
 	updatePlayer(dt);
+	updateDizzy(dt);
 	updateCamera();
 	updateAmbience(dt);
 	updateMusic(dt);
@@ -614,6 +630,54 @@ function draw(dt: number) {
 			ctx.fillText(line, 4, 2 + index * 8);
 		});
 		ctx.restore();
+	}
+
+	if (DEBUG_OVERLAY) {
+		const log = getTrickLog(player);
+
+		if (log.length > 0) {
+			const chain = currentTrickChain(player);
+			const repeat = currentTrickRepeat(player);
+
+			ctx.save();
+			ctx.fillStyle = "#ffffff";
+			ctx.font = "8px Tiny5";
+			ctx.globalAlpha = menuState.show ? 0.25 : 1.0;
+			ctx.textAlign = "right";
+			ctx.textBaseline = "top";
+			ctx.shadowColor = menuState.show ? "#00000000" : "#0000000d";
+			ctx.shadowOffsetX = 0;
+			ctx.shadowOffsetY = 1;
+			ctx.shadowBlur = 0;
+
+			const right = GAME_WIDTH_PX - 4;
+			const lines: string[] = [];
+
+			if (chain) {
+				lines.push(
+					`chain ×${chain.count}  ${(chain.remainingMs / 1000).toFixed(1)}s`,
+				);
+			}
+			if (repeat && repeat.count >= 2) {
+				lines.push(`repeat ${repeat.key} ×${repeat.count}`);
+			}
+
+			// Newest first, capped so it never runs off the bottom of the screen.
+			const MAX_SHOWN = 12;
+			for (const entry of log.slice(-MAX_SHOWN).reverse()) {
+				const ageMs = gameState.ms - entry.at;
+				const age =
+					ageMs < 1000
+						? `${Math.round(ageMs)}ms`
+						: `${(ageMs / 1000).toFixed(1)}s`;
+				lines.push(`${formatTrick(entry.trick)}  ${age}`);
+			}
+
+			lines.forEach((line, index) => {
+				ctx.fillText(line, right, 2 + index * 8);
+			});
+			ctx.restore();
+		}
 	}
 }
 
